@@ -25,7 +25,7 @@ const label = computed(() => {
 
 <template>
   <div>
-    <h4 class="mb-2 text-xs font-semibold uppercase text-text-secondary">{{ label }}</h4>
+    <h4 class="mb-2 text-xs font-semibold uppercase text-muted-foreground">{{ label }}</h4>
 
     <template v-if="tab === 'pending'">
       <FriendRequestItem
@@ -33,7 +33,7 @@ const label = computed(() => {
         :key="request.id"
         :request="request"
       />
-      <p v-if="friendsStore.pendingRequests.length === 0" class="py-8 text-center text-sm text-text-secondary">
+      <p v-if="friendsStore.pendingRequests.length === 0" class="py-8 text-center text-sm text-muted-foreground">
         No pending requests
       </p>
     </template>
@@ -44,7 +44,7 @@ const label = computed(() => {
         :key="friend.id"
         :friend="friend"
       />
-      <p v-if="filteredFriends.length === 0" class="py-8 text-center text-sm text-text-secondary">
+      <p v-if="filteredFriends.length === 0" class="py-8 text-center text-sm text-muted-foreground">
         {{ tab === 'online' ? 'No friends are online right now' : 'No friends yet' }}
       </p>
     </template>

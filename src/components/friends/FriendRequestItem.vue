@@ -2,7 +2,10 @@
 import type { FriendRequest } from '@/types'
 import { useFriendsStore } from '@/stores/friends'
 import { useAuthStore } from '@/stores/auth'
-import BaseAvatar from '@/components/common/BaseAvatar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Check, X } from 'lucide-vue-next'
 
 interface Props {
   request: FriendRequest
@@ -17,39 +20,40 @@ const user = isIncoming ? props.request.from : props.request.to
 </script>
 
 <template>
-  <div class="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-hover-bg">
-    <BaseAvatar
+  <div class="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-accent/50">
+    <UserAvatar
       :src="user.avatar"
       :alt="user.displayName"
       size="sm"
     />
 
     <div class="min-w-0 flex-1">
-      <div class="text-sm font-medium text-text-primary">{{ user.displayName }}</div>
-      <div class="text-xs text-text-secondary">
+      <div class="text-sm font-medium text-foreground">{{ user.displayName }}</div>
+      <div class="text-xs text-muted-foreground">
         {{ isIncoming ? 'Incoming Friend Request' : 'Outgoing Friend Request' }}
       </div>
     </div>
 
-    <div v-if="isIncoming" class="flex gap-2">
-      <button
-        @click="friendsStore.acceptRequest(request.id)"
-        class="rounded-full bg-chat-bg p-2 text-text-secondary transition-colors hover:text-online"
-        title="Accept"
-      >
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-      </button>
-      <button
-        @click="friendsStore.rejectRequest(request.id)"
-        class="rounded-full bg-chat-bg p-2 text-text-secondary transition-colors hover:text-danger"
-        title="Reject"
-      >
-        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
+    <TooltipProvider v-if="isIncoming">
+      <div class="flex gap-1">
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button variant="ghost" size="icon" class="h-8 w-8 hover:text-online" @click="friendsStore.acceptRequest(request.id)">
+              <Check class="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Accept</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button variant="ghost" size="icon" class="h-8 w-8 hover:text-destructive" @click="friendsStore.rejectRequest(request.id)">
+              <X class="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Reject</TooltipContent>
+        </Tooltip>
+      </div>
+    </TooltipProvider>
   </div>
 </template>

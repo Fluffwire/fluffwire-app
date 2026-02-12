@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-import BaseInput from '@/components/common/BaseInput.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
+import { Card, CardHeader, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Loader2 } from 'lucide-vue-next'
 
 const { login, isLoading, error } = useAuth()
 
@@ -15,43 +18,52 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="rounded-md bg-channel-bg p-8 shadow-lg">
-    <div class="mb-6 text-center">
-      <h1 class="text-2xl font-bold text-text-primary">Welcome back!</h1>
-      <p class="mt-1 text-text-secondary">We're so excited to see you again!</p>
-    </div>
+  <Card class="border-border/50 shadow-lg">
+    <CardHeader class="text-center">
+      <h1 class="text-2xl font-bold text-foreground">Welcome back!</h1>
+      <p class="mt-1 text-muted-foreground">We're so excited to see you again!</p>
+    </CardHeader>
 
-    <form @submit.prevent="handleSubmit" class="space-y-5">
-      <div v-if="error" class="rounded bg-danger/10 p-3 text-sm text-danger">
-        {{ error }}
-      </div>
+    <CardContent>
+      <form @submit.prevent="handleSubmit" class="space-y-5">
+        <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {{ error }}
+        </div>
 
-      <BaseInput
-        v-model="email"
-        label="Email"
-        type="email"
-        required
-        autocomplete="email"
-      />
+        <div class="space-y-2">
+          <Label for="login-email">Email</Label>
+          <Input
+            id="login-email"
+            v-model="email"
+            type="email"
+            required
+            autocomplete="email"
+          />
+        </div>
 
-      <BaseInput
-        v-model="password"
-        label="Password"
-        type="password"
-        required
-        autocomplete="current-password"
-      />
+        <div class="space-y-2">
+          <Label for="login-password">Password</Label>
+          <Input
+            id="login-password"
+            v-model="password"
+            type="password"
+            required
+            autocomplete="current-password"
+          />
+        </div>
 
-      <BaseButton type="submit" :loading="isLoading" class="w-full">
-        Log In
-      </BaseButton>
+        <Button type="submit" :disabled="isLoading" class="w-full">
+          <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+          Log In
+        </Button>
 
-      <p class="text-sm text-text-secondary">
-        Need an account?
-        <RouterLink to="/register" class="text-blurple hover:underline">
-          Register
-        </RouterLink>
-      </p>
-    </form>
-  </div>
+        <p class="text-sm text-muted-foreground">
+          Need an account?
+          <RouterLink to="/register" class="text-primary hover:underline">
+            Register
+          </RouterLink>
+        </p>
+      </form>
+    </CardContent>
+  </Card>
 </template>

@@ -17,11 +17,14 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
 import { useVoiceStore } from '@/stores/voice'
 import { useResponsive } from '@/composables/useResponsive'
+import { useNotifications } from '@/composables/useNotifications'
 
 const route = useRoute()
 const uiStore = useUiStore()
 const voiceStore = useVoiceStore()
 const { isMobile, isTablet, isDesktop } = useResponsive()
+
+useNotifications()
 
 const isSettings = computed(() => route.path === '/settings')
 

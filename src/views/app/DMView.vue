@@ -23,7 +23,7 @@ const dm = computed(() => dmStore.currentDm)
     :channel-name="dm.recipient.displayName"
     :is-dm="true"
   />
-  <div v-else class="flex h-full items-center justify-center text-text-secondary">
+  <div v-else class="flex h-full items-center justify-center text-muted-foreground">
     Select a conversation
   </div>
 </template>

@@ -2,7 +2,7 @@
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
-import BaseAvatar from '@/components/common/BaseAvatar.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -20,13 +20,13 @@ onMounted(() => {
       :key="dm.id"
       @click="router.push(`/channels/@me/${dm.id}`)"
       :class="[
-        'flex w-full items-center gap-3 rounded px-2 py-1.5 transition-colors',
+        'flex w-full items-center gap-3 rounded-lg px-2 py-1.5 transition-colors',
         route.params.dmId === dm.id
-          ? 'bg-active-bg text-text-primary'
-          : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary',
+          ? 'border-l-2 border-primary bg-accent text-foreground'
+          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
       ]"
     >
-      <BaseAvatar
+      <UserAvatar
         :src="dm.recipient.avatar"
         :alt="dm.recipient.displayName"
         size="sm"
@@ -34,13 +34,13 @@ onMounted(() => {
       />
       <div class="min-w-0 flex-1 text-left">
         <div class="truncate text-sm font-medium">{{ dm.recipient.displayName }}</div>
-        <div v-if="dm.lastMessage" class="truncate text-xs text-text-muted">
+        <div v-if="dm.lastMessage" class="truncate text-xs text-muted-foreground">
           {{ dm.lastMessage.content }}
         </div>
       </div>
     </button>
 
-    <p v-if="dmStore.dmChannels.length === 0" class="px-2 py-4 text-center text-xs text-text-muted">
+    <p v-if="dmStore.dmChannels.length === 0" class="px-2 py-4 text-center text-xs text-muted-foreground">
       No direct messages yet
     </p>
   </div>

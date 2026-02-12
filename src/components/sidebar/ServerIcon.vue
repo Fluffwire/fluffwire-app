@@ -24,21 +24,19 @@ function getInitials(name: string): string {
     <!-- Active pill indicator -->
     <div
       :class="[
-        'absolute left-0 w-1 rounded-r-full bg-text-primary transition-all duration-200',
+        'absolute left-0 w-1 rounded-r-full bg-primary transition-all duration-200',
         active ? 'h-10' : 'h-0 group-hover:h-5',
       ]"
     />
     <button
       @click="$emit('click')"
       :class="[
-        'group flex h-12 w-12 items-center justify-center overflow-hidden transition-all duration-200',
+        'group flex h-14 w-14 items-center justify-center overflow-hidden transition-all duration-200',
         active
-          ? 'rounded-[16px]'
-          : 'rounded-[24px] hover:rounded-[16px]',
-        server.icon ? '' : 'bg-chat-bg text-text-primary hover:bg-blurple hover:text-white',
-        active && !server.icon ? 'bg-blurple text-white' : '',
+          ? 'rounded-2xl shadow-lg shadow-primary/25'
+          : 'rounded-[28px] hover:rounded-2xl hover:shadow-md hover:shadow-primary/15',
+        server.icon ? '' : active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground',
       ]"
-      :title="server.name"
     >
       <img
         v-if="server.icon"
