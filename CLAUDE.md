@@ -1,6 +1,6 @@
 # Fluffwire Frontend (fluffwire-app)
 
-Discord-like chat application built with Vue 3 + TypeScript.
+Real-time chat application built with Vue 3 + TypeScript.
 
 ## Tech Stack
 
