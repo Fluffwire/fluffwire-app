@@ -10,10 +10,7 @@ const layout = computed(() => route.meta.layout as string)
 </script>
 
 <template>
-  <template v-if="layout === 'settings'">
-    <RouterView />
-  </template>
-  <component v-else :is="layout === 'app' ? AppLayout : AuthLayout">
+  <component :is="layout === 'app' ? AppLayout : AuthLayout">
     <RouterView />
   </component>
   <ToastContainer />
