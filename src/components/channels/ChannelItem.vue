@@ -61,40 +61,43 @@ async function handleDelete() {
 </script>
 
 <template>
-  <ContextMenu>
-    <ContextMenuTrigger as-child>
-      <button
-        @click="handleClick"
-        :class="[
-          'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
-          isActive
-            ? 'border-l-2 border-primary bg-accent text-foreground'
-            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
-        ]"
-      >
-        <Hash v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" />
-        <Headphones v-else class="h-5 w-5 shrink-0 opacity-60" />
-        <span class="truncate">{{ channel.name }}</span>
-      </button>
-    </ContextMenuTrigger>
+  <!-- Outer div is the draggable surface — no pointer-intercepting wrappers -->
+  <div>
+    <ContextMenu>
+      <ContextMenuTrigger as="div">
+        <button
+          @click="handleClick"
+          :class="[
+            'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
+            isActive
+              ? 'border-l-2 border-primary bg-accent text-foreground'
+              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+          ]"
+        >
+          <Hash v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" />
+          <Headphones v-else class="h-5 w-5 shrink-0 opacity-60" />
+          <span class="truncate">{{ channel.name }}</span>
+        </button>
+      </ContextMenuTrigger>
 
-    <ContextMenuContent v-if="isOwner" class="w-48">
-      <ContextMenuItem @click="handleEdit" class="gap-2">
-        <Pencil class="h-4 w-4" />
-        Edit Channel
-      </ContextMenuItem>
-      <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
-        <Trash2 class="h-4 w-4" />
-        Delete Channel
-      </ContextMenuItem>
-    </ContextMenuContent>
-  </ContextMenu>
+      <ContextMenuContent v-if="isOwner" class="w-48">
+        <ContextMenuItem @click="handleEdit" class="gap-2">
+          <Pencil class="h-4 w-4" />
+          Edit Channel
+        </ContextMenuItem>
+        <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+          <Trash2 class="h-4 w-4" />
+          Delete Channel
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
 
-  <DeleteConfirmDialog
-    :open="showDeleteDialog"
-    title="Delete Channel"
-    :description="`Are you sure you want to delete #${channel.name}? This cannot be undone.`"
-    @update:open="showDeleteDialog = $event"
-    @confirm="handleDelete"
-  />
+    <DeleteConfirmDialog
+      :open="showDeleteDialog"
+      title="Delete Channel"
+      :description="`Are you sure you want to delete #${channel.name}? This cannot be undone.`"
+      @update:open="showDeleteDialog = $event"
+      @confirm="handleDelete"
+    />
+  </div>
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
 import { useUiStore } from '@/stores/ui'
@@ -13,6 +13,7 @@ import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { toast } from 'vue-sonner'
+import Sortable from 'sortablejs'
 
 interface Props {
   category: CategoryType
@@ -28,10 +29,32 @@ const authStore = useAuthStore()
 
 const isCollapsed = ref(false)
 const showDeleteDialog = ref(false)
+const channelListEl = ref<HTMLElement | null>(null)
+let sortableInstance: Sortable | null = null
 
 const isOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
 )
+
+// Injected from ChannelSidebar — called when any channel drag ends
+const onChannelDragEnd = inject<() => void>('onChannelDragEnd', () => {})
+
+function initSortable() {
+  sortableInstance?.destroy()
+  sortableInstance = null
+
+  if (channelListEl.value && isOwner.value) {
+    sortableInstance = Sortable.create(channelListEl.value, {
+      group: 'channels',
+      animation: 150,
+      ghostClass: 'opacity-30',
+      onEnd: onChannelDragEnd,
+    })
+  }
+}
+
+watch([channelListEl, isOwner], initSortable, { flush: 'post' })
+onBeforeUnmount(() => { sortableInstance?.destroy() })
 
 function handleCreateChannel() {
   uiStore.openModal('createChannel', { categoryId: props.category.id })
@@ -97,12 +120,16 @@ async function handleDeleteCategory() {
       </ContextMenuContent>
     </ContextMenu>
 
-    <div v-show="!isCollapsed" class="mt-0.5">
-      <ChannelItem
-        v-for="channel in channels"
-        :key="channel.id"
-        :channel="channel"
-      />
+    <div
+      v-show="!isCollapsed"
+      ref="channelListEl"
+      class="mt-0.5"
+      data-channel-container
+      :data-category-id="category.id"
+    >
+      <div v-for="channel in channels" :key="channel.id" :data-id="channel.id">
+        <ChannelItem :channel="channel" />
+      </div>
     </div>
 
     <DeleteConfirmDialog
