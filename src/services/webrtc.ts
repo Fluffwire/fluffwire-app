@@ -20,6 +20,7 @@ class WebRTCService {
   private peerConnection: RTCPeerConnection | null = null
   private localStream: MediaStream | null = null
   private remoteStreams = new Map<string, MediaStream>()
+  private remoteAudioElements = new Map<string, HTMLAudioElement>()
   private audioContext: AudioContext | null = null
   private analyserNodes = new Map<string, AnalyserNode>()
 
@@ -68,10 +69,17 @@ class WebRTCService {
 
       this.peerConnection.ontrack = (event: RTCTrackEvent) => {
         const [stream] = event.streams
-        if (stream) {
-          const peerId = stream.id
-          this.remoteStreams.set(peerId, stream)
-          this.onRemoteStream?.(peerId, stream)
+        if (stream && !this.remoteAudioElements.has(stream.id)) {
+          this.remoteStreams.set(stream.id, stream)
+          this.onRemoteStream?.(stream.id, stream)
+
+          // Create hidden audio element to play remote audio
+          const audio = document.createElement('audio')
+          audio.srcObject = stream
+          audio.autoplay = true
+          audio.muted = this._isDeafened
+          audio.play().catch(() => {})
+          this.remoteAudioElements.set(stream.id, audio)
         }
       }
 
@@ -206,10 +214,8 @@ class WebRTCService {
         track.enabled = false
       })
     }
-    this.remoteStreams.forEach((stream) => {
-      stream.getAudioTracks().forEach((track) => {
-        track.enabled = !this._isDeafened
-      })
+    this.remoteAudioElements.forEach((audio) => {
+      audio.muted = this._isDeafened
     })
     this.sendVoiceStateUpdate()
     return this._isDeafened
@@ -242,6 +248,11 @@ class WebRTCService {
     this.localStream = null
 
     this.remoteStreams.clear()
+    this.remoteAudioElements.forEach((audio) => {
+      audio.pause()
+      audio.srcObject = null
+    })
+    this.remoteAudioElements.clear()
     this.analyserNodes.clear()
     this.audioContext?.close()
     this.audioContext = null
