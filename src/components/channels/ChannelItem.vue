@@ -37,7 +37,7 @@ const isOwner = computed(() =>
 
 function handleClick() {
   router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
-  if (props.channel.type === 'voice') {
+  if (props.channel.type === 'voice' && voiceStore.currentChannelId !== props.channel.id) {
     voiceStore.joinChannel(props.channel.serverId, props.channel.id)
   }
   if (uiStore.isMobileView || uiStore.isTabletView) {
