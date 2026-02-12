@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useFriendsStore } from '@/stores/friends'
-import BaseButton from '@/components/common/BaseButton.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Loader2 } from 'lucide-vue-next'
 
 const friendsStore = useFriendsStore()
 const username = ref('')
@@ -26,25 +28,26 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <h4 class="mb-1 text-sm font-bold uppercase text-text-primary">Add Friend</h4>
-    <p class="mb-4 text-sm text-text-secondary">
+    <h4 class="mb-1 text-sm font-bold uppercase text-foreground">Add Friend</h4>
+    <p class="mb-4 text-sm text-muted-foreground">
       You can add friends with their username.
     </p>
 
-    <form @submit.prevent="handleSubmit" class="flex items-center gap-3 rounded-lg bg-input-bg p-2">
-      <input
+    <form @submit.prevent="handleSubmit" class="flex items-center gap-3 rounded-xl border border-input bg-card p-2">
+      <Input
         v-model="username"
         placeholder="Enter a username"
-        class="flex-1 bg-transparent px-2 py-1.5 text-sm text-text-primary placeholder-text-muted outline-none"
+        class="flex-1 border-0 bg-transparent focus-visible:ring-0"
       />
-      <BaseButton type="submit" :loading="isLoading" :disabled="!username.trim()" size="sm">
+      <Button type="submit" :disabled="isLoading || !username.trim()" size="sm">
+        <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
         Send Friend Request
-      </BaseButton>
+      </Button>
     </form>
 
     <p
       v-if="message"
-      :class="['mt-3 text-sm', message.type === 'success' ? 'text-success' : 'text-danger']"
+      :class="['mt-3 text-sm', message.type === 'success' ? 'text-online' : 'text-destructive']"
     >
       {{ message.text }}
     </p>

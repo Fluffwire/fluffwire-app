@@ -3,18 +3,13 @@ import { ref, computed, onMounted } from 'vue'
 import { useFriendsStore } from '@/stores/friends'
 import FriendsList from '@/components/friends/FriendsList.vue'
 import AddFriendForm from '@/components/friends/AddFriendForm.vue'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
+import { Users } from 'lucide-vue-next'
 
 const friendsStore = useFriendsStore()
 
-type Tab = 'online' | 'all' | 'pending' | 'add'
-const activeTab = ref<Tab>('online')
-
-const tabs: { key: Tab; label: string }[] = [
-  { key: 'online', label: 'Online' },
-  { key: 'all', label: 'All' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'add', label: 'Add Friend' },
-]
+const activeTab = ref('online')
 
 onMounted(() => {
   friendsStore.fetchFriends()
@@ -27,39 +22,44 @@ const pendingCount = computed(() => friendsStore.pendingRequests.length)
 <template>
   <div class="flex h-full flex-col">
     <!-- Header -->
-    <div class="flex h-12 items-center gap-4 border-b border-border/50 px-4 shadow-sm">
-      <svg class="h-5 w-5 text-text-secondary" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-      </svg>
-      <h3 class="font-semibold text-text-primary">Friends</h3>
+    <div class="flex h-12 items-center gap-4 border-b border-primary/20 px-4">
+      <Users class="h-5 w-5 text-muted-foreground" />
+      <h3 class="font-semibold text-foreground">Friends</h3>
+    </div>
 
-      <div class="ml-4 flex gap-2">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="activeTab = tab.key"
-          :class="[
-            'relative rounded px-2 py-1 text-sm font-medium transition-colors',
-            activeTab === tab.key
-              ? tab.key === 'add' ? 'bg-online text-white' : 'bg-active-bg text-text-primary'
-              : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary',
-          ]"
-        >
-          {{ tab.label }}
-          <span
-            v-if="tab.key === 'pending' && pendingCount > 0"
-            class="ml-1 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-xs text-white"
-          >
-            {{ pendingCount }}
-          </span>
-        </button>
+    <!-- Tabs -->
+    <Tabs v-model="activeTab" class="flex flex-1 flex-col">
+      <div class="border-b border-border/50 px-4 pt-2">
+        <TabsList class="bg-transparent">
+          <TabsTrigger value="online">Online</TabsTrigger>
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="pending" class="gap-1.5">
+            Pending
+            <Badge v-if="pendingCount > 0" variant="destructive" class="ml-1 h-4 min-w-[16px] px-1 text-[10px]">
+              {{ pendingCount }}
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="add" class="text-primary data-[state=active]:text-primary">
+            Add Friend
+          </TabsTrigger>
+        </TabsList>
       </div>
-    </div>
 
-    <!-- Content -->
-    <div class="flex-1 overflow-y-auto p-4">
-      <AddFriendForm v-if="activeTab === 'add'" />
-      <FriendsList v-else :tab="activeTab" />
-    </div>
+      <TabsContent value="online" class="flex-1 overflow-y-auto p-4 mt-0">
+        <FriendsList tab="online" />
+      </TabsContent>
+
+      <TabsContent value="all" class="flex-1 overflow-y-auto p-4 mt-0">
+        <FriendsList tab="all" />
+      </TabsContent>
+
+      <TabsContent value="pending" class="flex-1 overflow-y-auto p-4 mt-0">
+        <FriendsList tab="pending" />
+      </TabsContent>
+
+      <TabsContent value="add" class="flex-1 overflow-y-auto p-4 mt-0">
+        <AddFriendForm />
+      </TabsContent>
+    </Tabs>
   </div>
 </template>

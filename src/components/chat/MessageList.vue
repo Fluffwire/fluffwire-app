@@ -1,12 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import MessageItem from './MessageItem.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import { Card } from '@/components/ui/card'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Hash } from 'lucide-vue-next'
 
 interface Props {
   channelId: string
+  channelName?: string
 }
 
 const props = defineProps<Props>()
@@ -31,7 +35,6 @@ watch(() => props.channelId, async (id) => {
   }
 }, { immediate: true })
 
-// Auto-scroll on new messages
 watch(() => messages.value.length, async () => {
   await nextTick()
   if (containerRef.value) {
@@ -51,13 +54,37 @@ function scrollToBottom() {
 <template>
   <div ref="containerRef" class="flex-1 overflow-y-auto">
     <div class="flex min-h-full flex-col justify-end">
-      <div v-if="isLoadingMore" class="py-4">
-        <LoadingSpinner size="sm" />
+      <!-- Loading more skeleton -->
+      <div v-if="isLoadingMore" class="space-y-4 p-4">
+        <div v-for="i in 3" :key="i" class="flex gap-4">
+          <Skeleton class="h-10 w-10 rounded-full shrink-0" />
+          <div class="flex-1 space-y-2">
+            <Skeleton class="h-4 w-32" />
+            <Skeleton class="h-4 w-full" />
+          </div>
+        </div>
       </div>
 
-      <div v-if="messages.length === 0 && !messagesStore.isLoading" class="p-8 text-center">
-        <h3 class="text-xl font-bold text-text-primary">Welcome to #{{ channelId }}!</h3>
-        <p class="mt-1 text-text-secondary">This is the start of the conversation.</p>
+      <!-- Welcome message -->
+      <Card v-if="messages.length === 0 && !messagesStore.isLoading" class="mx-4 mb-4 mt-auto border-border/50">
+        <div class="p-6 text-center">
+          <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Hash class="h-8 w-8 text-primary" />
+          </div>
+          <h3 class="text-xl font-bold text-foreground">Welcome to #{{ channelName ?? channelId }}!</h3>
+          <p class="mt-1 text-muted-foreground">This is the start of the conversation.</p>
+        </div>
+      </Card>
+
+      <!-- Initial loading skeleton -->
+      <div v-if="messagesStore.isLoading && messages.length === 0" class="space-y-4 p-4">
+        <div v-for="i in 6" :key="i" class="flex gap-4">
+          <Skeleton class="h-10 w-10 rounded-full shrink-0" />
+          <div class="flex-1 space-y-2">
+            <Skeleton class="h-4 w-24" />
+            <Skeleton class="h-4" :style="{ width: `${40 + Math.random() * 40}%` }" />
+          </div>
+        </div>
       </div>
 
       <MessageItem

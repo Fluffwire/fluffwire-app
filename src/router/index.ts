@@ -39,6 +39,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'app', requiresAuth: true },
   },
   {
+    path: '/invite/:code',
+    name: 'Invite',
+    component: () => import('@/views/app/InviteView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/',
     redirect: '/channels/@me',
   },

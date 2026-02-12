@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { serverApi } from '@/services/serverApi'
 import { useUiStore } from '@/stores/ui'
-import BaseModal from '@/components/common/BaseModal.vue'
-import BaseButton from '@/components/common/BaseButton.vue'
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Copy, Check, Loader2 } from 'lucide-vue-next'
 
 const uiStore = useUiStore()
 const inviteLink = ref('')
 const isLoading = ref(false)
 const copied = ref(false)
+
+const isOpen = computed({
+  get: () => uiStore.activeModal === 'invite',
+  set: (v) => { if (!v) uiStore.closeModal() },
+})
 
 watch(() => uiStore.activeModal, async (modal) => {
   if (modal === 'invite' && uiStore.modalData) {
@@ -33,26 +42,30 @@ async function copyToClipboard() {
 </script>
 
 <template>
-  <BaseModal
-    title="Invite Friends"
-    :show="uiStore.activeModal === 'invite'"
-    @close="uiStore.closeModal()"
-  >
-    <div class="space-y-4">
-      <p class="text-sm text-text-secondary">
-        Share this invite link with others to grant access to this server.
-      </p>
+  <Dialog v-model:open="isOpen">
+    <DialogContent class="sm:max-w-md">
+      <DialogHeader>
+        <DialogTitle>Invite Friends</DialogTitle>
+      </DialogHeader>
 
-      <div class="flex items-center gap-2 rounded bg-input-bg p-3">
-        <input
-          :value="inviteLink"
-          readonly
-          class="flex-1 bg-transparent text-sm text-text-primary outline-none"
-        />
-        <BaseButton size="sm" @click="copyToClipboard">
-          {{ copied ? 'Copied!' : 'Copy' }}
-        </BaseButton>
+      <div class="space-y-4">
+        <p class="text-sm text-muted-foreground">
+          Share this invite link with others to grant access to this server.
+        </p>
+
+        <div v-if="isLoading" class="flex justify-center py-4">
+          <Loader2 class="h-6 w-6 animate-spin text-primary" />
+        </div>
+
+        <div v-else class="flex items-center gap-2">
+          <Input :model-value="inviteLink" readonly class="flex-1" />
+          <Button size="sm" @click="copyToClipboard" class="shrink-0">
+            <Check v-if="copied" class="mr-1.5 h-4 w-4" />
+            <Copy v-else class="mr-1.5 h-4 w-4" />
+            {{ copied ? 'Copied!' : 'Copy' }}
+          </Button>
+        </div>
       </div>
-    </div>
-  </BaseModal>
+    </DialogContent>
+  </Dialog>
 </template>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { UserStatus } from '@/types'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 
 interface Props {
   src: string | null
@@ -34,30 +35,27 @@ const statusDotSize = {
   md: 'h-3 w-3 -bottom-0.5 -right-0.5',
   lg: 'h-4 w-4 -bottom-1 -right-1',
 }
+
+const fallbackTextSize = {
+  xs: 'text-xs',
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-2xl',
+}
 </script>
 
 <template>
   <div class="relative inline-flex shrink-0">
-    <img
-      v-if="src"
-      :src="src"
-      :alt="alt"
-      :class="['rounded-full object-cover', sizeClasses[size]]"
-    />
-    <div
-      v-else
-      :class="[
-        'flex items-center justify-center rounded-full bg-blurple text-white font-semibold',
-        sizeClasses[size],
-        size === 'xs' ? 'text-xs' : size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-2xl' : 'text-sm',
-      ]"
-    >
-      {{ alt?.charAt(0)?.toUpperCase() || '?' }}
-    </div>
+    <Avatar :class="sizeClasses[size]">
+      <AvatarImage v-if="src" :src="src" :alt="alt" />
+      <AvatarFallback :class="['bg-primary text-primary-foreground font-semibold', fallbackTextSize[size]]">
+        {{ alt?.charAt(0)?.toUpperCase() || '?' }}
+      </AvatarFallback>
+    </Avatar>
     <span
       v-if="status"
       :class="[
-        'absolute rounded-full border-2 border-channel-bg',
+        'absolute rounded-full border-2 border-card',
         statusColors[status],
         statusDotSize[size],
       ]"

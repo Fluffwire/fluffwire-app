@@ -1,19 +1,17 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-
-export interface Toast {
-  id: string
-  type: 'success' | 'error' | 'info'
-  message: string
-  duration?: number
-}
+import { useTheme, type ThemeName } from '@/composables/useTheme'
 
 export const useUiStore = defineStore('ui', () => {
   const showMemberSidebar = ref(true)
   const activeModal = ref<string | null>(null)
   const modalData = ref<unknown>(null)
-  const toasts = ref<Toast[]>([])
   const isMobileSidebarOpen = ref(false)
+  const isChannelSidebarOpen = ref(false)
+  const isMobileView = ref(false)
+  const isTabletView = ref(false)
+
+  const { theme, setTheme: applyTheme } = useTheme()
 
   function toggleMemberSidebar() {
     showMemberSidebar.value = !showMemberSidebar.value
@@ -29,28 +27,22 @@ export const useUiStore = defineStore('ui', () => {
     modalData.value = null
   }
 
-  function addToast(toast: Omit<Toast, 'id'>) {
-    const id = Date.now().toString(36)
-    toasts.value.push({ ...toast, id })
-    setTimeout(() => {
-      removeToast(id)
-    }, toast.duration ?? 5000)
-  }
-
-  function removeToast(id: string) {
-    toasts.value = toasts.value.filter((t) => t.id !== id)
+  function setTheme(name: ThemeName) {
+    applyTheme(name)
   }
 
   return {
     showMemberSidebar,
     activeModal,
     modalData,
-    toasts,
     isMobileSidebarOpen,
+    isChannelSidebarOpen,
+    isMobileView,
+    isTabletView,
+    theme,
     toggleMemberSidebar,
     openModal,
     closeModal,
-    addToast,
-    removeToast,
+    setTheme,
   }
 })

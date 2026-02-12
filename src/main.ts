@@ -10,6 +10,11 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
+// Initialize theme before anything renders
+import { useTheme } from './composables/useTheme'
+const { initTheme } = useTheme()
+initTheme()
+
 // Initialize auth state before mounting
 import { useAuthStore } from './stores/auth'
 const authStore = useAuthStore()

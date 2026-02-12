@@ -54,7 +54,7 @@ function typingText(): string {
 </script>
 
 <template>
-  <div class="absolute bottom-0 left-4 h-6 text-xs text-text-secondary">
+  <div class="absolute bottom-0 left-4 h-6 text-xs text-muted-foreground">
     <span v-if="typingUsers.size > 0">{{ typingText() }}</span>
   </div>
 </template>
