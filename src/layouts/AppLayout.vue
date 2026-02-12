@@ -4,10 +4,10 @@ import { useRoute } from 'vue-router'
 import ServerSidebar from '@/components/sidebar/ServerSidebar.vue'
 import ChannelSidebar from '@/components/sidebar/ChannelSidebar.vue'
 import MemberSidebar from '@/components/members/MemberSidebar.vue'
-import VoicePanel from '@/components/voice/VoicePanel.vue'
 import CreateServerModal from '@/components/server/CreateServerModal.vue'
 import JoinServerModal from '@/components/server/JoinServerModal.vue'
 import InviteModal from '@/components/server/InviteModal.vue'
+import ServerSettingsModal from '@/components/server/ServerSettingsModal.vue'
 import CreateChannelModal from '@/components/channels/CreateChannelModal.vue'
 import EditChannelModal from '@/components/channels/EditChannelModal.vue'
 import CreateCategoryModal from '@/components/channels/CreateCategoryModal.vue'
@@ -15,13 +15,11 @@ import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
 import MobileNav from '@/components/navigation/MobileNav.vue'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
-import { useVoiceStore } from '@/stores/voice'
 import { useResponsive } from '@/composables/useResponsive'
 import { useNotifications } from '@/composables/useNotifications'
 
 const route = useRoute()
 const uiStore = useUiStore()
-const voiceStore = useVoiceStore()
 const { isMobile, isTablet, isDesktop } = useResponsive()
 
 useNotifications()
@@ -76,9 +74,6 @@ const showChannelSidebar = computed(() => !isSettings.value)
       ]"
     >
       <slot />
-
-      <!-- Voice panel (sticky at bottom when in voice) -->
-      <VoicePanel v-if="voiceStore.isInVoice" />
     </main>
 
     <!-- Desktop: inline member sidebar -->
@@ -98,6 +93,7 @@ const showChannelSidebar = computed(() => !isSettings.value)
     <CreateServerModal />
     <JoinServerModal />
     <InviteModal />
+    <ServerSettingsModal />
     <CreateChannelModal />
     <EditChannelModal />
     <CreateCategoryModal />

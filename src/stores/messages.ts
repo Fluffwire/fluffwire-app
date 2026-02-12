@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Message, CreateMessagePayload } from '@/types'
+import type { Message, Attachment, CreateMessagePayload } from '@/types'
 import { WsOpCode } from '@/types/websocket'
 import { messageApi } from '@/services/messageApi'
 import { wsService } from '@/services/websocket'
@@ -71,6 +71,11 @@ export const useMessagesStore = defineStore('messages', () => {
     wsService.sendDispatch('MESSAGE_CREATE', payload)
   }
 
+  async function sendMessageWithAttachments(channelId: string, content: string, attachments: Omit<Attachment, 'id'>[]) {
+    await messageApi.createMessage(channelId, content, attachments)
+    // The WS MESSAGE_CREATE event will add it to the store
+  }
+
   async function editMessage(channelId: string, messageId: string, content: string) {
     await messageApi.editMessage(channelId, messageId, { content })
   }
@@ -95,6 +100,7 @@ export const useMessagesStore = defineStore('messages', () => {
     getMessages,
     fetchMessages,
     sendMessage,
+    sendMessageWithAttachments,
     editMessage,
     deleteMessage,
     channelHasMore,

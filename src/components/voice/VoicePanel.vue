@@ -15,12 +15,12 @@ const channelName = computed(() => {
 </script>
 
 <template>
-  <div class="absolute bottom-0 left-0 right-0 border-t border-border bg-card p-3">
+  <div class="border-t border-border/50 bg-card/80 px-3 py-2">
     <div class="flex items-center justify-between">
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <div class="h-2 w-2 animate-pulse rounded-full bg-online shadow-sm shadow-online/50" />
-          <span class="text-sm font-medium text-online">Voice Connected</span>
+          <span class="text-xs font-medium text-online">Voice Connected</span>
         </div>
         <div class="truncate text-xs text-muted-foreground">{{ channelName }}</div>
       </div>
@@ -28,12 +28,12 @@ const channelName = computed(() => {
     </div>
 
     <!-- Connected peers -->
-    <div v-if="voiceStore.peers.length > 0" class="mt-2 flex flex-wrap gap-1">
+    <div v-if="voiceStore.peers.length > 0" class="mt-1.5 flex flex-wrap gap-1">
       <Badge
         v-for="peer in voiceStore.peers"
         :key="peer.userId"
         :variant="peer.speaking ? 'default' : 'secondary'"
-        :class="peer.speaking ? 'bg-primary/20 text-primary' : ''"
+        :class="['text-xs', peer.speaking ? 'bg-primary/20 text-primary' : '']"
       >
         {{ peer.displayName }}
       </Badge>

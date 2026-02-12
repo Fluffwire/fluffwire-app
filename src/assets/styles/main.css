@@ -149,6 +149,40 @@ html.theme-transitioning *::after {
 /* ──────────────────────────────────────────────
    Base layer — plays nicely with Tailwind cascade
    ────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────
+   Message content (markdown) styles
+   ────────────────────────────────────────────── */
+.message-content code {
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  background: oklch(0.2 0 0 / 50%);
+  font-family: 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.85em;
+}
+
+.message-content pre {
+  margin: 0.25em 0;
+  padding: 0.5em 0.75em;
+  border-radius: 6px;
+  background: oklch(0.14 0 0 / 70%);
+  overflow-x: auto;
+}
+
+.message-content pre code {
+  padding: 0;
+  background: transparent;
+}
+
+.message-content a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.message-content a:hover {
+  opacity: 0.8;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -6,13 +6,15 @@ import { useChannelsStore } from '@/stores/channels'
 import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useVoiceStore } from '@/stores/voice'
 import ChannelItem from '@/components/channels/ChannelItem.vue'
 import ChannelCategory from '@/components/channels/ChannelCategory.vue'
 import UserPanel from './UserPanel.vue'
+import VoicePanel from '@/components/voice/VoicePanel.vue'
 import DMList from '@/components/friends/DMList.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Users, Plus, FolderPlus } from 'lucide-vue-next'
+import { Users, Plus, FolderPlus, Settings } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
 
@@ -29,12 +31,17 @@ const channelsStore = useChannelsStore()
 const dmStore = useDirectMessagesStore()
 const uiStore = useUiStore()
 const authStore = useAuthStore()
+const voiceStore = useVoiceStore()
 
 const isHome = computed(() => route.path.startsWith('/channels/@me'))
 const serverId = computed(() => route.params.serverId as string)
 
 const isOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
+)
+
+const showVoicePanel = computed(() =>
+  voiceStore.isInVoice && voiceStore.currentServerId === serverId.value
 )
 
 watch(serverId, (id) => {
@@ -168,9 +175,16 @@ onBeforeUnmount(destroySortables)
         <h2 class="font-semibold text-foreground">Direct Messages</h2>
       </template>
       <template v-else-if="serversStore.currentServer">
-        <h2 class="truncate font-semibold text-foreground">
+        <h2 class="min-w-0 flex-1 truncate font-semibold text-foreground">
           {{ serversStore.currentServer.name }}
         </h2>
+        <button
+          v-if="isOwner"
+          @click="uiStore.openModal('serverSettings')"
+          class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Settings class="h-4 w-4" />
+        </button>
       </template>
     </div>
 
@@ -252,6 +266,9 @@ onBeforeUnmount(destroySortables)
         </div>
       </div>
     </ScrollArea>
+
+    <!-- Voice panel (shown when in voice for this server) -->
+    <VoicePanel v-if="showVoicePanel" />
 
     <!-- User panel at bottom -->
     <UserPanel />

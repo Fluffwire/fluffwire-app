@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { usePresenceStore } from '@/stores/presence'
 import { useVoiceStore } from '@/stores/voice'
 import { useRouter } from 'vue-router'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -8,8 +10,13 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Mic, MicOff, Headphones, HeadphoneOff, Settings } from 'lucide-vue-next'
 
 const authStore = useAuthStore()
+const presenceStore = usePresenceStore()
 const voiceStore = useVoiceStore()
 const router = useRouter()
+
+const myStatus = computed(() =>
+  authStore.user ? presenceStore.getStatus(authStore.user.id) : 'offline'
+)
 </script>
 
 <template>
@@ -18,7 +25,7 @@ const router = useRouter()
       :src="authStore.user?.avatar ?? null"
       :alt="authStore.user?.displayName ?? ''"
       size="sm"
-      :status="authStore.user?.status"
+      :status="myStatus"
     />
 
     <div class="min-w-0 flex-1">
@@ -26,7 +33,7 @@ const router = useRouter()
         {{ authStore.user?.displayName }}
       </div>
       <div class="truncate text-xs text-muted-foreground">
-        {{ authStore.user?.status ?? 'Online' }}
+        {{ myStatus === 'offline' ? 'Offline' : myStatus === 'dnd' ? 'Do Not Disturb' : myStatus === 'idle' ? 'Idle' : 'Online' }}
       </div>
     </div>
 

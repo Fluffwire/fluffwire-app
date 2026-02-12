@@ -82,4 +82,19 @@ api.interceptors.response.use(
   }
 )
 
+export async function uploadFile(file: File): Promise<{
+  id: string
+  filename: string
+  url: string
+  contentType: string
+  size: number
+}> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const { data } = await api.post('/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
 export default api
