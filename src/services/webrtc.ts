@@ -19,6 +19,13 @@ class WebRTCService {
   private _currentChannelId: string | null = null
   private _currentServerId: string | null = null
 
+  // ICE candidate buffer — queued until remote description is set
+  private iceCandidateBuffer: RTCIceCandidateInit[] = []
+  private hasRemoteDescription = false
+
+  // Serialise all signal handling to prevent races
+  private signalQueue: Promise<void> = Promise.resolve()
+
   onPeerSpeaking: ((userId: string, speaking: boolean) => void) | null = null
   onRemoteStream: ((userId: string, stream: MediaStream) => void) | null = null
   onPeerDisconnected: ((userId: string) => void) | null = null
@@ -32,6 +39,8 @@ class WebRTCService {
 
     this._currentChannelId = channelId
     this._currentServerId = serverId
+    this.hasRemoteDescription = false
+    this.iceCandidateBuffer = []
 
     try {
       this.localStream = await navigator.mediaDevices.getUserMedia({
@@ -93,32 +102,80 @@ class WebRTCService {
   }
 
   async handleSignal(signal: VoiceSignal): Promise<void> {
+    // Serialise signal handling to prevent race conditions
+    this.signalQueue = this.signalQueue.then(() => this.processSignal(signal)).catch((err) => {
+      console.error('[WebRTC] Signal processing error:', err)
+    })
+  }
+
+  private async processSignal(signal: VoiceSignal): Promise<void> {
     if (!this.peerConnection) return
 
     switch (signal.type) {
       case 'answer': {
+        const state = this.peerConnection.signalingState
+        if (state !== 'have-local-offer') {
+          console.warn(`[WebRTC] Ignoring answer in state ${state}`)
+          return
+        }
         const desc = new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit)
         await this.peerConnection.setRemoteDescription(desc)
+        this.hasRemoteDescription = true
+        await this.drainIceCandidateBuffer()
         break
       }
       case 'ice-candidate': {
-        const candidate = new RTCIceCandidate(signal.payload as RTCIceCandidateInit)
-        await this.peerConnection.addIceCandidate(candidate)
+        const candidate = signal.payload as RTCIceCandidateInit
+        if (!this.hasRemoteDescription) {
+          this.iceCandidateBuffer.push(candidate)
+        } else {
+          try {
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate))
+          } catch (err) {
+            console.warn('[WebRTC] Failed to add ICE candidate:', err)
+          }
+        }
         break
       }
       case 'offer': {
-        // SFU renegotiation
+        // SFU renegotiation — server is adding new tracks
+        const state = this.peerConnection.signalingState
+        if (state !== 'stable') {
+          console.warn(`[WebRTC] Received renegotiation offer in state ${state}, rolling back`)
+          // Rollback our pending local offer so we can accept the server's
+          await this.peerConnection.setLocalDescription({ type: 'rollback' })
+        }
+        // Clear stale buffered candidates since new SDP means new ICE credentials
+        this.iceCandidateBuffer = []
+        this.hasRemoteDescription = false
+
         await this.peerConnection.setRemoteDescription(
           new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit)
         )
+        this.hasRemoteDescription = true
+
         const answer = await this.peerConnection.createAnswer()
         await this.peerConnection.setLocalDescription(answer)
+        await this.drainIceCandidateBuffer()
+
         wsService.sendDispatch('VOICE_SIGNAL', {
           type: 'answer',
           payload: answer,
           channelId: this._currentChannelId,
         })
         break
+      }
+    }
+  }
+
+  private async drainIceCandidateBuffer(): Promise<void> {
+    const buffered = this.iceCandidateBuffer
+    this.iceCandidateBuffer = []
+    for (const candidate of buffered) {
+      try {
+        await this.peerConnection!.addIceCandidate(new RTCIceCandidate(candidate))
+      } catch (err) {
+        console.warn('[WebRTC] Failed to add buffered ICE candidate:', err)
       }
     }
   }
@@ -184,6 +241,8 @@ class WebRTCService {
     this._currentServerId = null
     this._isMuted = false
     this._isDeafened = false
+    this.hasRemoteDescription = false
+    this.iceCandidateBuffer = []
   }
 
   private setupVoiceActivityDetection(): void {
