@@ -40,7 +40,10 @@ watch(() => messages.value.length, async () => {
   if (containerRef.value) {
     const el = containerRef.value
     const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-    if (isNearBottom) scrollToBottom()
+    // Only auto-scroll if near bottom and not loading more messages at the top
+    if (isNearBottom && !isLoadingMore.value) {
+      scrollToBottom()
+    }
   }
 })
 
