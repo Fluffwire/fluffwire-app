@@ -2,12 +2,14 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
+import { useChannelsStore } from '@/stores/channels'
 import { useUiStore } from '@/stores/ui'
 import BaseModal from '@/components/common/BaseModal.vue'
 import BaseInput from '@/components/common/BaseInput.vue'
 import BaseButton from '@/components/common/BaseButton.vue'
 
 const serversStore = useServersStore()
+const channelsStore = useChannelsStore()
 const uiStore = useUiStore()
 const router = useRouter()
 
@@ -23,7 +25,9 @@ async function handleCreate() {
     const server = await serversStore.createServer(serverName.value.trim())
     uiStore.closeModal()
     serverName.value = ''
-    router.push(`/channels/${server.id}`)
+    await channelsStore.fetchChannels(server.id)
+    const firstChannel = channelsStore.textChannels[0]
+    router.push(`/channels/${server.id}/${firstChannel?.id ?? ''}`)
   } catch {
     error.value = 'Failed to create server'
   } finally {

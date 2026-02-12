@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useServersStore } from '@/stores/servers'
+import { useChannelsStore } from '@/stores/channels'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import ServerIcon from './ServerIcon.vue'
 
 const serversStore = useServersStore()
+const channelsStore = useChannelsStore()
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
@@ -17,8 +19,10 @@ function navigateHome() {
   router.push('/channels/@me')
 }
 
-function navigateToServer(serverId: string) {
-  router.push(`/channels/${serverId}`)
+async function navigateToServer(serverId: string) {
+  await channelsStore.fetchChannels(serverId)
+  const firstChannel = channelsStore.textChannels[0]
+  router.push(`/channels/${serverId}/${firstChannel?.id ?? ''}`)
 }
 </script>
 
