@@ -19,7 +19,10 @@ export const useServersStore = defineStore('servers', () => {
 
   function setupWsHandlers() {
     wsDispatcher.register(WS_EVENTS.SERVER_CREATE, (data: unknown) => {
-      servers.value.push(data as Server)
+      const server = data as Server
+      if (!servers.value.find((s) => s.id === server.id)) {
+        servers.value.push(server)
+      }
     })
     wsDispatcher.register(WS_EVENTS.SERVER_UPDATE, (data: unknown) => {
       const updated = data as Server
@@ -45,7 +48,10 @@ export const useServersStore = defineStore('servers', () => {
 
   async function createServer(name: string) {
     const { data } = await serverApi.createServer({ name })
-    servers.value.push(data)
+    // WS SERVER_CREATE handler also adds the server; prevent duplicates
+    if (!servers.value.find((s) => s.id === data.id)) {
+      servers.value.push(data)
+    }
     return data
   }
 

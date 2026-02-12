@@ -21,18 +21,18 @@ function close() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex bg-server-bg">
-    <!-- Settings sidebar -->
-    <div class="flex flex-1 justify-end bg-channel-bg">
-      <div class="w-56 p-4 pt-16">
-        <h3 class="mb-1 px-3 text-xs font-bold uppercase tracking-wide text-text-secondary">
+  <div class="fixed inset-0 z-50 flex">
+    <!-- Sidebar region -->
+    <div class="flex h-full w-[218px] shrink-0 justify-end overflow-y-auto bg-channel-bg">
+      <div class="w-[190px] py-16 pr-2 pl-5">
+        <h3 class="mb-1 px-2 text-xs font-bold uppercase tracking-wide text-text-secondary">
           User Settings
         </h3>
         <nav class="space-y-0.5">
           <button
             @click="activeTab = 'account'"
             :class="[
-              'w-full rounded px-3 py-1.5 text-left text-sm',
+              'w-full rounded px-2 py-1.5 text-left text-sm',
               activeTab === 'account'
                 ? 'bg-active-bg font-medium text-text-primary'
                 : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary'
@@ -43,7 +43,7 @@ function close() {
           <button
             @click="activeTab = 'voice'"
             :class="[
-              'w-full rounded px-3 py-1.5 text-left text-sm',
+              'w-full rounded px-2 py-1.5 text-left text-sm',
               activeTab === 'voice'
                 ? 'bg-active-bg font-medium text-text-primary'
                 : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary'
@@ -54,7 +54,7 @@ function close() {
           <button
             @click="activeTab = 'appearance'"
             :class="[
-              'w-full rounded px-3 py-1.5 text-left text-sm',
+              'w-full rounded px-2 py-1.5 text-left text-sm',
               activeTab === 'appearance'
                 ? 'bg-active-bg font-medium text-text-primary'
                 : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary'
@@ -65,7 +65,7 @@ function close() {
           <div class="my-2 border-t border-border" />
           <button
             @click="handleLogout"
-            class="w-full rounded px-3 py-1.5 text-left text-sm text-danger hover:bg-danger/10"
+            class="w-full rounded px-2 py-1.5 text-left text-sm text-danger hover:bg-danger/10"
           >
             Log Out
           </button>
@@ -73,9 +73,9 @@ function close() {
       </div>
     </div>
 
-    <!-- Settings content -->
-    <div class="flex flex-[1.5] pt-16">
-      <div class="w-full max-w-2xl overflow-y-auto p-8">
+    <!-- Content region -->
+    <div class="flex min-w-0 flex-1 bg-chat-bg">
+      <div class="h-full w-full max-w-[740px] overflow-y-auto py-16 pr-4 pl-10">
         <!-- My Account -->
         <template v-if="activeTab === 'account'">
           <h2 class="mb-6 text-xl font-bold text-text-primary">My Account</h2>
@@ -119,13 +119,13 @@ function close() {
       </div>
 
       <!-- Close button -->
-      <div class="pt-16 pr-8">
+      <div class="shrink-0 py-16 pr-5">
         <button
           @click="close"
-          class="flex h-10 w-10 items-center justify-center rounded-full border border-border text-text-secondary transition-colors hover:text-text-primary"
+          class="flex h-9 w-9 items-center justify-center rounded-full border-2 border-border text-text-secondary transition-colors hover:text-text-primary"
           title="Close Settings (ESC)"
         >
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
