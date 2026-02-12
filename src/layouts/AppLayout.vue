@@ -5,6 +5,7 @@ import ServerSidebar from '@/components/sidebar/ServerSidebar.vue'
 import ChannelSidebar from '@/components/sidebar/ChannelSidebar.vue'
 import MemberSidebar from '@/components/members/MemberSidebar.vue'
 import VoicePanel from '@/components/voice/VoicePanel.vue'
+import CreateServerModal from '@/components/server/CreateServerModal.vue'
 import { useUiStore } from '@/stores/ui'
 import { useVoiceStore } from '@/stores/voice'
 
@@ -39,5 +40,8 @@ const showMemberSidebar = computed(() => {
 
     <!-- Member sidebar (right side, toggleable) -->
     <MemberSidebar v-if="showMemberSidebar" />
+
+    <!-- Modals -->
+    <CreateServerModal />
   </div>
 </template>
