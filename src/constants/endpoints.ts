@@ -39,6 +39,7 @@ export const API = {
     ACCEPT: (id: string) => `/friends/requests/${id}/accept`,
     REJECT: (id: string) => `/friends/requests/${id}/reject`,
   },
+  UPLOAD: '/upload',
   DM: {
     BASE: '/dm',
     BY_ID: (id: string) => `/dm/${id}`,

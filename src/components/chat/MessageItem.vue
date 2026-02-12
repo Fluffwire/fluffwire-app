@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import type { Message } from '@/types'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { renderMarkdown } from '@/composables/useMarkdown'
 
 interface Props {
   message: Message
@@ -28,6 +29,22 @@ const formattedTime = computed(() => {
 const shortTime = computed(() => {
   return new Date(props.message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 })
+
+const renderedContent = computed(() => renderMarkdown(props.message.content))
+
+const imageAttachments = computed(() =>
+  (props.message.attachments ?? []).filter((a) => a.contentType.startsWith('image/'))
+)
+
+const fileAttachments = computed(() =>
+  (props.message.attachments ?? []).filter((a) => !a.contentType.startsWith('image/'))
+)
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
 </script>
 
 <template>
@@ -59,7 +76,39 @@ const shortTime = computed(() => {
             </Tooltip>
             <span v-if="message.editedAt" class="text-xs text-muted-foreground">(edited)</span>
           </div>
-          <div class="text-sm text-foreground/90 break-words">{{ message.content }}</div>
+          <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+
+          <!-- Image attachments -->
+          <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
+            <a
+              v-for="att in imageAttachments"
+              :key="att.id"
+              :href="att.url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                :src="att.url"
+                :alt="att.filename"
+                class="max-h-[300px] max-w-[400px] rounded-lg border border-border/50 object-contain"
+              />
+            </a>
+          </div>
+
+          <!-- File attachments -->
+          <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
+            <a
+              v-for="att in fileAttachments"
+              :key="att.id"
+              :href="att.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
+            >
+              <span class="truncate">{{ att.filename }}</span>
+              <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
+            </a>
+          </div>
         </div>
       </template>
 
@@ -75,7 +124,39 @@ const shortTime = computed(() => {
           </Tooltip>
         </div>
         <div class="min-w-0 flex-1">
-          <div class="text-sm text-foreground/90 break-words">{{ message.content }}</div>
+          <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+
+          <!-- Image attachments -->
+          <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
+            <a
+              v-for="att in imageAttachments"
+              :key="att.id"
+              :href="att.url"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                :src="att.url"
+                :alt="att.filename"
+                class="max-h-[300px] max-w-[400px] rounded-lg border border-border/50 object-contain"
+              />
+            </a>
+          </div>
+
+          <!-- File attachments -->
+          <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
+            <a
+              v-for="att in fileAttachments"
+              :key="att.id"
+              :href="att.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
+            >
+              <span class="truncate">{{ att.filename }}</span>
+              <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
+            </a>
+          </div>
         </div>
       </template>
     </TooltipProvider>
