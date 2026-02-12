@@ -480,7 +480,7 @@ Fetch DM message history. Same pagination as channel messages.
 
 ## WebSocket Protocol
 
-The WebSocket connection follows a Discord-like gateway protocol using JSON messages.
+The WebSocket connection follows a gateway protocol using JSON messages.
 
 ### Connection Flow
 
