@@ -13,6 +13,8 @@ const route = useRoute()
 const uiStore = useUiStore()
 const voiceStore = useVoiceStore()
 
+const isSettings = computed(() => route.path === '/settings')
+
 const isServerView = computed(() => {
   return route.params.serverId && route.params.serverId !== '@me'
 })
@@ -27,8 +29,8 @@ const showMemberSidebar = computed(() => {
     <!-- Server sidebar (72px icon strip) -->
     <ServerSidebar />
 
-    <!-- Channel sidebar (240px) -->
-    <ChannelSidebar />
+    <!-- Channel sidebar (240px) — hidden on settings -->
+    <ChannelSidebar v-if="!isSettings" />
 
     <!-- Main content area -->
     <main class="relative flex min-w-0 flex-1 flex-col bg-chat-bg">
@@ -38,8 +40,8 @@ const showMemberSidebar = computed(() => {
       <VoicePanel v-if="voiceStore.isInVoice" />
     </main>
 
-    <!-- Member sidebar (right side, toggleable) -->
-    <MemberSidebar v-if="showMemberSidebar" />
+    <!-- Member sidebar (right side, toggleable) — hidden on settings -->
+    <MemberSidebar v-if="showMemberSidebar && !isSettings" />
 
     <!-- Modals -->
     <CreateServerModal />
