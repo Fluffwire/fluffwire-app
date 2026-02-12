@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { Channel, ChannelCategory, CreateChannelPayload } from '@/types'
 import { channelApi } from '@/services/channelApi'
+import type { ChannelPositionPayload, CategoryPositionPayload } from '@/services/channelApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 
 export const useChannelsStore = defineStore('channels', () => {
@@ -28,7 +29,10 @@ export const useChannelsStore = defineStore('channels', () => {
 
   function setupWsHandlers() {
     wsDispatcher.register(WS_EVENTS.CHANNEL_CREATE, (data: unknown) => {
-      channels.value.push(data as Channel)
+      const ch = data as Channel
+      if (!channels.value.some((c) => c.id === ch.id)) {
+        channels.value.push(ch)
+      }
     })
     wsDispatcher.register(WS_EVENTS.CHANNEL_UPDATE, (data: unknown) => {
       const updated = data as Channel
@@ -38,6 +42,27 @@ export const useChannelsStore = defineStore('channels', () => {
     wsDispatcher.register(WS_EVENTS.CHANNEL_DELETE, (data: unknown) => {
       const { id } = data as { id: string }
       channels.value = channels.value.filter((c) => c.id !== id)
+    })
+    wsDispatcher.register(WS_EVENTS.CHANNELS_REORDER, (data: unknown) => {
+      channels.value = data as Channel[]
+    })
+    wsDispatcher.register(WS_EVENTS.CATEGORY_CREATE, (data: unknown) => {
+      const cat = data as ChannelCategory
+      if (!categories.value.some((c) => c.id === cat.id)) {
+        categories.value.push(cat)
+      }
+    })
+    wsDispatcher.register(WS_EVENTS.CATEGORY_UPDATE, (data: unknown) => {
+      const updated = data as ChannelCategory
+      const idx = categories.value.findIndex((c) => c.id === updated.id)
+      if (idx !== -1) categories.value[idx] = updated
+    })
+    wsDispatcher.register(WS_EVENTS.CATEGORY_DELETE, (data: unknown) => {
+      const { id } = data as { id: string }
+      categories.value = categories.value.filter((c) => c.id !== id)
+    })
+    wsDispatcher.register(WS_EVENTS.CATEGORIES_REORDER, (data: unknown) => {
+      categories.value = data as ChannelCategory[]
     })
   }
   setupWsHandlers()
@@ -55,13 +80,59 @@ export const useChannelsStore = defineStore('channels', () => {
 
   async function createChannel(serverId: string, payload: CreateChannelPayload) {
     const { data } = await channelApi.createChannel(serverId, payload)
-    channels.value.push(data)
+    // Push immediately from API response (dedup-guarded)
+    if (!channels.value.some((c) => c.id === data.id)) {
+      channels.value.push(data)
+    }
+    return data
+  }
+
+  async function updateChannel(channelId: string, payload: { name?: string; topic?: string }) {
+    const { data } = await channelApi.updateChannel(channelId, payload)
+    const idx = channels.value.findIndex((c) => c.id === data.id)
+    if (idx !== -1) channels.value[idx] = data
     return data
   }
 
   async function deleteChannel(channelId: string) {
     await channelApi.deleteChannel(channelId)
     channels.value = channels.value.filter((c) => c.id !== channelId)
+  }
+
+  async function createCategory(serverId: string, name: string) {
+    const { data } = await channelApi.createCategory(serverId, name)
+    if (!categories.value.some((c) => c.id === data.id)) {
+      categories.value.push(data)
+    }
+    return data
+  }
+
+  async function updateCategory(serverId: string, categoryId: string, name: string) {
+    const { data } = await channelApi.updateCategory(serverId, categoryId, name)
+    const idx = categories.value.findIndex((c) => c.id === data.id)
+    if (idx !== -1) categories.value[idx] = data
+    return data
+  }
+
+  async function deleteCategory(serverId: string, categoryId: string) {
+    await channelApi.deleteCategory(serverId, categoryId)
+    categories.value = categories.value.filter((c) => c.id !== categoryId)
+    // Channels in this category become uncategorized
+    channels.value = channels.value.map((ch) =>
+      ch.categoryId === categoryId ? { ...ch, categoryId: null } : ch
+    )
+  }
+
+  async function reorderChannels(serverId: string, positions: ChannelPositionPayload[]) {
+    const { data } = await channelApi.reorderChannels(serverId, positions)
+    channels.value = data.channels
+    categories.value = data.categories
+  }
+
+  async function reorderCategories(serverId: string, positions: CategoryPositionPayload[]) {
+    const { data } = await channelApi.reorderCategories(serverId, positions)
+    channels.value = data.channels
+    categories.value = data.categories
   }
 
   function clearChannels() {
@@ -81,7 +152,13 @@ export const useChannelsStore = defineStore('channels', () => {
     channelsByCategory,
     fetchChannels,
     createChannel,
+    updateChannel,
     deleteChannel,
+    createCategory,
+    updateCategory,
+    deleteCategory,
+    reorderChannels,
+    reorderCategories,
     clearChannels,
   }
 })

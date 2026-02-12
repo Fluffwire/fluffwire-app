@@ -1,33 +1,101 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
+import { useUiStore } from '@/stores/ui'
+import { useChannelsStore } from '@/stores/channels'
+import { useServersStore } from '@/stores/servers'
+import { useAuthStore } from '@/stores/auth'
 import ChannelItem from './ChannelItem.vue'
+import DeleteConfirmDialog from './DeleteConfirmDialog.vue'
+import { ChevronDown, Plus, Pencil, Trash2 } from 'lucide-vue-next'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import { toast } from 'vue-sonner'
 
 interface Props {
   category: CategoryType
   channels: Channel[]
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+const route = useRoute()
+const uiStore = useUiStore()
+const channelsStore = useChannelsStore()
+const serversStore = useServersStore()
+const authStore = useAuthStore()
 
 const isCollapsed = ref(false)
+const showDeleteDialog = ref(false)
+
+const isOwner = computed(() =>
+  serversStore.currentServer?.ownerId === authStore.user?.id
+)
+
+function handleCreateChannel() {
+  uiStore.openModal('createChannel', { categoryId: props.category.id })
+}
+
+function handleEditCategory() {
+  uiStore.openModal('editCategory', props.category)
+}
+
+async function handleDeleteCategory() {
+  try {
+    await channelsStore.deleteCategory(
+      route.params.serverId as string,
+      props.category.id,
+    )
+    toast.success('Category deleted')
+    showDeleteDialog.value = false
+  } catch {
+    toast.error('Failed to delete category')
+  }
+}
 </script>
 
 <template>
   <div class="mt-4">
-    <button
-      @click="isCollapsed = !isCollapsed"
-      class="flex w-full items-center gap-0.5 px-1 text-xs font-semibold uppercase text-text-secondary transition-colors hover:text-text-primary"
-    >
-      <svg
-        :class="['h-3 w-3 transition-transform', isCollapsed ? '-rotate-90' : '']"
-        fill="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path d="M7 10l5 5 5-5z" />
-      </svg>
-      <span>{{ category.name }}</span>
-    </button>
+    <ContextMenu>
+      <ContextMenuTrigger as-child>
+        <div class="flex items-center justify-between px-1">
+          <button
+            @click="isCollapsed = !isCollapsed"
+            class="flex flex-1 items-center gap-0.5 text-xs font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronDown
+              :class="['h-3 w-3 transition-transform', isCollapsed ? '-rotate-90' : '']"
+            />
+            <span>{{ category.name }}</span>
+          </button>
+
+          <button
+            v-if="isOwner"
+            @click.stop="handleCreateChannel"
+            class="flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <Plus class="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </ContextMenuTrigger>
+
+      <ContextMenuContent v-if="isOwner" class="w-52">
+        <ContextMenuItem @click="handleCreateChannel" class="gap-2">
+          <Plus class="h-4 w-4" />
+          Create Channel
+        </ContextMenuItem>
+        <ContextMenuSeparator />
+        <ContextMenuItem @click="handleEditCategory" class="gap-2">
+          <Pencil class="h-4 w-4" />
+          Edit Category
+        </ContextMenuItem>
+        <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+          <Trash2 class="h-4 w-4" />
+          Delete Category
+        </ContextMenuItem>
+      </ContextMenuContent>
+    </ContextMenu>
 
     <div v-show="!isCollapsed" class="mt-0.5">
       <ChannelItem
@@ -36,5 +104,13 @@ const isCollapsed = ref(false)
         :channel="channel"
       />
     </div>
+
+    <DeleteConfirmDialog
+      :open="showDeleteDialog"
+      title="Delete Category"
+      :description="`Are you sure you want to delete '${category.name}'? Channels in this category will become uncategorized.`"
+      @update:open="showDeleteDialog = $event"
+      @confirm="handleDeleteCategory"
+    />
   </div>
 </template>

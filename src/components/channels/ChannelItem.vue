@@ -1,8 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { Channel } from '@/types'
 import { useVoiceStore } from '@/stores/voice'
+import { useUiStore } from '@/stores/ui'
+import { useChannelsStore } from '@/stores/channels'
+import { useServersStore } from '@/stores/servers'
+import { useAuthStore } from '@/stores/auth'
+import { Hash, Headphones, Pencil, Trash2 } from 'lucide-vue-next'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import DeleteConfirmDialog from './DeleteConfirmDialog.vue'
+import { toast } from 'vue-sonner'
 
 interface Props {
   channel: Channel
@@ -12,34 +22,79 @@ const props = defineProps<Props>()
 const route = useRoute()
 const router = useRouter()
 const voiceStore = useVoiceStore()
+const uiStore = useUiStore()
+const channelsStore = useChannelsStore()
+const serversStore = useServersStore()
+const authStore = useAuthStore()
+
+const showDeleteDialog = ref(false)
 
 const isActive = computed(() => route.params.channelId === props.channel.id)
 
+const isOwner = computed(() =>
+  serversStore.currentServer?.ownerId === authStore.user?.id
+)
+
 function handleClick() {
+  router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
   if (props.channel.type === 'voice') {
     voiceStore.joinChannel(props.channel.serverId, props.channel.id)
-  } else {
-    router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
+  }
+  if (uiStore.isMobileView || uiStore.isTabletView) {
+    uiStore.isChannelSidebarOpen = false
+  }
+}
+
+function handleEdit() {
+  uiStore.openModal('editChannel', props.channel)
+}
+
+async function handleDelete() {
+  try {
+    await channelsStore.deleteChannel(props.channel.id)
+    toast.success('Channel deleted')
+    showDeleteDialog.value = false
+  } catch {
+    toast.error('Failed to delete channel')
   }
 }
 </script>
 
 <template>
-  <button
-    @click="handleClick"
-    :class="[
-      'flex w-full items-center gap-1.5 rounded px-2 py-1.5 text-sm transition-colors',
-      isActive
-        ? 'bg-active-bg text-text-primary'
-        : 'text-text-secondary hover:bg-hover-bg hover:text-text-primary',
-    ]"
-  >
-    <svg v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M5.88 21l1.54-6H2.5l.5-2h4.92l1.04-4H4.04l.5-2h4.92L11 1h2l-1.54 6h4.08L17 1h2l-1.54 6H22.5l-.5 2h-4.92l-1.04 4h4.92l-.5 2h-4.92L14 21h-2l1.54-6h-4.08L8 21H5.88zm4.66-8h4.08l1.04-4h-4.08l-1.04 4z" />
-    </svg>
-    <svg v-else class="h-5 w-5 shrink-0 opacity-60" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 3a9 9 0 00-9 9v7c0 1.1.9 2 2 2h4v-8H5v-1c0-3.87 3.13-7 7-7s7 3.13 7 7v1h-4v8h4c1.1 0 2-.9 2-2v-7a9 9 0 00-9-9z" />
-    </svg>
-    <span class="truncate">{{ channel.name }}</span>
-  </button>
+  <ContextMenu>
+    <ContextMenuTrigger as-child>
+      <button
+        @click="handleClick"
+        :class="[
+          'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
+          isActive
+            ? 'border-l-2 border-primary bg-accent text-foreground'
+            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+        ]"
+      >
+        <Hash v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" />
+        <Headphones v-else class="h-5 w-5 shrink-0 opacity-60" />
+        <span class="truncate">{{ channel.name }}</span>
+      </button>
+    </ContextMenuTrigger>
+
+    <ContextMenuContent v-if="isOwner" class="w-48">
+      <ContextMenuItem @click="handleEdit" class="gap-2">
+        <Pencil class="h-4 w-4" />
+        Edit Channel
+      </ContextMenuItem>
+      <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+        <Trash2 class="h-4 w-4" />
+        Delete Channel
+      </ContextMenuItem>
+    </ContextMenuContent>
+  </ContextMenu>
+
+  <DeleteConfirmDialog
+    :open="showDeleteDialog"
+    title="Delete Channel"
+    :description="`Are you sure you want to delete #${channel.name}? This cannot be undone.`"
+    @update:open="showDeleteDialog = $event"
+    @confirm="handleDelete"
+  />
 </template>
