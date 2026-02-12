@@ -82,12 +82,7 @@ async function handleSubmit() {
     await messagesStore.sendMessageWithAttachments(
       props.channelId,
       text || ' ',
-      attachments.map((a) => ({
-        filename: a.filename,
-        url: a.url,
-        contentType: a.contentType,
-        size: a.size,
-      }))
+      attachments,
     )
     content.value = ''
     pendingFiles.value = []

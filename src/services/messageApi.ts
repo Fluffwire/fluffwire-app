@@ -9,7 +9,7 @@ export const messageApi = {
     return api.get(API.CHANNELS.MESSAGES(channelId), { params })
   },
 
-  createMessage(channelId: string, content: string, attachments?: Omit<Attachment, 'id'>[]): Promise<{ data: Message }> {
+  createMessage(channelId: string, content: string, attachments?: { id: string; filename: string; url: string; contentType: string; size: number }[]): Promise<{ data: Message }> {
     return api.post(API.CHANNELS.MESSAGES(channelId), { content, attachments })
   },
 

@@ -71,7 +71,7 @@ export const useMessagesStore = defineStore('messages', () => {
     wsService.sendDispatch('MESSAGE_CREATE', payload)
   }
 
-  async function sendMessageWithAttachments(channelId: string, content: string, attachments: Omit<Attachment, 'id'>[]) {
+  async function sendMessageWithAttachments(channelId: string, content: string, attachments: { id: string; filename: string; url: string; contentType: string; size: number }[]) {
     await messageApi.createMessage(channelId, content, attachments)
     // The WS MESSAGE_CREATE event will add it to the store
   }
