@@ -3,7 +3,16 @@ import type { VoiceSignal, MediaDeviceOption } from '@/types'
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:app.fluffwire.com:3478' },
+    {
+      urls: [
+        'turn:app.fluffwire.com:3478?transport=udp',
+        'turn:app.fluffwire.com:3478?transport=tcp',
+        'turns:app.fluffwire.com:5349?transport=tcp',
+      ],
+      username: 'fluffwire',
+      credential: 'TurnRelay2026!',
+    },
   ],
 }
 
