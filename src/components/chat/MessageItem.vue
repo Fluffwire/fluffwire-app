@@ -10,7 +10,9 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { renderMarkdown } from '@/composables/useMarkdown'
-import { Pencil, Trash2, Pin } from 'lucide-vue-next'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import EmojiPicker from './EmojiPicker.vue'
+import { Pencil, Trash2, Pin, SmilePlus } from 'lucide-vue-next'
 
 interface Props {
   message: Message
@@ -29,12 +31,19 @@ const emit = defineEmits<{
   delete: [messageId: string]
   pin: [messageId: string]
   unpin: [messageId: string]
+  reaction: [messageId: string, emoji: string]
 }>()
 
 const isEditing = ref(false)
 const editContent = ref('')
 const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const showDeleteDialog = ref(false)
+const showReactionPicker = ref(false)
+
+function handleReactionSelect(emoji: string) {
+  emit('reaction', props.message.id, emoji)
+  showReactionPicker.value = false
+}
 
 const isOwnMessage = computed(() => props.currentUserId === props.message.author.id)
 
@@ -55,6 +64,15 @@ const shortTime = computed(() => {
 })
 
 const renderedContent = computed(() => renderMarkdown(props.message.content))
+
+const youtubeVideoId = computed(() => {
+  const match = props.message.content.match(
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)([\w-]{11})/
+  )
+  return match ? match[1] : null
+})
+
+const youtubePlaying = ref(false)
 
 const imageAttachments = computed(() =>
   (props.message.attachments ?? []).filter((a) => a.contentType.startsWith('image/'))
@@ -123,9 +141,24 @@ function confirmDelete() {
     <TooltipProvider>
     <!-- Hover action buttons -->
     <div
-      v-if="(isOwnMessage || canDelete) && !isEditing"
+      v-if="!isEditing"
       class="absolute -top-3 right-4 z-10 hidden gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm group-hover:flex"
     >
+      <Popover v-model:open="showReactionPicker">
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <PopoverTrigger as-child>
+              <Button variant="ghost" size="icon" class="h-7 w-7">
+                <SmilePlus class="h-3.5 w-3.5" />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent>Add Reaction</TooltipContent>
+        </Tooltip>
+        <PopoverContent side="top" align="end" class="w-auto border-0 bg-transparent p-0 shadow-none">
+          <EmojiPicker @select="handleReactionSelect" />
+        </PopoverContent>
+      </Popover>
       <Tooltip v-if="isOwnMessage || canDelete">
         <TooltipTrigger as-child>
           <Button
@@ -174,6 +207,7 @@ function confirmDelete() {
                 {{ message.author.displayName }}
               </span>
             </UserProfilePopover>
+            <span v-if="message.webhookId" class="rounded bg-primary/20 px-1 py-0.5 text-[10px] font-semibold uppercase leading-none text-primary">BOT</span>
             <Tooltip>
               <TooltipTrigger as-child>
                 <span class="text-xs text-muted-foreground">{{ formattedTime }}</span>
@@ -201,6 +235,28 @@ function confirmDelete() {
           <!-- Normal content -->
           <template v-else>
             <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+            <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
+              <iframe
+                v-if="youtubePlaying"
+                :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
+                class="aspect-video w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              />
+              <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
+                <img
+                  :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
+                  :alt="'YouTube video'"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
+                  <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
+                    <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </button>
+            </div>
 
             <!-- Image attachments -->
             <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
@@ -232,6 +288,24 @@ function confirmDelete() {
                 <span class="truncate">{{ att.filename }}</span>
                 <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
               </a>
+            </div>
+
+            <!-- Reactions -->
+            <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+              <button
+                v-for="r in message.reactions"
+                :key="r.emoji"
+                @click="emit('reaction', message.id, r.emoji)"
+                :class="[
+                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
+                  r.userIds.includes(currentUserId ?? '')
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
+                ]"
+              >
+                <span>{{ r.emoji }}</span>
+                <span>{{ r.count }}</span>
+              </button>
             </div>
           </template>
         </div>
@@ -267,6 +341,28 @@ function confirmDelete() {
           <!-- Normal content -->
           <template v-else>
             <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+            <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
+              <iframe
+                v-if="youtubePlaying"
+                :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
+                class="aspect-video w-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              />
+              <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
+                <img
+                  :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
+                  :alt="'YouTube video'"
+                  class="h-full w-full object-cover"
+                  loading="lazy"
+                />
+                <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
+                  <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
+                    <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </div>
+                </div>
+              </button>
+            </div>
 
             <!-- Image attachments -->
             <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
@@ -298,6 +394,24 @@ function confirmDelete() {
                 <span class="truncate">{{ att.filename }}</span>
                 <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
               </a>
+            </div>
+
+            <!-- Reactions -->
+            <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+              <button
+                v-for="r in message.reactions"
+                :key="r.emoji"
+                @click="emit('reaction', message.id, r.emoji)"
+                :class="[
+                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
+                  r.userIds.includes(currentUserId ?? '')
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
+                ]"
+              >
+                <span>{{ r.emoji }}</span>
+                <span>{{ r.count }}</span>
+              </button>
             </div>
           </template>
         </div>

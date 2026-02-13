@@ -51,6 +51,24 @@ export const usePresenceStore = defineStore('presence', () => {
         customStatus,
       })
     }
+    // Persist chosen status for page refresh
+    localStorage.setItem('fluffwire-user-status', status)
+  }
+
+  /**
+   * Restore the user's preferred status after WS reconnect.
+   * Call after READY has been processed.
+   */
+  function restoreOwnStatus() {
+    const saved = localStorage.getItem('fluffwire-user-status') as UserStatus | null
+    if (saved && saved !== 'offline') {
+      // Re-send the saved status so other users see it
+      setOwnStatus(saved)
+    } else if (saved === 'offline') {
+      // User chose "Invisible" — re-send offline status
+      setOwnStatus('offline')
+    }
+    // If no saved status, use server default (online)
   }
 
   return {
@@ -59,5 +77,6 @@ export const usePresenceStore = defineStore('presence', () => {
     getCustomStatus,
     setBulkPresence,
     setOwnStatus,
+    restoreOwnStatus,
   }
 })

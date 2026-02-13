@@ -31,10 +31,10 @@ const screenStream = computed(() => voiceStore.getScreenStream(props.peer.userId
 
 watch(screenStream, async (stream) => {
   await nextTick()
-  if (previewVideo.value && stream) {
-    previewVideo.value.srcObject = stream
+  if (previewVideo.value) {
+    previewVideo.value.srcObject = stream ?? null
   }
-})
+}, { immediate: true })
 
 function onVolumeChange(e: Event) {
   const target = e.target as HTMLInputElement

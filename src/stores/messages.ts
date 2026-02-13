@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Message, Attachment, CreateMessagePayload } from '@/types'
+import type { Message, Reaction, CreateMessagePayload } from '@/types'
 import { WsOpCode } from '@/types/websocket'
 import { messageApi } from '@/services/messageApi'
 import { wsService } from '@/services/websocket'
@@ -64,6 +64,15 @@ export const useMessagesStore = defineStore('messages', () => {
         if (!pinned.find((m) => m.id === message.id)) {
           pinned.unshift(message)
         }
+      }
+    })
+
+    wsDispatcher.register(WS_EVENTS.MESSAGE_REACTION_UPDATE, (data: unknown) => {
+      const { messageId, channelId, reactions } = data as { messageId: string; channelId: string; reactions: Reaction[] }
+      const messages = messagesByChannel.value.get(channelId)
+      if (messages) {
+        const msg = messages.find((m) => m.id === messageId)
+        if (msg) msg.reactions = reactions
       }
     })
 
@@ -139,6 +148,10 @@ export const useMessagesStore = defineStore('messages', () => {
     return pinnedMessages.value.get(channelId) ?? []
   }
 
+  async function toggleReaction(channelId: string, messageId: string, emoji: string) {
+    await messageApi.toggleReaction(channelId, messageId, emoji)
+  }
+
   async function pinMessage(channelId: string, messageId: string) {
     await messageApi.pinMessage(channelId, messageId)
   }
@@ -161,6 +174,7 @@ export const useMessagesStore = defineStore('messages', () => {
     clearChannel,
     fetchPinnedMessages,
     getPinnedMessages,
+    toggleReaction,
     pinMessage,
     unpinMessage,
   }

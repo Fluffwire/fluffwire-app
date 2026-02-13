@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
+import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -22,6 +23,14 @@ const isSending = ref(false)
 const showEmojiPicker = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const lastTypingSent = ref(0)
+
+function emitTyping() {
+  const now = Date.now()
+  if (now - lastTypingSent.value < 3000) return
+  lastTypingSent.value = now
+  messageApi.sendTyping(props.channelId).catch(() => {})
+}
 
 function openFilePicker() {
   fileInput.value?.click()
@@ -66,10 +75,12 @@ async function handleSubmit() {
   if (!text && files.length === 0) return
   if (isSending.value) return
 
+  // Clear input immediately to prevent double-submit
+  content.value = ''
+
   if (files.length === 0) {
     // Fast path: no attachments, use WebSocket
     messagesStore.sendMessage({ content: text, channelId: props.channelId })
-    content.value = ''
     return
   }
 
@@ -84,7 +95,6 @@ async function handleSubmit() {
       text || ' ',
       attachments,
     )
-    content.value = ''
     pendingFiles.value = []
   } finally {
     isSending.value = false
@@ -182,6 +192,7 @@ defineExpose({ insertAtCursor })
         ref="textareaRef"
         v-model="content"
         @keydown="handleKeydown"
+        @input="emitTyping"
         @paste="handlePaste"
         :placeholder="`Message #${channelName}`"
         rows="1"

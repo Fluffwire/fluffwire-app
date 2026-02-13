@@ -18,6 +18,11 @@ export const API = {
     MEMBERS: (id: string) => `/servers/${id}/members`,
     INVITES: (id: string) => `/servers/${id}/invites`,
     JOIN: '/servers/join',
+    KICK: (serverId: string, userId: string) => `/servers/${serverId}/members/${userId}`,
+    BANS: (serverId: string) => `/servers/${serverId}/bans`,
+    UNBAN: (serverId: string, userId: string) => `/servers/${serverId}/bans/${userId}`,
+    WEBHOOKS: (serverId: string) => `/servers/${serverId}/webhooks`,
+    WEBHOOK: (serverId: string, webhookId: string) => `/servers/${serverId}/webhooks/${webhookId}`,
   },
   CHANNELS: {
     BY_SERVER: (serverId: string) => `/servers/${serverId}/channels`,
@@ -31,6 +36,8 @@ export const API = {
     PIN: (channelId: string, messageId: string) => `/channels/${channelId}/messages/${messageId}/pin`,
     PINS: (channelId: string) => `/channels/${channelId}/pins`,
     SEARCH: (channelId: string) => `/channels/${channelId}/messages/search`,
+    REACTION: (channelId: string, messageId: string, emoji: string) =>
+      `/channels/${channelId}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
   },
   CATEGORIES: {
     BY_SERVER: (serverId: string) => `/servers/${serverId}/categories`,

@@ -1,10 +1,35 @@
 import { marked, type RendererObject } from 'marked'
 import DOMPurify from 'dompurify'
 
+const emoticonMap: [RegExp, string][] = [
+  [/(?<=^|[\s]):\)(?=$|[\s])/g, '😊'],
+  [/(?<=^|[\s]):\((?=$|[\s])/g, '😞'],
+  [/(?<=^|[\s]);\)(?=$|[\s])/g, '😉'],
+  [/(?<=^|[\s])<3(?=$|[\s])/g, '❤️'],
+  [/(?<=^|[\s]):D(?=$|[\s])/g, '😃'],
+  [/(?<=^|[\s]):P(?=$|[\s])/g, '😛'],
+  [/(?<=^|[\s]):\/(?=$|[\s])/g, '😕'],
+  [/(?<=^|[\s]):o(?=$|[\s])/gi, '😮'],
+  [/(?<=^|[\s])XD(?=$|[\s])/gi, '😆'],
+  [/(?<=^|[\s])B\)(?=$|[\s])/g, '😎'],
+]
+
+function replaceEmoticons(text: string): string {
+  // Don't replace inside code blocks/spans
+  const parts = text.split(/(```[\s\S]*?```|`[^`]+`)/g)
+  return parts.map((part, i) => {
+    if (i % 2 === 1) return part // code block, skip
+    for (const [pattern, emoji] of emoticonMap) {
+      part = part.replace(pattern, emoji)
+    }
+    return part
+  }).join('')
+}
+
 const renderer: RendererObject = {
   // Flatten paragraphs to avoid <p> wrapping for chat messages
   paragraph({ tokens }) {
-    return this.parser.parseInline(tokens) + '<br>'
+    return this.parser.parseInline(tokens) + '<br><br>'
   },
   heading({ text }) {
     return text + '\n'
@@ -28,11 +53,13 @@ const ALLOWED_TAGS = ['strong', 'em', 'del', 'code', 'pre', 'a', 'br']
 const ALLOWED_ATTR = ['href', 'target', 'rel', 'class']
 
 export function renderMarkdown(content: string): string {
-  const raw = marked.parse(content, { async: false }) as string
+  const raw = marked.parse(replaceEmoticons(content), { async: false }) as string
   const clean = DOMPurify.sanitize(raw.trim(), {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
   })
+  // Trim trailing <br> tags from paragraph rendering
+  const trimmed = clean.replace(/(<br>)+$/, '')
   // Ensure links open in new tabs
-  return clean.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
+  return trimmed.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
 }

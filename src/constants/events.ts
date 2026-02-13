@@ -27,6 +27,7 @@ export const WS_EVENTS = {
   DM_CREATE: 'DM_CREATE',
   MESSAGE_PIN: 'MESSAGE_PIN',
   MESSAGE_UNPIN: 'MESSAGE_UNPIN',
+  MESSAGE_REACTION_UPDATE: 'MESSAGE_REACTION_UPDATE',
 } as const
 
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS]

@@ -38,7 +38,12 @@ async function handlePin(messageId: string) {
 async function handleUnpin(messageId: string) {
   await messagesStore.unpinMessage(props.channelId, messageId)
 }
+
+async function handleReaction(messageId: string, emoji: string) {
+  await messagesStore.toggleReaction(props.channelId, messageId, emoji)
+}
 const containerRef = ref<HTMLElement | null>(null)
+const scrollEnabled = ref(false)
 
 const messages = computed(() => messagesStore.getMessages(props.channelId))
 const hasMore = computed(() => messagesStore.channelHasMore(props.channelId))
@@ -48,15 +53,19 @@ async function loadMore() {
   await messagesStore.fetchMessages(props.channelId, true)
 }
 
-const { isLoadingMore } = useInfiniteScroll(containerRef, loadMore, { direction: 'top' })
+const { isLoadingMore } = useInfiniteScroll(containerRef, loadMore, { direction: 'top', enabled: scrollEnabled })
 
 watch(() => props.channelId, async (id) => {
   if (id) {
+    scrollEnabled.value = false
     await messagesStore.fetchMessages(id)
-    // Double nextTick: first for Vue reactivity, second for DOM render
     await nextTick()
-    await nextTick()
-    scrollToBottom()
+    // Use rAF to ensure layout is complete before scrolling
+    requestAnimationFrame(() => {
+      scrollToBottom()
+      // Enable infinite scroll after scroll position is set
+      setTimeout(() => { scrollEnabled.value = true }, 150)
+    })
     readStateStore.markAsRead(id)
   }
 }, { immediate: true })
@@ -98,7 +107,10 @@ defineExpose({ scrollToMessage })
 
 <template>
   <div ref="containerRef" class="flex-1 overflow-y-auto">
-    <div class="flex min-h-full flex-col justify-end">
+    <div class="flex min-h-full flex-col">
+      <!-- Spacer pushes messages to bottom when few -->
+      <div class="flex-1" />
+
       <!-- Loading more skeleton -->
       <div v-if="isLoadingMore" class="space-y-4 p-4">
         <div v-for="i in 3" :key="i" class="flex gap-4">
@@ -111,7 +123,7 @@ defineExpose({ scrollToMessage })
       </div>
 
       <!-- Welcome message -->
-      <Card v-if="messages.length === 0 && !messagesStore.isLoading" class="mx-4 mb-4 mt-auto border-border/50">
+      <Card v-if="messages.length === 0 && !messagesStore.isLoading" class="mx-4 mb-4 border-border/50">
         <div class="p-6 text-center">
           <div class="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
             <Hash class="h-8 w-8 text-primary" />
@@ -143,7 +155,11 @@ defineExpose({ scrollToMessage })
         @delete="handleDelete"
         @pin="handlePin"
         @unpin="handleUnpin"
+        @reaction="handleReaction"
       />
+
+      <!-- Bottom padding so last message isn't flush against input -->
+      <div class="h-4" />
     </div>
   </div>
 </template>

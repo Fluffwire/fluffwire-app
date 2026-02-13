@@ -38,6 +38,11 @@ const {
 
 const desktopPermissionDenied = ref(false)
 
+function handleSoundToggle(value: boolean) {
+  setSoundEnabled(value)
+  toast.success(value ? 'Sound enabled' : 'Sound disabled')
+}
+
 async function handleDesktopToggle(value: boolean) {
   const result = await setDesktopEnabled(value)
   if (value && result === false) {
@@ -105,6 +110,42 @@ async function saveProfile() {
 const voiceStore = useVoiceStore()
 const audioDevices = ref<MediaDeviceOption[]>([])
 const capturingPttKey = ref(false)
+
+// Mic test state
+const micTestActive = ref(false)
+const micTestLevel = ref(0)
+let micTestStream: MediaStream | null = null
+let micTestAnimFrame = 0
+
+async function startMicTest() {
+  try {
+    micTestStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    micTestActive.value = true
+    const ctx = new AudioContext()
+    const source = ctx.createMediaStreamSource(micTestStream)
+    const analyser = ctx.createAnalyser()
+    analyser.fftSize = 256
+    source.connect(analyser)
+    const data = new Uint8Array(analyser.frequencyBinCount)
+    function tick() {
+      analyser.getByteFrequencyData(data)
+      const avg = data.reduce((a, b) => a + b, 0) / data.length
+      micTestLevel.value = Math.min(100, Math.round((avg / 128) * 100))
+      micTestAnimFrame = requestAnimationFrame(tick)
+    }
+    tick()
+  } catch {
+    toast.error('Could not access microphone')
+  }
+}
+
+function stopMicTest() {
+  cancelAnimationFrame(micTestAnimFrame)
+  micTestStream?.getTracks().forEach((t) => t.stop())
+  micTestStream = null
+  micTestActive.value = false
+  micTestLevel.value = 0
+}
 
 async function loadAudioDevices() {
   audioDevices.value = await webrtcService.getAudioDevices()
@@ -386,6 +427,42 @@ const themePreviewColors: Record<ThemeName, string> = {
                 </CardContent>
               </Card>
 
+              <!-- Mic Test -->
+              <Card class="mb-4">
+                <CardHeader>
+                  <CardTitle class="text-base">Mic Test</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                  <Button
+                    v-if="!micTestActive"
+                    variant="outline"
+                    class="gap-2"
+                    @click="startMicTest"
+                  >
+                    <Mic class="h-4 w-4" />
+                    Start Mic Test
+                  </Button>
+                  <Button
+                    v-else
+                    variant="destructive"
+                    class="gap-2"
+                    @click="stopMicTest"
+                  >
+                    <Mic class="h-4 w-4" />
+                    Stop Test
+                  </Button>
+                  <div v-if="micTestActive" class="space-y-1">
+                    <div class="h-3 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        class="h-full rounded-full bg-primary transition-all duration-75"
+                        :style="{ width: micTestLevel + '%' }"
+                      />
+                    </div>
+                    <p class="text-xs text-muted-foreground">Speak into your microphone to test</p>
+                  </div>
+                </CardContent>
+              </Card>
+
               <!-- Audio Devices -->
               <Card>
                 <CardHeader>
@@ -443,7 +520,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <Button size="sm" variant="outline" @click="playTestSound">
                       Test Sound
                     </Button>
-                    <Switch :checked="soundEnabled" @update:checked="setSoundEnabled" />
+                    <Switch :model-value="soundEnabled" @update:model-value="handleSoundToggle" />
                   </div>
                 </CardContent>
               </Card>
@@ -455,7 +532,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                       <h3 class="text-sm font-medium text-foreground">Desktop Notifications</h3>
                       <p class="text-sm text-muted-foreground">Show native desktop notifications for new messages</p>
                     </div>
-                    <Switch :checked="desktopEnabled" @update:checked="handleDesktopToggle" />
+                    <Switch :model-value="desktopEnabled" @update:model-value="handleDesktopToggle" />
                   </div>
                   <p v-if="desktopPermissionDenied" class="mt-2 text-sm text-destructive">
                     Notification permission was denied by the browser. Please allow notifications in your browser settings.
@@ -479,7 +556,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <button
                       v-for="name in themeNames"
                       :key="name"
-                      @click="uiStore.setTheme(name)"
+                      @click="uiStore.setTheme(name); toast.success('Theme updated')"
                       :class="[
                         'flex items-center gap-3 rounded-xl border-2 p-4 transition-all',
                         theme === name

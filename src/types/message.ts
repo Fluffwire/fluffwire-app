@@ -30,9 +30,17 @@ export interface Message {
   timestamp: string
   editedAt: string | null
   attachments: Attachment[]
+  reactions: Reaction[]
   pinned?: boolean
   pinnedBy?: string | null
   pinnedAt?: string | null
+  webhookId?: string | null
+}
+
+export interface Reaction {
+  emoji: string
+  count: number
+  userIds: string[]
 }
 
 export interface Attachment {

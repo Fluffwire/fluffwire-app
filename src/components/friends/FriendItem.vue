@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { Friend } from '@/types'
 import { useRouter } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
@@ -8,7 +8,13 @@ import { usePresenceStore } from '@/stores/presence'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { MessageSquare, X } from 'lucide-vue-next'
+
+const showRemoveDialog = ref(false)
 
 interface Props {
   friend: Friend
@@ -29,7 +35,7 @@ async function openDM() {
 </script>
 
 <template>
-  <div class="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-accent/50">
+  <div class="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-accent/50" @click="openDM">
     <UserAvatar
       :src="friend.user.avatar"
       :alt="friend.user.displayName"
@@ -43,7 +49,7 @@ async function openDM() {
     </div>
 
     <TooltipProvider>
-      <div class="flex gap-1">
+      <div class="flex gap-1" @click.stop>
         <Tooltip>
           <TooltipTrigger as-child>
             <Button variant="ghost" size="icon" class="h-8 w-8" @click="openDM">
@@ -55,7 +61,7 @@ async function openDM() {
 
         <Tooltip>
           <TooltipTrigger as-child>
-            <Button variant="ghost" size="icon" class="h-8 w-8 hover:text-destructive" @click="friendsStore.removeFriend(friend.id)">
+            <Button variant="ghost" size="icon" class="h-8 w-8 hover:text-destructive" @click="showRemoveDialog = true">
               <X class="h-4 w-4" />
             </Button>
           </TooltipTrigger>
@@ -63,5 +69,23 @@ async function openDM() {
         </Tooltip>
       </div>
     </TooltipProvider>
+
+    <!-- Remove friend confirmation -->
+    <AlertDialog :open="showRemoveDialog" @update:open="showRemoveDialog = $event">
+      <AlertDialogContent @click.stop>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove {{ friend.user.displayName }}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to remove this friend? You will need to send a new friend request to add them back.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="friendsStore.removeFriend(friend.id)">
+            Remove
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

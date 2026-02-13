@@ -14,6 +14,7 @@ export const useVoiceStore = defineStore('voice', () => {
   const isDeafened = ref(false)
   const isConnecting = ref(false)
   const isScreenSharing = ref(false)
+  const connectedSince = ref<Date | null>(null)
   const watchingUserId = ref<string | null>(null)
   const screenStreams = ref<Map<string, MediaStream>>(new Map())
   // All voice channel members across the server: channelId -> VoicePeer[]
@@ -196,6 +197,7 @@ export const useVoiceStore = defineStore('voice', () => {
       await webrtcService.joinVoiceChannel(serverId, channelId)
       currentChannelId.value = channelId
       currentServerId.value = serverId
+      connectedSince.value = new Date()
       soundManager.play('voiceJoin')
     } finally {
       isConnecting.value = false
@@ -208,6 +210,7 @@ export const useVoiceStore = defineStore('voice', () => {
     currentServerId.value = null
     peers.value = []
     isScreenSharing.value = false
+    connectedSince.value = null
     watchingUserId.value = null
     screenStreams.value.clear()
   }
@@ -278,6 +281,7 @@ export const useVoiceStore = defineStore('voice', () => {
     isConnecting,
     isInVoice,
     isScreenSharing,
+    connectedSince,
     watchingUserId,
     screenStreams,
     voiceChannelMembers,

@@ -32,3 +32,14 @@ export interface ServerInvite {
   maxUses: number | null
   uses: number
 }
+
+export interface Webhook {
+  id: string
+  serverId: string
+  channelId: string
+  name: string
+  token: string
+  avatar: string | null
+  createdBy: string
+  createdAt: string
+}

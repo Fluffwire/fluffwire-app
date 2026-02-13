@@ -33,7 +33,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = payload.user
       useServersStore().setServers(payload.servers as never[])
       useFriendsStore().setFriends(payload.friends as never[])
-      usePresenceStore().setBulkPresence(payload.presences as never[])
+      const presenceStore = usePresenceStore()
+      presenceStore.setBulkPresence(payload.presences as never[])
+      presenceStore.restoreOwnStatus()
       if (payload.readStates) {
         useReadStateStore().setReadStates(payload.readStates)
       }

@@ -37,6 +37,10 @@ export const messageApi = {
     return api.get(API.CHANNELS.PINS(channelId))
   },
 
+  toggleReaction(channelId: string, messageId: string, emoji: string): Promise<{ data: { reactions: import('@/types').Reaction[] } }> {
+    return api.put(API.CHANNELS.REACTION(channelId, messageId, emoji))
+  },
+
   searchMessages(channelId: string, params: {
     q: string
     from?: string
