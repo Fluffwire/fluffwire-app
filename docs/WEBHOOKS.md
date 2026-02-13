@@ -25,13 +25,31 @@ Content-Type: application/json
 |-----------|--------|----------|-----------------------|
 | `content` | string | Yes      | The message content   |
 
-### Example
+### Examples
+
+**Linux / macOS:**
 
 ```bash
 curl -X POST https://app.fluffwire.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN \
   -H "Content-Type: application/json" \
   -d '{"content": "Hello from a webhook!"}'
 ```
+
+**Windows (cmd.exe):**
+
+```cmd
+curl -X POST https://app.fluffwire.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN -H "Content-Type: application/json" -d "{\"content\": \"Hello from a webhook!\"}"
+```
+
+**Windows (PowerShell):**
+
+```powershell
+curl.exe -X POST https://app.fluffwire.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_TOKEN `
+  -H "Content-Type: application/json" `
+  -d '{"content": "Hello from a webhook!"}'
+```
+
+> Note: In PowerShell, use `curl.exe` — bare `curl` is an alias for `Invoke-WebRequest`.
 
 ### Response
 
