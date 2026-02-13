@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuth } from '@/composables/useAuth'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,11 +9,14 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-vue-next'
 
+const route = useRoute()
 const { login, isLoading, error } = useAuth()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(true)
+
+const sessionExpired = computed(() => route.query.reason === 'session_expired')
 
 async function handleSubmit() {
   await login({ email: email.value, password: password.value }, rememberMe.value)
@@ -28,6 +32,10 @@ async function handleSubmit() {
 
     <CardContent>
       <form @submit.prevent="handleSubmit" class="space-y-5">
+        <div v-if="sessionExpired" class="rounded-lg bg-amber-500/10 p-3 text-sm text-amber-400">
+          Your session has expired. Please log in again.
+        </div>
+
         <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {{ error }}
         </div>

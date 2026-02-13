@@ -117,6 +117,17 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = updated
   }
 
+  async function deleteAccount(password: string): Promise<void> {
+    await api.delete(API.USERS.DELETE_ACCOUNT, { data: { password } })
+  }
+
+  async function cancelDeletion(): Promise<void> {
+    await api.post(API.USERS.CANCEL_DELETION)
+    // Refetch user to clear deleteScheduledAt
+    const { data } = await authApi.getMe()
+    user.value = data
+  }
+
   return {
     user,
     accessToken,
@@ -128,5 +139,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialize,
     logout,
     updateProfile,
+    deleteAccount,
+    cancelDeletion,
   }
 })

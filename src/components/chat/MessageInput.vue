@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
+import { wsService } from '@/services/websocket'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import FilePreview from './FilePreview.vue'
@@ -26,6 +27,12 @@ const showEmojiPicker = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
 const lastTypingSent = ref(0)
+
+const wsConnected = ref(wsService.isConnected)
+const unsubConnection = wsService.addConnectionListener((connected) => {
+  wsConnected.value = connected
+})
+onBeforeUnmount(() => unsubConnection())
 
 function emitTyping() {
   const now = Date.now()
@@ -71,6 +78,8 @@ function handleDrop(e: DragEvent) {
 }
 
 async function handleSubmit() {
+  if (!wsConnected.value) return
+
   const text = content.value.trim()
   const files = [...pendingFiles.value]
 
@@ -200,6 +209,7 @@ defineExpose({ insertAtCursor })
         variant="ghost"
         size="icon"
         class="mb-1 ml-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+        :disabled="!wsConnected"
         @click="openFilePicker"
       >
         <Paperclip class="h-4 w-4" />
@@ -211,9 +221,10 @@ defineExpose({ insertAtCursor })
         @keydown="handleKeydown"
         @input="emitTyping"
         @paste="handlePaste"
-        :placeholder="`Message #${channelName}`"
+        :placeholder="wsConnected ? `Message #${channelName}` : 'Reconnecting...'"
+        :disabled="!wsConnected"
         rows="1"
-        class="max-h-[50vh] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none"
+        class="max-h-[50vh] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <!-- Emoji picker -->
@@ -223,6 +234,7 @@ defineExpose({ insertAtCursor })
             variant="ghost"
             size="icon"
             class="mb-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
+            :disabled="!wsConnected"
           >
             <Smile class="h-4 w-4" />
           </Button>
@@ -237,7 +249,7 @@ defineExpose({ insertAtCursor })
         variant="ghost"
         size="icon"
         class="mb-1 mr-1 h-8 w-8 text-primary hover:text-primary"
-        :disabled="isSending"
+        :disabled="isSending || !wsConnected"
         @click="handleSubmit"
       >
         <Loader2 v-if="isSending" class="h-4 w-4 animate-spin" />

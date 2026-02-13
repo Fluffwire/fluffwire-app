@@ -14,10 +14,36 @@ class WebSocketService {
   private token: string | null = null
   private listeners = new Map<string, Set<WsListener>>()
   private _isConnected = false
-  onConnectionChange: ((connected: boolean) => void) | null = null
+  private _hasConnectedOnce = false
+  private _disconnectReason: 'auth_failed' | 'network' | null = null
+
+  private connectionListeners = new Set<(connected: boolean) => void>()
+  private authFailureListeners = new Set<() => void>()
 
   get isConnected(): boolean {
     return this._isConnected
+  }
+
+  get disconnectReason(): 'auth_failed' | 'network' | null {
+    return this._disconnectReason
+  }
+
+  addConnectionListener(fn: (connected: boolean) => void): () => void {
+    this.connectionListeners.add(fn)
+    return () => this.connectionListeners.delete(fn)
+  }
+
+  addAuthFailureListener(fn: () => void): () => void {
+    this.authFailureListeners.add(fn)
+    return () => this.authFailureListeners.delete(fn)
+  }
+
+  private notifyConnectionListeners(connected: boolean): void {
+    this.connectionListeners.forEach((fn) => fn(connected))
+  }
+
+  private notifyAuthFailureListeners(): void {
+    this.authFailureListeners.forEach((fn) => fn())
   }
 
   connect(token: string): void {
@@ -36,9 +62,6 @@ class WebSocketService {
 
     this.ws.onopen = () => {
       console.log('[WS] Connected')
-      this._isConnected = true
-      this.reconnectAttempts = 0
-      this.onConnectionChange?.(true)
     }
 
     this.ws.onmessage = (event: MessageEvent) => {
@@ -49,8 +72,15 @@ class WebSocketService {
     this.ws.onclose = (event: CloseEvent) => {
       console.log('[WS] Disconnected:', event.code, event.reason)
       this._isConnected = false
-      this.onConnectionChange?.(false)
       this.stopHeartbeat()
+
+      if (event.code === 4004) {
+        this._disconnectReason = 'auth_failed'
+        this.notifyAuthFailureListeners()
+      } else if (this._hasConnectedOnce) {
+        this._disconnectReason = 'network'
+        this.notifyConnectionListeners(false)
+      }
 
       if (this.token && event.code !== 4004) {
         this.scheduleReconnect()
@@ -80,6 +110,11 @@ class WebSocketService {
           if (message.t === 'READY') {
             const data = message.d as { sessionId: string }
             this.sessionId = data.sessionId
+            this._isConnected = true
+            this._hasConnectedOnce = true
+            this._disconnectReason = null
+            this.reconnectAttempts = 0
+            this.notifyConnectionListeners(true)
           }
           wsDispatcher.dispatch(message.t, message.d)
           this.emit(message.t, message.d)
@@ -180,7 +215,7 @@ class WebSocketService {
     this.ws?.close()
     this.ws = null
     this._isConnected = false
-    this.onConnectionChange?.(false)
+    this.notifyConnectionListeners(false)
   }
 }
 

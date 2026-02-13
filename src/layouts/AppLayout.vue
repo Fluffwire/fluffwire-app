@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import ServerSidebar from '@/components/sidebar/ServerSidebar.vue'
 import ChannelSidebar from '@/components/sidebar/ChannelSidebar.vue'
 import MemberSidebar from '@/components/members/MemberSidebar.vue'
@@ -17,15 +17,20 @@ import OfflineBanner from '@/components/common/OfflineBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
 import { useVoiceStore } from '@/stores/voice'
 import { useResponsive } from '@/composables/useResponsive'
 import { useNotifications } from '@/composables/useNotifications'
 import { useIdleDetection } from '@/composables/useIdleDetection'
 import { wsService } from '@/services/websocket'
+import { authApi } from '@/services/authApi'
+import { getTokenStorage } from '@/services/tokenStorage'
 
 const route = useRoute()
+const router = useRouter()
 const uiStore = useUiStore()
+const authStore = useAuthStore()
 const presenceStore = usePresenceStore()
 const voiceStore = useVoiceStore()
 const { isMobile, isTablet, isDesktop } = useResponsive()
@@ -47,9 +52,34 @@ watch(isIdle, (idle) => {
 const wsConnected = ref(true)
 const bannerDismissed = ref(false)
 
-wsService.onConnectionChange = (connected) => {
+const unsubConnection = wsService.addConnectionListener((connected) => {
   wsConnected.value = connected
-}
+})
+
+const unsubAuthFailure = wsService.addAuthFailureListener(async () => {
+  const storage = getTokenStorage()
+  const refreshToken = storage.getItem('refreshToken')
+  if (refreshToken) {
+    try {
+      const { data } = await authApi.refresh(refreshToken)
+      storage.setItem('accessToken', data.accessToken)
+      storage.setItem('refreshToken', data.refreshToken)
+      authStore.accessToken = data.accessToken
+      wsService.connect(data.accessToken)
+    } catch {
+      authStore.logout()
+      router.push({ path: '/login', query: { reason: 'session_expired' } })
+    }
+  } else {
+    authStore.logout()
+    router.push({ path: '/login', query: { reason: 'session_expired' } })
+  }
+})
+
+onBeforeUnmount(() => {
+  unsubConnection()
+  unsubAuthFailure()
+})
 
 watch(wsConnected, (connected) => {
   if (connected) {

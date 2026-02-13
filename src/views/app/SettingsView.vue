@@ -14,8 +14,12 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
+import {
+  AlertDialog, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useVoiceStore } from '@/stores/voice'
 import { webrtcService } from '@/services/webrtc'
@@ -172,6 +176,54 @@ watch([profileDisplayName, profileBio, profileAvatarFile], () => {
   const bioChanged = profileBio.value.trim() !== ((authStore.user as { bio?: string })?.bio ?? '')
   hasProfileChanges.value = nameChanged || bioChanged || !!profileAvatarFile.value
 })
+
+// Account deletion
+const showDeleteDialog = ref(false)
+const deletePassword = ref('')
+const deleteConfirmText = ref('')
+const deleteLoading = ref(false)
+const deleteError = ref('')
+const cancellingDeletion = ref(false)
+
+async function handleDeleteAccount() {
+  if (deleteConfirmText.value !== 'DELETE') return
+  if (!deletePassword.value) {
+    deleteError.value = 'Password is required'
+    return
+  }
+  deleteLoading.value = true
+  deleteError.value = ''
+  try {
+    await authStore.deleteAccount(deletePassword.value)
+    showDeleteDialog.value = false
+    authStore.logout()
+    router.push('/login')
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    deleteError.value = err.response?.data?.message || 'Failed to delete account'
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+async function handleCancelDeletion() {
+  cancellingDeletion.value = true
+  try {
+    await authStore.cancelDeletion()
+    toast.success('Account deletion cancelled')
+  } catch {
+    toast.error('Failed to cancel deletion')
+  } finally {
+    cancellingDeletion.value = false
+  }
+}
+
+function openDeleteDialog() {
+  deletePassword.value = ''
+  deleteConfirmText.value = ''
+  deleteError.value = ''
+  showDeleteDialog.value = true
+}
 
 function handleLogout() {
   authStore.logout()
@@ -348,6 +400,109 @@ const themePreviewColors: Record<ThemeName, string> = {
                   </div>
                 </CardContent>
               </Card>
+
+              <!-- Pending deletion warning -->
+              <Card v-if="authStore.user?.deleteScheduledAt" class="mb-4 border-amber-500/50">
+                <CardContent class="p-6">
+                  <div class="flex items-start gap-3">
+                    <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                    <div class="flex-1 space-y-2">
+                      <h3 class="text-sm font-semibold text-amber-500">Account Scheduled for Deletion</h3>
+                      <p class="text-sm text-muted-foreground">
+                        Your account is scheduled to be permanently deleted on
+                        <span class="font-medium text-foreground">
+                          {{ new Date(authStore.user.deleteScheduledAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) }}
+                        </span>.
+                        You can cancel this at any time before that date.
+                      </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        :disabled="cancellingDeletion"
+                        @click="handleCancelDeletion"
+                      >
+                        <Loader2 v-if="cancellingDeletion" class="mr-2 h-4 w-4 animate-spin" />
+                        Cancel Deletion
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <!-- Delete account -->
+              <Card v-if="!authStore.user?.deleteScheduledAt" class="border-destructive/30">
+                <CardContent class="p-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h3 class="text-sm font-medium text-destructive">Delete Account</h3>
+                      <p class="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                    </div>
+                    <Button variant="destructive" size="sm" @click="openDeleteDialog">
+                      Delete Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <!-- Delete confirmation dialog -->
+              <AlertDialog v-model:open="showDeleteDialog">
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle class="flex items-center gap-2 text-destructive">
+                      <AlertTriangle class="h-5 w-5" />
+                      Delete Account
+                    </AlertDialogTitle>
+                    <AlertDialogDescription class="space-y-3">
+                      <p>
+                        This will schedule your account for permanent deletion. You will have
+                        <span class="font-semibold text-foreground">30 days</span> to cancel before
+                        your account and all associated data are permanently removed.
+                      </p>
+                      <p>This includes your messages, servers you own, and all other data.</p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+
+                  <div class="space-y-3 py-2">
+                    <div v-if="deleteError" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+                      {{ deleteError }}
+                    </div>
+
+                    <div class="space-y-2">
+                      <Label for="delete-password">Confirm your password</Label>
+                      <Input
+                        id="delete-password"
+                        v-model="deletePassword"
+                        type="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                      />
+                    </div>
+
+                    <div class="space-y-2">
+                      <Label for="delete-confirm">
+                        Type <span class="font-mono font-bold text-destructive">DELETE</span> to confirm
+                      </Label>
+                      <Input
+                        id="delete-confirm"
+                        v-model="deleteConfirmText"
+                        placeholder="Type DELETE"
+                      />
+                    </div>
+                  </div>
+
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <Button
+                      variant="destructive"
+                      :disabled="deleteConfirmText !== 'DELETE' || !deletePassword || deleteLoading"
+                      @click="handleDeleteAccount"
+                    >
+                      <Loader2 v-if="deleteLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      Delete Account
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </template>
 
             <!-- Voice & Audio -->

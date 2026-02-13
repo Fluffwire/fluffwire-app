@@ -13,6 +13,7 @@ export interface User {
 
 export interface CurrentUser extends User {
   email: string
+  deleteScheduledAt?: string | null
 }
 
 export interface UserSettings {

@@ -63,6 +63,10 @@ export const serverApi = {
     return api.post(API.SERVERS.WEBHOOKS(serverId), { name, channelId })
   },
 
+  updateWebhook(serverId: string, webhookId: string, data: { name?: string; channelId?: string }): Promise<{ data: Webhook }> {
+    return api.patch(API.SERVERS.WEBHOOK(serverId, webhookId), data)
+  },
+
   deleteWebhook(serverId: string, webhookId: string): Promise<void> {
     return api.delete(API.SERVERS.WEBHOOK(serverId, webhookId))
   },

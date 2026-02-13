@@ -13,7 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus } from 'lucide-vue-next'
+import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 const serversStore = useServersStore()
@@ -101,6 +101,40 @@ async function deleteWebhook(webhookId: string) {
     toast.success('Webhook deleted')
   } catch {
     toast.error('Failed to delete webhook')
+  }
+}
+
+// Webhook editing
+const editingWebhookId = ref<string | null>(null)
+const editWebhookName = ref('')
+const editWebhookChannelId = ref('')
+
+function startEditWebhook(wh: Webhook) {
+  editingWebhookId.value = wh.id
+  editWebhookName.value = wh.name
+  editWebhookChannelId.value = wh.channelId
+}
+
+function cancelEditWebhook() {
+  editingWebhookId.value = null
+  editWebhookName.value = ''
+  editWebhookChannelId.value = ''
+}
+
+async function saveWebhook() {
+  if (!serversStore.currentServer || !editingWebhookId.value) return
+  try {
+    const { data } = await serverApi.updateWebhook(
+      serversStore.currentServer.id,
+      editingWebhookId.value,
+      { name: editWebhookName.value.trim(), channelId: editWebhookChannelId.value },
+    )
+    const idx = webhooks.value.findIndex((w) => w.id === data.id)
+    if (idx !== -1) webhooks.value[idx] = data
+    cancelEditWebhook()
+    toast.success('Webhook updated')
+  } catch {
+    toast.error('Failed to update webhook')
   }
 }
 
@@ -277,24 +311,52 @@ async function handleSave() {
         <div
           v-for="wh in webhooks"
           :key="wh.id"
-          class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
+          class="rounded-lg border border-border/50 px-3 py-2"
         >
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <WebhookIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-              <p class="truncate text-sm font-medium text-foreground">{{ wh.name }}</p>
+          <!-- Editing mode -->
+          <div v-if="editingWebhookId === wh.id" class="space-y-2">
+            <div class="space-y-1">
+              <Label>Name</Label>
+              <Input v-model="editWebhookName" placeholder="Webhook name" />
             </div>
-            <p class="text-xs text-muted-foreground">
-              #{{ textChannels.find((c) => c.id === wh.channelId)?.name ?? 'unknown' }}
-            </p>
+            <div class="space-y-1">
+              <Label>Channel</Label>
+              <select
+                v-model="editWebhookChannelId"
+                class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option v-for="ch in textChannels" :key="ch.id" :value="ch.id">
+                  #{{ ch.name }}
+                </option>
+              </select>
+            </div>
+            <div class="flex justify-end gap-2">
+              <Button size="sm" variant="ghost" @click="cancelEditWebhook">Cancel</Button>
+              <Button size="sm" @click="saveWebhook" :disabled="!editWebhookName.trim() || !editWebhookChannelId">Save</Button>
+            </div>
           </div>
-          <div class="flex shrink-0 gap-1">
-            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyWebhookUrl(wh)">
-              <Copy class="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="deleteWebhook(wh.id)">
-              <Trash2 class="h-3.5 w-3.5" />
-            </Button>
+          <!-- Read-only mode -->
+          <div v-else class="flex items-center justify-between">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <WebhookIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                <p class="truncate text-sm font-medium text-foreground">{{ wh.name }}</p>
+              </div>
+              <p class="text-xs text-muted-foreground">
+                #{{ textChannels.find((c) => c.id === wh.channelId)?.name ?? 'unknown' }}
+              </p>
+            </div>
+            <div class="flex shrink-0 gap-1">
+              <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="startEditWebhook(wh)">
+                <Pencil class="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyWebhookUrl(wh)">
+                <Copy class="h-3.5 w-3.5" />
+              </Button>
+              <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="deleteWebhook(wh.id)">
+                <Trash2 class="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

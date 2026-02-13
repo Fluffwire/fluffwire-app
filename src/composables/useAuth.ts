@@ -7,14 +7,22 @@ export function useAuth() {
   const router = useRouter()
 
   async function login(credentials: LoginCredentials, rememberMe = true) {
-    await authStore.login(credentials, rememberMe)
-    const redirect = router.currentRoute.value.query.redirect as string
-    router.push(redirect || '/channels/@me')
+    try {
+      await authStore.login(credentials, rememberMe)
+      const redirect = router.currentRoute.value.query.redirect as string
+      router.push(redirect || '/channels/@me')
+    } catch {
+      // Store already sets error.value
+    }
   }
 
   async function register(credentials: RegisterCredentials, rememberMe = true) {
-    await authStore.register(credentials, rememberMe)
-    router.push('/channels/@me')
+    try {
+      await authStore.register(credentials, rememberMe)
+      router.push('/channels/@me')
+    } catch {
+      // Store already sets error.value
+    }
   }
 
   function logout() {

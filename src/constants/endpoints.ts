@@ -11,6 +11,8 @@ export const API = {
     BY_ID: (id: string) => `/users/${id}`,
     PROFILE: '/users/@me',
     SETTINGS: '/users/@me/settings',
+    DELETE_ACCOUNT: '/users/@me',
+    CANCEL_DELETION: '/users/@me/cancel-deletion',
   },
   SERVERS: {
     BASE: '/servers',

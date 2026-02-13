@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
 import { useRouter } from 'vue-router'
+import { wsService } from '@/services/websocket'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -12,6 +13,12 @@ import type { UserStatus } from '@/types'
 const authStore = useAuthStore()
 const presenceStore = usePresenceStore()
 const router = useRouter()
+
+const wsConnected = ref(wsService.isConnected)
+const unsubConnection = wsService.addConnectionListener((connected) => {
+  wsConnected.value = connected
+})
+onBeforeUnmount(() => unsubConnection())
 
 const myStatus = computed(() =>
   authStore.user ? presenceStore.getStatus(authStore.user.id) : 'offline'
@@ -23,7 +30,13 @@ const statusOptions: { value: UserStatus; label: string; color: string; icon: ty
   { value: 'offline', label: 'Invisible', color: 'bg-gray-500', icon: EyeOff },
 ]
 
+const displayStatus = computed(() => {
+  if (!wsConnected.value) return 'idle' as UserStatus
+  return myStatus.value
+})
+
 const statusLabel = computed(() => {
+  if (!wsConnected.value) return 'Disconnected'
   const opt = statusOptions.find((o) => o.value === myStatus.value)
   return opt?.label ?? 'Online'
 })
@@ -36,25 +49,30 @@ function setStatus(status: UserStatus) {
 <template>
   <div class="flex items-center gap-2 border-t border-border/50 bg-card/50 px-2 py-1.5 backdrop-blur-sm">
     <Popover>
-      <PopoverTrigger as-child>
-        <button class="flex items-center gap-2 min-w-0 flex-1 rounded-md px-1 py-0.5 hover:bg-accent/50 transition-colors">
+      <PopoverTrigger as-child :disabled="!wsConnected">
+        <button
+          :class="[
+            'flex items-center gap-2 min-w-0 flex-1 rounded-md px-1 py-0.5 transition-colors',
+            wsConnected ? 'hover:bg-accent/50' : 'cursor-default opacity-75',
+          ]"
+        >
           <UserAvatar
             :src="authStore.user?.avatar ?? null"
             :alt="authStore.user?.displayName ?? ''"
             size="sm"
-            :status="myStatus"
+            :status="displayStatus"
           />
           <div class="min-w-0 flex-1 text-left">
             <div class="truncate text-sm font-medium text-foreground">
               {{ authStore.user?.displayName }}
             </div>
-            <div class="truncate text-xs text-muted-foreground">
+            <div :class="['truncate text-xs', !wsConnected ? 'text-amber-400' : 'text-muted-foreground']">
               {{ statusLabel }}
             </div>
           </div>
         </button>
       </PopoverTrigger>
-      <PopoverContent side="top" align="start" class="w-56 p-1">
+      <PopoverContent v-if="wsConnected" side="top" align="start" class="w-56 p-1">
         <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Set Status</div>
         <button
           v-for="opt in statusOptions"
