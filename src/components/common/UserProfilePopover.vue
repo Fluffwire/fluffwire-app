@@ -64,7 +64,7 @@ const joinedDate = computed(() => {
 })
 
 async function sendMessage() {
-  const dm = await dmStore.getOrCreateDM(props.user.id)
+  const dm = await dmStore.openDM(props.user.id)
   router.push(`/channels/@me/${dm.id}`)
 }
 
