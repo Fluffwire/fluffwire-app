@@ -17,6 +17,17 @@ export interface ChannelCategory {
   position: number
 }
 
+export interface MessageReply {
+  id: string
+  author: {
+    id: string
+    username: string
+    displayName: string
+    avatar: string | null
+  }
+  content: string
+}
+
 export interface Message {
   id: string
   channelId: string
@@ -35,6 +46,7 @@ export interface Message {
   pinnedBy?: string | null
   pinnedAt?: string | null
   webhookId?: string | null
+  replyTo?: MessageReply
 }
 
 export interface Reaction {
@@ -54,6 +66,7 @@ export interface Attachment {
 export interface CreateMessagePayload {
   content: string
   channelId: string
+  replyToId?: string
 }
 
 export interface EditMessagePayload {

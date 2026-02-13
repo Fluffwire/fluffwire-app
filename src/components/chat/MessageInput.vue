@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
 import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import FilePreview from './FilePreview.vue'
 import EmojiPicker from './EmojiPicker.vue'
-import { SendHorizontal, Paperclip, Smile, Loader2 } from 'lucide-vue-next'
+import { SendHorizontal, Paperclip, Smile, Loader2, CornerDownRight, X } from 'lucide-vue-next'
 
 interface Props {
   channelId: string
@@ -16,6 +16,8 @@ interface Props {
 
 const props = defineProps<Props>()
 const messagesStore = useMessagesStore()
+
+const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
 
 const content = ref('')
 const pendingFiles = ref<File[]>([])
@@ -168,7 +170,22 @@ defineExpose({ insertAtCursor })
       />
     </div>
 
-    <div class="flex items-end rounded-xl border border-input bg-card">
+    <!-- Reply banner -->
+    <div
+      v-if="replyingTo"
+      class="flex items-center gap-2 rounded-t-xl border border-b-0 border-input bg-secondary/50 px-3 py-1.5"
+    >
+      <CornerDownRight class="h-3.5 w-3.5 shrink-0 text-primary" />
+      <span class="text-xs text-muted-foreground">
+        Replying to <span class="font-semibold text-foreground">{{ replyingTo.author.displayName }}</span>
+      </span>
+      <span class="min-w-0 flex-1 truncate text-xs text-muted-foreground">{{ replyingTo.content }}</span>
+      <button class="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground" @click="messagesStore.clearReply(channelId)">
+        <X class="h-3.5 w-3.5" />
+      </button>
+    </div>
+
+    <div :class="['flex items-end border border-input bg-card', replyingTo ? 'rounded-b-xl rounded-t-none border-t-0' : 'rounded-xl']">
       <!-- Hidden file input -->
       <input
         ref="fileInput"

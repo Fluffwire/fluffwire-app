@@ -15,6 +15,12 @@ interface PresenceEntry {
 export const usePresenceStore = defineStore('presence', () => {
   const presences = ref<Map<string, PresenceEntry>>(new Map())
 
+  // Track the user's manually chosen status (persisted) vs auto-idle
+  const userChosenStatus = ref<UserStatus>(
+    (localStorage.getItem('fluffwire-user-status') as UserStatus) ?? 'online'
+  )
+  const isAutoIdle = ref(false)
+
   function getStatus(userId: string): UserStatus {
     return presences.value.get(userId)?.status ?? 'offline'
   }
@@ -37,7 +43,7 @@ export const usePresenceStore = defineStore('presence', () => {
   }
   setupWsHandlers()
 
-  function setOwnStatus(status: UserStatus, customStatus?: string) {
+  function setOwnStatus(status: UserStatus, customStatus?: string, isAuto = false) {
     wsService.send({
       op: WsOpCode.PRESENCE_UPDATE,
       d: { status, customStatus },
@@ -51,8 +57,27 @@ export const usePresenceStore = defineStore('presence', () => {
         customStatus,
       })
     }
-    // Persist chosen status for page refresh
-    localStorage.setItem('fluffwire-user-status', status)
+
+    if (!isAuto) {
+      // Manual selection — save as the user's chosen status
+      userChosenStatus.value = status
+      isAutoIdle.value = false
+      localStorage.setItem('fluffwire-user-status', status)
+    }
+  }
+
+  function setAutoIdle() {
+    // Only auto-idle if the user's chosen status is 'online'
+    if (userChosenStatus.value !== 'online') return
+    if (isAutoIdle.value) return
+    isAutoIdle.value = true
+    setOwnStatus('idle', undefined, true)
+  }
+
+  function restoreFromIdle() {
+    if (!isAutoIdle.value) return
+    isAutoIdle.value = false
+    setOwnStatus(userChosenStatus.value, undefined, true)
   }
 
   /**
@@ -62,7 +87,6 @@ export const usePresenceStore = defineStore('presence', () => {
   function restoreOwnStatus() {
     const saved = localStorage.getItem('fluffwire-user-status') as UserStatus | null
     if (saved && saved !== 'offline') {
-      // Re-send the saved status so other users see it
       setOwnStatus(saved)
     } else if (saved === 'offline') {
       // User chose "Invisible" — re-send offline status
@@ -77,6 +101,8 @@ export const usePresenceStore = defineStore('presence', () => {
     getCustomStatus,
     setBulkPresence,
     setOwnStatus,
+    setAutoIdle,
+    restoreFromIdle,
     restoreOwnStatus,
   }
 })

@@ -4,14 +4,45 @@ import type { Server } from '@/types'
 import { serverApi } from '@/services/serverApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 
+const SERVER_ORDER_KEY = 'fluffwire-server-order'
+
 export const useServersStore = defineStore('servers', () => {
   const servers = ref<Server[]>([])
   const currentServerId = ref<string | null>(null)
   const isLoading = ref(false)
 
+  // Server order persisted to localStorage
+  const serverOrder = ref<string[]>(
+    JSON.parse(localStorage.getItem(SERVER_ORDER_KEY) ?? '[]')
+  )
+
   const currentServer = computed(() =>
     servers.value.find((s) => s.id === currentServerId.value) ?? null
   )
+
+  const orderedServers = computed(() => {
+    const order = serverOrder.value
+    const serverMap = new Map(servers.value.map((s) => [s.id, s]))
+    const ordered: Server[] = []
+    // Add servers in saved order
+    for (const id of order) {
+      const s = serverMap.get(id)
+      if (s) {
+        ordered.push(s)
+        serverMap.delete(id)
+      }
+    }
+    // Append any new servers not in the saved order
+    for (const s of serverMap.values()) {
+      ordered.push(s)
+    }
+    return ordered
+  })
+
+  function saveServerOrder(ids: string[]) {
+    serverOrder.value = ids
+    localStorage.setItem(SERVER_ORDER_KEY, JSON.stringify(ids))
+  }
 
   function setServers(data: Server[]) {
     servers.value = data
@@ -85,6 +116,7 @@ export const useServersStore = defineStore('servers', () => {
     currentServerId,
     currentServer,
     isLoading,
+    orderedServers,
     setServers,
     fetchServers,
     createServer,
@@ -92,5 +124,6 @@ export const useServersStore = defineStore('servers', () => {
     joinServer,
     deleteServer,
     leaveServer,
+    saveServerOrder,
   }
 })

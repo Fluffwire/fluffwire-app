@@ -14,6 +14,7 @@ class WebSocketService {
   private token: string | null = null
   private listeners = new Map<string, Set<WsListener>>()
   private _isConnected = false
+  onConnectionChange: ((connected: boolean) => void) | null = null
 
   get isConnected(): boolean {
     return this._isConnected
@@ -37,6 +38,7 @@ class WebSocketService {
       console.log('[WS] Connected')
       this._isConnected = true
       this.reconnectAttempts = 0
+      this.onConnectionChange?.(true)
     }
 
     this.ws.onmessage = (event: MessageEvent) => {
@@ -47,6 +49,7 @@ class WebSocketService {
     this.ws.onclose = (event: CloseEvent) => {
       console.log('[WS] Disconnected:', event.code, event.reason)
       this._isConnected = false
+      this.onConnectionChange?.(false)
       this.stopHeartbeat()
 
       if (this.token && event.code !== 4004) {
@@ -177,6 +180,7 @@ class WebSocketService {
     this.ws?.close()
     this.ws = null
     this._isConnected = false
+    this.onConnectionChange?.(false)
   }
 }
 

@@ -5,26 +5,34 @@ import { useVoiceStore } from '@/stores/voice'
 import { useChannelsStore } from '@/stores/channels'
 import { useAuthStore } from '@/stores/auth'
 import { useFriendsStore } from '@/stores/friends'
+import { useMembersStore } from '@/stores/members'
 import { useUiStore } from '@/stores/ui'
 import { webrtcService } from '@/services/webrtc'
+import { wsService } from '@/services/websocket'
 import VoicePeerTile from '@/components/voice/VoicePeerTile.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Headphones, X, UserPlus, Users } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 
 const route = useRoute()
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
 const authStore = useAuthStore()
 const friendsStore = useFriendsStore()
+const membersStore = useMembersStore()
 const uiStore = useUiStore()
 
 const channelId = computed(() => route.params.channelId as string)
+const serverId = computed(() => route.params.serverId as string)
 const channel = computed(() =>
   channelsStore.channels.find((c) => c.id === channelId.value)
 )
 
 const fullScreenVideo = ref<HTMLVideoElement | null>(null)
+const showInvitePicker = ref(false)
 
 const watchingPeer = computed(() =>
   voiceStore.watchingUserId
@@ -38,6 +46,15 @@ const watchingStream = computed(() =>
     : undefined
 )
 
+// Members not currently in this voice channel
+const invitableMembers = computed(() => {
+  const members = membersStore.getMembers(serverId.value)
+  const inVoice = new Set(voiceStore.peers.map((p) => p.userId))
+  return members.filter(
+    (m) => m.userId !== authStore.user?.id && !inVoice.has(m.userId)
+  )
+})
+
 watch(watchingStream, async (stream) => {
   await nextTick()
   if (fullScreenVideo.value) {
@@ -45,9 +62,14 @@ watch(watchingStream, async (stream) => {
   }
 }, { immediate: true })
 
-function openInviteModal() {
-  const serverId = route.params.serverId as string
-  if (serverId) uiStore.openModal('invite', serverId)
+function sendVoiceInvite(targetUserId: string) {
+  wsService.sendDispatch('VOICE_INVITE', {
+    targetUserId,
+    channelId: channelId.value,
+    serverId: serverId.value,
+  })
+  showInvitePicker.value = false
+  toast.success('Voice invite sent')
 }
 
 function handleWatchStream(userId: string) {
@@ -76,19 +98,43 @@ function handleAddFriend(userId: string) {
       </div>
       <div class="flex items-center gap-1">
         <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-8 w-8 text-muted-foreground hover:text-foreground"
-                @click="openInviteModal"
-              >
-                <UserPlus class="h-5 w-5" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Invite People</TooltipContent>
-          </Tooltip>
+          <Popover v-model:open="showInvitePicker">
+            <Tooltip>
+              <TooltipTrigger as-child>
+                <PopoverTrigger as-child>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  >
+                    <UserPlus class="h-5 w-5" />
+                  </Button>
+                </PopoverTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Invite to Voice</TooltipContent>
+            </Tooltip>
+            <PopoverContent align="end" class="w-64 p-2">
+              <p class="mb-2 px-2 text-xs font-semibold text-muted-foreground">Invite to Voice</p>
+              <div v-if="invitableMembers.length === 0" class="px-2 py-3 text-center text-sm text-muted-foreground">
+                No members to invite
+              </div>
+              <div v-else class="max-h-48 overflow-y-auto">
+                <button
+                  v-for="member in invitableMembers"
+                  :key="member.userId"
+                  class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+                  @click="sendVoiceInvite(member.userId)"
+                >
+                  <UserAvatar
+                    :src="member.user.avatar"
+                    :alt="member.user.displayName"
+                    size="xs"
+                  />
+                  <span class="truncate text-foreground">{{ member.user.displayName }}</span>
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
           <Tooltip>
             <TooltipTrigger as-child>
               <Button

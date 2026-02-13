@@ -28,3 +28,12 @@ export interface MediaDeviceOption {
   label: string
   kind: MediaDeviceKind
 }
+
+export interface VoiceInvite {
+  inviterId: string
+  inviterName: string
+  inviterAvatar: string | null
+  channelId: string
+  channelName?: string
+  serverId: string
+}

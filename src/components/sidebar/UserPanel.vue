@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Settings, Check, Circle, Moon, MinusCircle, EyeOff } from 'lucide-vue-next'
+import { Settings, Check, Circle, MinusCircle, EyeOff } from 'lucide-vue-next'
 import type { UserStatus } from '@/types'
 
 const authStore = useAuthStore()
@@ -19,7 +19,6 @@ const myStatus = computed(() =>
 
 const statusOptions: { value: UserStatus; label: string; color: string; icon: typeof Circle }[] = [
   { value: 'online', label: 'Online', color: 'bg-emerald-500', icon: Circle },
-  { value: 'idle', label: 'Idle', color: 'bg-yellow-500', icon: Moon },
   { value: 'dnd', label: 'Do Not Disturb', color: 'bg-red-500', icon: MinusCircle },
   { value: 'offline', label: 'Invisible', color: 'bg-gray-500', icon: EyeOff },
 ]

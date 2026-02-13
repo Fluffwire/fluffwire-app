@@ -12,7 +12,7 @@ import {
 import { renderMarkdown } from '@/composables/useMarkdown'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiPicker from './EmojiPicker.vue'
-import { Pencil, Trash2, Pin, SmilePlus } from 'lucide-vue-next'
+import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight } from 'lucide-vue-next'
 
 interface Props {
   message: Message
@@ -32,6 +32,8 @@ const emit = defineEmits<{
   pin: [messageId: string]
   unpin: [messageId: string]
   reaction: [messageId: string, emoji: string]
+  reply: [message: Message]
+  jumpTo: [messageId: string]
 }>()
 
 const isEditing = ref(false)
@@ -144,6 +146,14 @@ function confirmDelete() {
       v-if="!isEditing"
       class="absolute -top-3 right-4 z-10 hidden gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm group-hover:flex"
     >
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button variant="ghost" size="icon" class="h-7 w-7" @click="emit('reply', message)">
+            <CornerDownRight class="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Reply</TooltipContent>
+      </Tooltip>
       <Popover v-model:open="showReactionPicker">
         <Tooltip>
           <TooltipTrigger as-child>
@@ -201,6 +211,16 @@ function confirmDelete() {
           </div>
         </UserProfilePopover>
         <div class="min-w-0 flex-1">
+          <!-- Reply preview -->
+          <button
+            v-if="message.replyTo"
+            class="mb-1 flex items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors"
+            @click="emit('jumpTo', message.replyTo!.id)"
+          >
+            <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
+            <span class="font-semibold text-foreground">{{ message.replyTo.author.displayName }}</span>
+            <span class="truncate text-muted-foreground">{{ message.replyTo.content }}</span>
+          </button>
           <div class="flex items-baseline gap-2">
             <UserProfilePopover :user="message.author" side="right">
               <span class="text-sm font-medium text-foreground hover:text-primary cursor-pointer">
@@ -323,6 +343,16 @@ function confirmDelete() {
           </Tooltip>
         </div>
         <div class="min-w-0 flex-1">
+          <!-- Reply preview -->
+          <button
+            v-if="message.replyTo"
+            class="mb-1 flex items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors"
+            @click="emit('jumpTo', message.replyTo!.id)"
+          >
+            <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
+            <span class="font-semibold text-foreground">{{ message.replyTo.author.displayName }}</span>
+            <span class="truncate text-muted-foreground">{{ message.replyTo.content }}</span>
+          </button>
           <!-- Inline edit mode -->
           <div v-if="isEditing">
             <textarea

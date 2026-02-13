@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { VoicePeer, VoiceSignal } from '@/types'
+import type { VoicePeer, VoiceSignal, VoiceInvite } from '@/types'
 import { webrtcService } from '@/services/webrtc'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { soundManager } from '@/composables/useSounds'
@@ -19,6 +19,9 @@ export const useVoiceStore = defineStore('voice', () => {
   const screenStreams = ref<Map<string, MediaStream>>(new Map())
   // All voice channel members across the server: channelId -> VoicePeer[]
   const voiceChannelMembers = ref<Map<string, VoicePeer[]>>(new Map())
+
+  // Voice invites
+  const activeInvites = ref<VoiceInvite[]>([])
 
   // Voice settings
   const voiceMode = ref<'voice-activity' | 'push-to-talk'>('voice-activity')
@@ -142,6 +145,17 @@ export const useVoiceStore = defineStore('voice', () => {
       webrtcService.handleSignal(data as VoiceSignal)
     })
 
+    wsDispatcher.register(WS_EVENTS.VOICE_INVITE, (data: unknown) => {
+      const invite = data as VoiceInvite
+      // Avoid duplicate invites from the same user to the same channel
+      if (activeInvites.value.some((i) => i.inviterId === invite.inviterId && i.channelId === invite.channelId)) return
+      activeInvites.value.push(invite)
+      // Auto-remove after 30 seconds
+      setTimeout(() => {
+        dismissInvite(invite.inviterId, invite.channelId)
+      }, 30000)
+    })
+
     // Re-join voice channel after WebSocket reconnect
     wsDispatcher.register(WS_EVENTS.READY, async () => {
       if (currentChannelId.value && currentServerId.value) {
@@ -189,6 +203,12 @@ export const useVoiceStore = defineStore('voice', () => {
     if (watchingUserId.value === userId) {
       watchingUserId.value = null
     }
+  }
+
+  function dismissInvite(inviterId: string, channelId: string) {
+    activeInvites.value = activeInvites.value.filter(
+      (i) => !(i.inviterId === inviterId && i.channelId === channelId)
+    )
   }
 
   async function joinChannel(serverId: string, channelId: string) {
@@ -285,7 +305,9 @@ export const useVoiceStore = defineStore('voice', () => {
     watchingUserId,
     screenStreams,
     voiceChannelMembers,
+    activeInvites,
     getVoiceChannelMembers,
+    dismissInvite,
     voiceMode,
     vadThreshold,
     pttKey,

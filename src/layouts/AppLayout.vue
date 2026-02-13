@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import ServerSidebar from '@/components/sidebar/ServerSidebar.vue'
 import ChannelSidebar from '@/components/sidebar/ChannelSidebar.vue'
@@ -13,16 +13,51 @@ import EditChannelModal from '@/components/channels/EditChannelModal.vue'
 import CreateCategoryModal from '@/components/channels/CreateCategoryModal.vue'
 import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
 import MobileNav from '@/components/navigation/MobileNav.vue'
+import OfflineBanner from '@/components/common/OfflineBanner.vue'
+import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
+import { usePresenceStore } from '@/stores/presence'
+import { useVoiceStore } from '@/stores/voice'
 import { useResponsive } from '@/composables/useResponsive'
 import { useNotifications } from '@/composables/useNotifications'
+import { useIdleDetection } from '@/composables/useIdleDetection'
+import { wsService } from '@/services/websocket'
 
 const route = useRoute()
 const uiStore = useUiStore()
+const presenceStore = usePresenceStore()
+const voiceStore = useVoiceStore()
 const { isMobile, isTablet, isDesktop } = useResponsive()
 
 useNotifications()
+
+// Idle detection — auto-set idle after 5 minutes of inactivity
+const { isIdle } = useIdleDetection(5 * 60 * 1000)
+
+watch(isIdle, (idle) => {
+  if (idle) {
+    presenceStore.setAutoIdle()
+  } else {
+    presenceStore.restoreFromIdle()
+  }
+})
+
+// Connection state tracking for offline banner
+const wsConnected = ref(true)
+const bannerDismissed = ref(false)
+
+wsService.onConnectionChange = (connected) => {
+  wsConnected.value = connected
+}
+
+watch(wsConnected, (connected) => {
+  if (connected) {
+    bannerDismissed.value = false
+  }
+})
+
+const showOfflineBanner = computed(() => !wsConnected.value && !bannerDismissed.value)
 
 const isSettings = computed(() => route.path === '/settings')
 
@@ -39,6 +74,18 @@ const showChannelSidebar = computed(() => !isSettings.value)
 
 <template>
   <div class="flex h-full w-full overflow-hidden">
+    <!-- Offline banner -->
+    <OfflineBanner v-if="showOfflineBanner" @dismiss="bannerDismissed = true" />
+
+    <!-- Voice invite toasts -->
+    <div v-if="voiceStore.activeInvites.length" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <VoiceInviteToast
+        v-for="invite in voiceStore.activeInvites"
+        :key="`${invite.inviterId}-${invite.channelId}`"
+        :invite="invite"
+      />
+    </div>
+
     <!-- Server sidebar — hidden on mobile -->
     <ServerSidebar v-if="!isMobile" />
 

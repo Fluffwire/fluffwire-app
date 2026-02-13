@@ -13,6 +13,7 @@ export const useMessagesStore = defineStore('messages', () => {
   const hasMore = ref<Map<string, boolean>>(new Map())
   const isLoading = ref(false)
   const pinnedMessages = ref<Map<string, Message[]>>(new Map())
+  const replyingTo = ref<Map<string, Message>>(new Map())
 
   function getMessages(channelId: string): Message[] {
     return messagesByChannel.value.get(channelId) ?? []
@@ -112,12 +113,32 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   }
 
+  function setReplyTo(channelId: string, message: Message) {
+    replyingTo.value.set(channelId, message)
+  }
+
+  function getReplyTo(channelId: string): Message | undefined {
+    return replyingTo.value.get(channelId)
+  }
+
+  function clearReply(channelId: string) {
+    replyingTo.value.delete(channelId)
+  }
+
   function sendMessage(payload: CreateMessagePayload) {
+    const reply = replyingTo.value.get(payload.channelId)
+    if (reply) {
+      payload.replyToId = reply.id
+      replyingTo.value.delete(payload.channelId)
+    }
     wsService.sendDispatch('MESSAGE_CREATE', payload)
   }
 
   async function sendMessageWithAttachments(channelId: string, content: string, attachments: { id: string; filename: string; url: string; contentType: string; size: number }[]) {
-    await messageApi.createMessage(channelId, content, attachments)
+    const reply = replyingTo.value.get(channelId)
+    const replyToId = reply?.id
+    if (reply) replyingTo.value.delete(channelId)
+    await messageApi.createMessage(channelId, content, attachments, replyToId)
     // The WS MESSAGE_CREATE event will add it to the store
   }
 
@@ -164,6 +185,7 @@ export const useMessagesStore = defineStore('messages', () => {
     messagesByChannel,
     isLoading,
     pinnedMessages,
+    replyingTo,
     getMessages,
     fetchMessages,
     sendMessage,
@@ -177,5 +199,8 @@ export const useMessagesStore = defineStore('messages', () => {
     toggleReaction,
     pinMessage,
     unpinMessage,
+    setReplyTo,
+    getReplyTo,
+    clearReply,
   }
 })

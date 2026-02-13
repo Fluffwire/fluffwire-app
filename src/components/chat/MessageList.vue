@@ -42,6 +42,14 @@ async function handleUnpin(messageId: string) {
 async function handleReaction(messageId: string, emoji: string) {
   await messagesStore.toggleReaction(props.channelId, messageId, emoji)
 }
+
+function handleReply(message: import('@/types').Message) {
+  messagesStore.setReplyTo(props.channelId, message)
+}
+
+function handleJumpTo(messageId: string) {
+  scrollToMessage(messageId)
+}
 const containerRef = ref<HTMLElement | null>(null)
 const scrollEnabled = ref(false)
 
@@ -148,7 +156,7 @@ defineExpose({ scrollToMessage })
         v-for="(message, index) in messages"
         :key="message.id"
         :message="message"
-        :show-author="index === 0 || messages[index - 1]?.author.id !== message.author.id"
+        :show-author="index === 0 || messages[index - 1]?.author.id !== message.author.id || !!message.replyTo"
         :current-user-id="authStore.user?.id"
         :can-delete="isServerOwner"
         @edit="handleEdit"
@@ -156,6 +164,8 @@ defineExpose({ scrollToMessage })
         @pin="handlePin"
         @unpin="handleUnpin"
         @reaction="handleReaction"
+        @reply="handleReply"
+        @jump-to="handleJumpTo"
       />
 
       <!-- Bottom padding so last message isn't flush against input -->
