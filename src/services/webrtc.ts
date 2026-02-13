@@ -25,6 +25,9 @@ class WebRTCService {
   private analyserNodes = new Map<string, AnalyserNode>()
   private remoteVadIntervals = new Map<string, number>()
 
+  private screenStream: MediaStream | null = null
+  private _isScreenSharing = false
+
   private _isMuted = false
   private _isDeafened = false
   private _currentChannelId: string | null = null
@@ -47,9 +50,12 @@ class WebRTCService {
   onPeerSpeaking: ((userId: string, speaking: boolean) => void) | null = null
   onRemoteStream: ((userId: string, stream: MediaStream) => void) | null = null
   onPeerDisconnected: ((userId: string) => void) | null = null
+  onRemoteVideoStream: ((userId: string, stream: MediaStream) => void) | null = null
+  onRemoteVideoRemoved: ((userId: string) => void) | null = null
 
   get isMuted(): boolean { return this._isMuted }
   get isDeafened(): boolean { return this._isDeafened }
+  get isScreenSharing(): boolean { return this._isScreenSharing }
   get currentChannelId(): string | null { return this._currentChannelId }
   get voiceMode(): 'voice-activity' | 'push-to-talk' { return this._voiceMode }
   get vadThreshold(): number { return this._vadThreshold }
@@ -133,7 +139,29 @@ class WebRTCService {
 
       this.peerConnection.ontrack = (event: RTCTrackEvent) => {
         const [stream] = event.streams
-        if (stream && !this.remoteAudioElements.has(stream.id)) {
+        if (!stream) return
+
+        // Route by stream ID: "screen-stream-{userId}" → video, "stream-{userId}" → audio
+        if (stream.id.startsWith('screen-stream-')) {
+          const userId = stream.id.slice('screen-stream-'.length)
+          this.remoteStreams.set(stream.id, stream)
+          this.onRemoteVideoStream?.(userId, stream)
+
+          // Clean up when track ends
+          event.track.onended = () => {
+            this.remoteStreams.delete(stream.id)
+            this.onRemoteVideoRemoved?.(userId)
+          }
+          stream.onremovetrack = () => {
+            if (stream.getTracks().length === 0) {
+              this.remoteStreams.delete(stream.id)
+              this.onRemoteVideoRemoved?.(userId)
+            }
+          }
+          return
+        }
+
+        if (!this.remoteAudioElements.has(stream.id)) {
           this.remoteStreams.set(stream.id, stream)
           this.onRemoteStream?.(stream.id, stream)
 
@@ -225,16 +253,16 @@ class WebRTCService {
         break
       }
       case 'offer': {
-        // SFU renegotiation — server is adding new tracks
+        // SFU renegotiation — server is adding/removing tracks.
+        // The server always wins (impolite peer in Perfect Negotiation).
         const state = this.peerConnection.signalingState
-        if (state !== 'stable') {
-          console.warn(`[WebRTC] Received renegotiation offer in state ${state}, rolling back`)
-          // Rollback our pending local offer so we can accept the server's
+        if (state === 'have-local-offer') {
+          // Glare: we sent an offer and server sent one too. Roll back ours.
           await this.peerConnection.setLocalDescription({ type: 'rollback' })
+        } else if (state !== 'stable') {
+          console.warn(`[WebRTC] Cannot handle offer in state ${state}, skipping`)
+          return
         }
-        // Clear stale buffered candidates since new SDP means new ICE credentials
-        this.iceCandidateBuffer = []
-        this.hasRemoteDescription = false
 
         await this.peerConnection.setRemoteDescription(
           new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit)
@@ -302,7 +330,77 @@ class WebRTCService {
     })
   }
 
+  async startScreenShare(): Promise<void> {
+    if (!this.peerConnection || !this._currentChannelId) return
+
+    this.screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'always' } as MediaTrackConstraints,
+      audio: true,
+    })
+
+    // Auto-stop when user clicks browser's "Stop sharing" button
+    const videoTrack = this.screenStream.getVideoTracks()[0]
+    if (videoTrack) {
+      videoTrack.onended = () => {
+        this.stopScreenShare()
+      }
+    }
+
+    // Add tracks to PeerConnection (creates unassociated transceivers).
+    // No SDP negotiation here — the server will send a renegotiation offer
+    // that the browser matches with these transceivers automatically.
+    for (const track of this.screenStream.getTracks()) {
+      this.peerConnection.addTrack(track, this.screenStream)
+    }
+
+    this._isScreenSharing = true
+
+    // Signal the server to start screen sharing (no SDP payload needed)
+    wsService.sendDispatch('VOICE_SIGNAL', {
+      type: 'screen-share',
+      payload: {} as RTCSessionDescriptionInit,
+      channelId: this._currentChannelId,
+    })
+  }
+
+  async stopScreenShare(): Promise<void> {
+    if (!this._isScreenSharing) return
+
+    // Remove screen tracks from peer connection
+    if (this.peerConnection && this.screenStream) {
+      const senders = this.peerConnection.getSenders()
+      for (const track of this.screenStream.getTracks()) {
+        const sender = senders.find((s) => s.track === track)
+        if (sender) {
+          this.peerConnection.removeTrack(sender)
+        }
+        track.stop()
+      }
+    }
+
+    if (this._currentChannelId) {
+      wsService.sendDispatch('VOICE_SIGNAL', {
+        type: 'screen-stop',
+        payload: {} as RTCSessionDescriptionInit,
+        channelId: this._currentChannelId,
+      })
+    }
+
+    this.screenStream = null
+    this._isScreenSharing = false
+  }
+
   async leaveVoiceChannel(): Promise<void> {
+    // Stop screen sharing before leaving
+    if (this._isScreenSharing) {
+      // Stop tracks without sending screen-stop signal (leaving channel handles cleanup)
+      if (this.screenStream) {
+        this.screenStream.getTracks().forEach((t) => t.stop())
+        this.screenStream = null
+      }
+      this._isScreenSharing = false
+    }
+
     if (this._currentChannelId) {
       wsService.send({
         op: 4,

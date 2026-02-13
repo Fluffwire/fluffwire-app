@@ -1,10 +1,13 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useVoiceStore } from '@/stores/voice'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff } from 'lucide-vue-next'
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff } from 'lucide-vue-next'
 
 const voiceStore = useVoiceStore()
+
+const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming))
 </script>
 
 <template>
@@ -40,6 +43,23 @@ const voiceStore = useVoiceStore()
           </Button>
         </TooltipTrigger>
         <TooltipContent>{{ voiceStore.isDeafened ? 'Undeafen' : 'Deafen' }}</TooltipContent>
+      </Tooltip>
+
+      <!-- Share Screen -->
+      <Tooltip>
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            :class="['h-8 w-8', voiceStore.isScreenSharing ? 'bg-primary/20 text-primary hover:bg-primary/30 hover:text-primary' : 'text-muted-foreground']"
+            :disabled="!voiceStore.isScreenSharing && anyoneStreaming"
+            @click="voiceStore.isScreenSharing ? voiceStore.stopScreenShare() : voiceStore.startScreenShare()"
+          >
+            <MonitorOff v-if="voiceStore.isScreenSharing" class="h-4 w-4" />
+            <Monitor v-else class="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{ voiceStore.isScreenSharing ? 'Stop Sharing' : anyoneStreaming ? 'Someone is already sharing' : 'Share Screen' }}</TooltipContent>
       </Tooltip>
 
       <!-- Disconnect -->

@@ -14,10 +14,11 @@ export interface VoicePeer {
   selfMute: boolean
   selfDeaf: boolean
   speaking: boolean
+  streaming: boolean
 }
 
 export interface VoiceSignal {
-  type: 'offer' | 'answer' | 'ice-candidate'
+  type: 'offer' | 'answer' | 'ice-candidate' | 'screen-share' | 'screen-stop'
   payload: RTCSessionDescriptionInit | RTCIceCandidateInit
   fromUserId?: string
 }

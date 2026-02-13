@@ -9,7 +9,7 @@ import { useServersStore } from '@/stores/servers'
 import { useAuthStore } from '@/stores/auth'
 import { useReadStateStore } from '@/stores/readState'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { Hash, Headphones, Pencil, Trash2, Mic, MicOff } from 'lucide-vue-next'
+import { Hash, Headphones, Pencil, Trash2, Mic, MicOff, Monitor } from 'lucide-vue-next'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
@@ -131,7 +131,8 @@ async function handleDelete() {
           <div v-if="member.speaking" class="absolute inset-0 rounded-full ring-2 ring-primary" />
         </div>
         <span :class="['truncate', member.speaking ? 'text-primary font-medium' : '']">{{ member.displayName }}</span>
-        <MicOff v-if="member.selfMute" class="ml-auto h-3 w-3 shrink-0 text-destructive/70" />
+        <Monitor v-if="member.streaming" class="ml-auto h-3 w-3 shrink-0 text-primary" />
+        <MicOff v-if="member.selfMute" class="h-3 w-3 shrink-0 text-destructive/70" :class="{ 'ml-auto': !member.streaming }" />
       </div>
     </div>
 

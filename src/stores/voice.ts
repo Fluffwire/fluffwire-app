@@ -12,6 +12,9 @@ export const useVoiceStore = defineStore('voice', () => {
   const isMuted = ref(false)
   const isDeafened = ref(false)
   const isConnecting = ref(false)
+  const isScreenSharing = ref(false)
+  const watchingUserId = ref<string | null>(null)
+  const screenStreams = ref<Map<string, MediaStream>>(new Map())
   // All voice channel members across the server: channelId -> VoicePeer[]
   const voiceChannelMembers = ref<Map<string, VoicePeer[]>>(new Map())
 
@@ -61,6 +64,7 @@ export const useVoiceStore = defineStore('voice', () => {
         channelId: string | null
         selfMute: boolean
         selfDeaf: boolean
+        streaming?: boolean
         username: string
         displayName: string
         avatar: string | null
@@ -93,6 +97,7 @@ export const useVoiceStore = defineStore('voice', () => {
         selfMute: state.selfMute,
         selfDeaf: state.selfDeaf,
         speaking: false,
+        streaming: state.streaming ?? false,
       }
 
       // Remove from any previous channel in the map
@@ -123,6 +128,7 @@ export const useVoiceStore = defineStore('voice', () => {
         if (existing) {
           existing.selfMute = state.selfMute
           existing.selfDeaf = state.selfDeaf
+          existing.streaming = state.streaming ?? false
         } else {
           peers.value.push({ ...peer })
           soundManager.play('voiceJoin')
@@ -139,6 +145,17 @@ export const useVoiceStore = defineStore('voice', () => {
   webrtcService.onPeerSpeaking = (userId: string, speaking: boolean) => {
     const peer = peers.value.find((p) => p.userId === userId)
     if (peer) peer.speaking = speaking
+  }
+
+  webrtcService.onRemoteVideoStream = (userId: string, stream: MediaStream) => {
+    screenStreams.value.set(userId, stream)
+  }
+
+  webrtcService.onRemoteVideoRemoved = (userId: string) => {
+    screenStreams.value.delete(userId)
+    if (watchingUserId.value === userId) {
+      watchingUserId.value = null
+    }
   }
 
   async function joinChannel(serverId: string, channelId: string) {
@@ -158,7 +175,31 @@ export const useVoiceStore = defineStore('voice', () => {
     currentChannelId.value = null
     currentServerId.value = null
     peers.value = []
-    // Persist mute/deafen state across leave/join
+    isScreenSharing.value = false
+    watchingUserId.value = null
+    screenStreams.value.clear()
+  }
+
+  async function startScreenShare() {
+    await webrtcService.startScreenShare()
+    isScreenSharing.value = true
+  }
+
+  async function stopScreenShare() {
+    await webrtcService.stopScreenShare()
+    isScreenSharing.value = false
+  }
+
+  function watchStream(userId: string) {
+    watchingUserId.value = userId
+  }
+
+  function stopWatching() {
+    watchingUserId.value = null
+  }
+
+  function getScreenStream(userId: string): MediaStream | undefined {
+    return screenStreams.value.get(userId)
   }
 
   function toggleMute() {
@@ -204,6 +245,9 @@ export const useVoiceStore = defineStore('voice', () => {
     isDeafened,
     isConnecting,
     isInVoice,
+    isScreenSharing,
+    watchingUserId,
+    screenStreams,
     voiceChannelMembers,
     getVoiceChannelMembers,
     voiceMode,
@@ -213,6 +257,11 @@ export const useVoiceStore = defineStore('voice', () => {
     leaveChannel,
     toggleMute,
     toggleDeafen,
+    startScreenShare,
+    stopScreenShare,
+    watchStream,
+    stopWatching,
+    getScreenStream,
     setVoiceMode,
     setVadThreshold,
     setPttKey,
