@@ -18,9 +18,14 @@ defineProps<Props>()
 
 const showPins = ref(false)
 const showSearch = ref(false)
+const messageListRef = ref<InstanceType<typeof MessageList> | null>(null)
 
 function togglePins() {
   showPins.value = !showPins.value
+}
+
+function handleJumpTo(messageId: string) {
+  messageListRef.value?.scrollToMessage(messageId)
 }
 </script>
 
@@ -33,7 +38,7 @@ function togglePins() {
         @toggle-pins="togglePins"
         @open-search="showSearch = true"
       />
-      <MessageList :channel-id="channelId" :channel-name="channelName" :is-server-owner="isServerOwner" />
+      <MessageList ref="messageListRef" :channel-id="channelId" :channel-name="channelName" :is-server-owner="isServerOwner" />
       <div class="relative px-4 pb-6">
         <MessageInput :channel-id="channelId" :channel-name="channelName" />
         <TypingIndicator :channel-id="channelId" />
@@ -44,12 +49,14 @@ function togglePins() {
       :channel-id="channelId"
       :open="showPins"
       @close="showPins = false"
+      @jump-to="handleJumpTo"
     />
 
     <SearchModal
       :channel-id="channelId"
       :open="showSearch"
       @update:open="showSearch = $event"
+      @jump-to="handleJumpTo"
     />
   </div>
 </template>

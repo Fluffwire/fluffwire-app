@@ -4,7 +4,7 @@ import DOMPurify from 'dompurify'
 const renderer: RendererObject = {
   // Flatten paragraphs to avoid <p> wrapping for chat messages
   paragraph({ tokens }) {
-    return this.parser.parseInline(tokens) + '\n'
+    return this.parser.parseInline(tokens) + '<br>'
   },
   heading({ text }) {
     return text + '\n'

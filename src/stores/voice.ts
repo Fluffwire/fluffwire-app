@@ -4,6 +4,7 @@ import type { VoicePeer, VoiceSignal } from '@/types'
 import { webrtcService } from '@/services/webrtc'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { soundManager } from '@/composables/useSounds'
+import { useAuthStore } from '@/stores/auth'
 
 export const useVoiceStore = defineStore('voice', () => {
   const currentChannelId = ref<string | null>(null)
@@ -139,12 +140,43 @@ export const useVoiceStore = defineStore('voice', () => {
     wsDispatcher.register(WS_EVENTS.VOICE_SIGNAL, (data: unknown) => {
       webrtcService.handleSignal(data as VoiceSignal)
     })
+
+    // Re-join voice channel after WebSocket reconnect
+    wsDispatcher.register(WS_EVENTS.READY, async () => {
+      if (currentChannelId.value && currentServerId.value) {
+        const channelId = currentChannelId.value
+        const serverId = currentServerId.value
+        // Clean up old connection and peers
+        await webrtcService.leaveVoiceChannel()
+        peers.value = []
+        screenStreams.value.clear()
+        isScreenSharing.value = false
+        watchingUserId.value = null
+        // Re-join
+        try {
+          await webrtcService.joinVoiceChannel(serverId, channelId)
+        } catch (e) {
+          console.error('[Voice] Failed to rejoin after reconnect:', e)
+          currentChannelId.value = null
+          currentServerId.value = null
+        }
+      }
+    })
   }
   setupWsHandlers()
 
   webrtcService.onPeerSpeaking = (userId: string, speaking: boolean) => {
-    const peer = peers.value.find((p) => p.userId === userId)
+    // 'local' means self — resolve to actual user ID
+    const resolvedId = userId === 'local' ? useAuthStore().user?.id : userId
+    if (!resolvedId) return
+    const peer = peers.value.find((p) => p.userId === resolvedId)
     if (peer) peer.speaking = speaking
+    // Also update in voiceChannelMembers for sidebar indicators
+    if (currentChannelId.value) {
+      const members = voiceChannelMembers.value.get(currentChannelId.value)
+      const member = members?.find((p) => p.userId === resolvedId)
+      if (member) member.speaking = speaking
+    }
   }
 
   webrtcService.onRemoteVideoStream = (userId: string, stream: MediaStream) => {

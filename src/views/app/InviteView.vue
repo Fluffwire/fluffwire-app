@@ -2,12 +2,14 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
+import { useChannelsStore } from '@/stores/channels'
 import { Loader2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 const route = useRoute()
 const router = useRouter()
 const serversStore = useServersStore()
+const channelsStore = useChannelsStore()
 
 const isLoading = ref(true)
 const error = ref('')
@@ -21,7 +23,9 @@ onMounted(async () => {
   }
   try {
     const server = await serversStore.joinServer(code)
-    router.replace(`/channels/${server.id}`)
+    await channelsStore.fetchChannels(server.id)
+    const firstChannel = channelsStore.textChannels[0]
+    router.replace(`/channels/${server.id}/${firstChannel?.id ?? ''}`)
   } catch {
     error.value = 'Invalid or expired invite code'
     isLoading.value = false

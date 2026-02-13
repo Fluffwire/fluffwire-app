@@ -82,6 +82,18 @@ function scrollToBottom() {
     containerRef.value.scrollTop = containerRef.value.scrollHeight
   }
 }
+
+function scrollToMessage(messageId: string) {
+  if (!containerRef.value) return
+  const el = containerRef.value.querySelector(`[data-message-id="${messageId}"]`)
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('bg-primary/10')
+    setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
+  }
+}
+
+defineExpose({ scrollToMessage })
 </script>
 
 <template>

@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Friend } from '@/types'
 import { useRouter } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useFriendsStore } from '@/stores/friends'
+import { usePresenceStore } from '@/stores/presence'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -16,6 +18,9 @@ const props = defineProps<Props>()
 const router = useRouter()
 const dmStore = useDirectMessagesStore()
 const friendsStore = useFriendsStore()
+const presenceStore = usePresenceStore()
+
+const status = computed(() => presenceStore.getStatus(props.friend.user.id))
 
 async function openDM() {
   const dm = await dmStore.openDM(props.friend.user.id)
@@ -29,12 +34,12 @@ async function openDM() {
       :src="friend.user.avatar"
       :alt="friend.user.displayName"
       size="sm"
-      :status="friend.user.status"
+      :status="status"
     />
 
     <div class="min-w-0 flex-1">
       <div class="text-sm font-medium text-foreground">{{ friend.user.displayName }}</div>
-      <div class="text-xs capitalize text-muted-foreground">{{ friend.user.status }}</div>
+      <div class="text-xs capitalize text-muted-foreground">{{ status === 'offline' ? 'Offline' : status === 'dnd' ? 'Do Not Disturb' : status }}</div>
     </div>
 
     <TooltipProvider>

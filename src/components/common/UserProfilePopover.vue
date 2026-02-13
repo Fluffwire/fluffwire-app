@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import type { User } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
 import { useFriendsStore } from '@/stores/friends'
 import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useRouter } from 'vue-router'
+import { userApi } from '@/services/userApi'
 import UserAvatar from './UserAvatar.vue'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -34,6 +35,18 @@ const presenceStore = usePresenceStore()
 const friendsStore = useFriendsStore()
 const dmStore = useDirectMessagesStore()
 const router = useRouter()
+
+const fetchedBio = ref<string | undefined>(undefined)
+const bio = computed(() => props.user.bio ?? fetchedBio.value)
+
+async function onPopoverOpen(open: boolean) {
+  if (open && props.user.bio === undefined && fetchedBio.value === undefined) {
+    try {
+      const { data } = await userApi.getUser(props.user.id)
+      fetchedBio.value = data.bio ?? ''
+    } catch { /* ignore */ }
+  }
+}
 
 const status = computed(() => presenceStore.getStatus(props.user.id))
 const isOwnProfile = computed(() => props.user.id === authStore.user?.id)
@@ -90,7 +103,7 @@ function copyUserId() {
           <slot />
         </PopoverTrigger>
       </ContextMenuTrigger>
-      <PopoverContent :side="side" class="w-72 p-0" :side-offset="8">
+      <PopoverContent :side="side" class="w-72 p-0" :side-offset="8" @open-auto-focus="onPopoverOpen(true)">
         <!-- Banner -->
         <div class="h-16 rounded-t-lg bg-gradient-to-r from-primary/40 to-primary/20" />
 
@@ -101,7 +114,7 @@ function copyUserId() {
             :alt="user.displayName"
             size="lg"
             :status="status"
-            class="ring-4 ring-popover"
+            class="ring-4 ring-card"
           />
 
           <!-- Name + Status -->
@@ -119,9 +132,9 @@ function copyUserId() {
           <Separator class="my-3" />
 
           <!-- Bio -->
-          <div v-if="user.bio" class="mb-3">
+          <div v-if="bio" class="mb-3">
             <div class="text-[11px] font-semibold uppercase text-muted-foreground">About Me</div>
-            <div class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ user.bio }}</div>
+            <div class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ bio }}</div>
           </div>
 
           <!-- Member since -->

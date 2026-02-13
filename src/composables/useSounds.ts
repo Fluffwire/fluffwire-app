@@ -137,6 +137,8 @@ class SoundManager {
   private _enabled = true
 
   constructor() {
+    // Restore persisted notification sound preference
+    this._enabled = localStorage.getItem('fluffwire-notification-sound') !== 'false'
     this.init()
   }
 

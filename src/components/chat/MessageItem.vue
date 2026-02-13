@@ -114,6 +114,7 @@ function confirmDelete() {
 
 <template>
   <div
+    :data-message-id="message.id"
     :class="[
       'group relative flex gap-4 px-4 py-0.5 transition-colors hover:bg-accent/30 rounded-lg mx-2',
       showAuthor ? 'mt-4' : '',
