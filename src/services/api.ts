@@ -1,5 +1,6 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { API } from '@/constants/endpoints'
+import { getTokenStorage } from '@/services/tokenStorage'
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -11,7 +12,7 @@ const api: AxiosInstance = axios.create({
 
 // Request interceptor: attach access token
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-  const token = localStorage.getItem('accessToken')
+  const token = getTokenStorage().getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -54,7 +55,8 @@ api.interceptors.response.use(
       isRefreshing = true
 
       try {
-        const refreshToken = localStorage.getItem('refreshToken')
+        const storage = getTokenStorage()
+        const refreshToken = storage.getItem('refreshToken')
         if (!refreshToken) throw new Error('No refresh token')
 
         const { data } = await axios.post(
@@ -62,8 +64,8 @@ api.interceptors.response.use(
           { refreshToken }
         )
 
-        localStorage.setItem('accessToken', data.accessToken)
-        localStorage.setItem('refreshToken', data.refreshToken)
+        storage.setItem('accessToken', data.accessToken)
+        storage.setItem('refreshToken', data.refreshToken)
         processQueue(null, data.accessToken)
         originalRequest.headers.Authorization = `Bearer ${data.accessToken}`
         return api(originalRequest)
@@ -71,6 +73,8 @@ api.interceptors.response.use(
         processQueue(refreshError, null)
         localStorage.removeItem('accessToken')
         localStorage.removeItem('refreshToken')
+        sessionStorage.removeItem('accessToken')
+        sessionStorage.removeItem('refreshToken')
         window.location.href = '/login'
         return Promise.reject(refreshError)
       } finally {

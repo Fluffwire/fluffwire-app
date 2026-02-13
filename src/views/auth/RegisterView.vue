@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-vue-next'
 
 const { register, isLoading, error } = useAuth()
@@ -12,13 +13,14 @@ const { register, isLoading, error } = useAuth()
 const email = ref('')
 const username = ref('')
 const password = ref('')
+const rememberMe = ref(true)
 
 async function handleSubmit() {
   await register({
     email: email.value,
     username: username.value,
     password: password.value,
-  })
+  }, rememberMe.value)
 }
 </script>
 
@@ -65,6 +67,11 @@ async function handleSubmit() {
             required
             autocomplete="new-password"
           />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <Checkbox id="reg-remember-me" :checked="rememberMe" @update:checked="rememberMe = $event" />
+          <Label for="reg-remember-me" class="cursor-pointer text-sm text-muted-foreground">Remember me</Label>
         </div>
 
         <Button type="submit" :disabled="isLoading" class="w-full">

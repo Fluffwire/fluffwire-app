@@ -63,7 +63,9 @@ class WebRTCService {
 
       this.peerConnection = new RTCPeerConnection(ICE_SERVERS)
 
+      // Apply persisted mute state to new tracks
       this.localStream.getAudioTracks().forEach((track) => {
+        track.enabled = !this._isMuted
         this.peerConnection!.addTrack(track, this.localStream!)
       })
 
@@ -222,6 +224,7 @@ class WebRTCService {
   }
 
   private sendVoiceStateUpdate(): void {
+    if (!this._currentChannelId) return
     wsService.send({
       op: 4,
       d: {
@@ -259,8 +262,7 @@ class WebRTCService {
 
     this._currentChannelId = null
     this._currentServerId = null
-    this._isMuted = false
-    this._isDeafened = false
+    // Persist mute/deafen state across leave/join
     this.hasRemoteDescription = false
     this.iceCandidateBuffer = []
   }
@@ -302,6 +304,13 @@ class WebRTCService {
         label: d.label || `${d.kind} (${d.deviceId.slice(0, 8)})`,
         kind: d.kind as MediaDeviceKind,
       }))
+  }
+
+  setPeerVolume(streamId: string, volume: number): void {
+    const audio = this.remoteAudioElements.get(streamId)
+    if (audio) {
+      audio.volume = Math.max(0, Math.min(1, volume))
+    }
   }
 
   async setInputDevice(deviceId: string): Promise<void> {

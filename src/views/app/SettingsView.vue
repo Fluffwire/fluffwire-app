@@ -25,8 +25,20 @@ const {
   setSoundEnabled,
   setDesktopEnabled,
   requestDesktopPermission,
+  playTestSound,
   desktopPermission,
 } = useNotificationSettings()
+
+const desktopPermissionDenied = ref(false)
+
+async function handleDesktopToggle(value: boolean) {
+  const result = await setDesktopEnabled(value)
+  if (value && result === false) {
+    desktopPermissionDenied.value = true
+  } else {
+    desktopPermissionDenied.value = false
+  }
+}
 
 const activeTab = ref('account')
 
@@ -186,27 +198,27 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <h3 class="text-sm font-medium text-foreground">Notification Sound</h3>
                     <p class="text-sm text-muted-foreground">Play a sound when a new message arrives</p>
                   </div>
-                  <Switch :checked="soundEnabled" @update:checked="setSoundEnabled" />
+                  <div class="flex items-center gap-3">
+                    <Button size="sm" variant="outline" @click="playTestSound">
+                      Test Sound
+                    </Button>
+                    <Switch :checked="soundEnabled" @update:checked="setSoundEnabled" />
+                  </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardContent class="flex items-center justify-between p-6">
-                  <div>
-                    <h3 class="text-sm font-medium text-foreground">Desktop Notifications</h3>
-                    <p class="text-sm text-muted-foreground">Show native desktop notifications for new messages</p>
+                <CardContent class="p-6">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <h3 class="text-sm font-medium text-foreground">Desktop Notifications</h3>
+                      <p class="text-sm text-muted-foreground">Show native desktop notifications for new messages</p>
+                    </div>
+                    <Switch :checked="desktopEnabled" @update:checked="handleDesktopToggle" />
                   </div>
-                  <div class="flex items-center gap-3">
-                    <Button
-                      v-if="desktopPermission !== 'granted' && desktopEnabled"
-                      size="sm"
-                      variant="outline"
-                      @click="requestDesktopPermission"
-                    >
-                      Allow
-                    </Button>
-                    <Switch :checked="desktopEnabled" @update:checked="setDesktopEnabled" />
-                  </div>
+                  <p v-if="desktopPermissionDenied" class="mt-2 text-sm text-destructive">
+                    Notification permission was denied by the browser. Please allow notifications in your browser settings.
+                  </p>
                 </CardContent>
               </Card>
             </template>

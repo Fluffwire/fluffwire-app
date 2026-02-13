@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
+import { useReadStateStore } from '@/stores/readState'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import ServerIcon from './ServerIcon.vue'
@@ -16,6 +17,7 @@ withDefaults(defineProps<Props>(), { isSheet: false })
 
 const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
+const readStateStore = useReadStateStore()
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
@@ -70,11 +72,15 @@ async function navigateToServer(serverId: string) {
       <!-- Server icons -->
       <Tooltip v-for="server in serversStore.servers" :key="server.id">
         <TooltipTrigger as-child>
-          <div>
+          <div class="relative">
             <ServerIcon
               :server="server"
               :active="isActive(server.id)"
               @click="navigateToServer(server.id)"
+            />
+            <span
+              v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
+              class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
             />
           </div>
         </TooltipTrigger>

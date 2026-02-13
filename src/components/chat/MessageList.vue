@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { useMessagesStore } from '@/stores/messages'
+import { useAuthStore } from '@/stores/auth'
+import { useReadStateStore } from '@/stores/readState'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import MessageItem from './MessageItem.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -11,10 +13,23 @@ import { Hash } from 'lucide-vue-next'
 interface Props {
   channelId: string
   channelName?: string
+  isServerOwner?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  isServerOwner: false,
+})
 const messagesStore = useMessagesStore()
+const authStore = useAuthStore()
+const readStateStore = useReadStateStore()
+
+async function handleEdit(messageId: string, content: string) {
+  await messagesStore.editMessage(props.channelId, messageId, content)
+}
+
+async function handleDelete(messageId: string) {
+  await messagesStore.deleteMessage(props.channelId, messageId)
+}
 const containerRef = ref<HTMLElement | null>(null)
 
 const messages = computed(() => messagesStore.getMessages(props.channelId))
@@ -32,6 +47,7 @@ watch(() => props.channelId, async (id) => {
     await messagesStore.fetchMessages(id)
     await nextTick()
     scrollToBottom()
+    readStateStore.markAsRead(id)
   }
 }, { immediate: true })
 
@@ -44,6 +60,10 @@ watch(() => messages.value.length, async () => {
     if (isNearBottom && !isLoadingMore.value) {
       scrollToBottom()
     }
+  }
+  // Mark as read when new messages arrive while viewing this channel
+  if (!document.hidden) {
+    readStateStore.markAsRead(props.channelId)
   }
 })
 
@@ -95,6 +115,10 @@ function scrollToBottom() {
         :key="message.id"
         :message="message"
         :show-author="index === 0 || messages[index - 1]?.author.id !== message.author.id"
+        :current-user-id="authStore.user?.id"
+        :can-delete="isServerOwner"
+        @edit="handleEdit"
+        @delete="handleDelete"
       />
     </div>
   </div>

@@ -6,11 +6,14 @@ import { wsService } from '@/services/websocket'
 import { useServersStore } from './servers'
 import { useFriendsStore } from './friends'
 import { usePresenceStore } from './presence'
+import { useReadStateStore } from './readState'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { getTokenStorage, setRememberMe } from '@/services/tokenStorage'
 
 export const useAuthStore = defineStore('auth', () => {
+  const storage = getTokenStorage()
   const user = ref<CurrentUser | null>(null)
-  const accessToken = ref<string | null>(localStorage.getItem('accessToken'))
+  const accessToken = ref<string | null>(storage.getItem('accessToken'))
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -23,23 +26,33 @@ export const useAuthStore = defineStore('auth', () => {
         servers: unknown[]
         friends: unknown[]
         presences: unknown[]
+        readStates: { userId: string; channelId: string; lastMessageId: string }[]
       }
       user.value = payload.user
       useServersStore().setServers(payload.servers as never[])
       useFriendsStore().setFriends(payload.friends as never[])
       usePresenceStore().setBulkPresence(payload.presences as never[])
+      if (payload.readStates) {
+        useReadStateStore().setReadStates(payload.readStates)
+      }
     })
   }
 
-  async function login(credentials: LoginCredentials): Promise<void> {
+  function storeTokens(access: string, refresh: string) {
+    const s = getTokenStorage()
+    s.setItem('accessToken', access)
+    s.setItem('refreshToken', refresh)
+  }
+
+  async function login(credentials: LoginCredentials, rememberMe = true): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
+      setRememberMe(rememberMe)
       const { data } = await authApi.login(credentials)
       accessToken.value = data.accessToken
       user.value = data.user
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
+      storeTokens(data.accessToken, data.refreshToken)
       setupWsHandlers()
       wsService.connect(data.accessToken)
     } catch (e: unknown) {
@@ -51,15 +64,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function register(credentials: RegisterCredentials): Promise<void> {
+  async function register(credentials: RegisterCredentials, rememberMe = true): Promise<void> {
     isLoading.value = true
     error.value = null
     try {
+      setRememberMe(rememberMe)
       const { data } = await authApi.register(credentials)
       accessToken.value = data.accessToken
       user.value = data.user
-      localStorage.setItem('accessToken', data.accessToken)
-      localStorage.setItem('refreshToken', data.refreshToken)
+      storeTokens(data.accessToken, data.refreshToken)
       setupWsHandlers()
       wsService.connect(data.accessToken)
     } catch (e: unknown) {
@@ -90,6 +103,9 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken.value = null
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
+    sessionStorage.removeItem('accessToken')
+    sessionStorage.removeItem('refreshToken')
+    localStorage.removeItem('fluffwire-remember')
   }
 
   return {

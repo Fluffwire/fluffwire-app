@@ -8,6 +8,7 @@ interface Props {
   channelId: string
   channelName: string
   isDm?: boolean
+  isServerOwner?: boolean
 }
 
 defineProps<Props>()
@@ -16,7 +17,7 @@ defineProps<Props>()
 <template>
   <div class="flex h-full flex-col">
     <ChatHeader :channel-name="channelName" :is-dm="isDm" />
-    <MessageList :channel-id="channelId" :channel-name="channelName" />
+    <MessageList :channel-id="channelId" :channel-name="channelName" :is-server-owner="isServerOwner" />
     <div class="relative px-4 pb-6">
       <MessageInput :channel-id="channelId" :channel-name="channelName" />
       <TypingIndicator :channel-id="channelId" />

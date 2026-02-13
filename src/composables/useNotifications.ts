@@ -18,9 +18,18 @@ function setSoundEnabled(value: boolean) {
   localStorage.setItem(STORAGE_KEYS.sound, String(value))
 }
 
-function setDesktopEnabled(value: boolean) {
+async function setDesktopEnabled(value: boolean) {
+  if (value) {
+    const granted = await requestDesktopPermission()
+    if (!granted) {
+      desktopEnabled.value = false
+      localStorage.setItem(STORAGE_KEYS.desktop, 'false')
+      return false
+    }
+  }
   desktopEnabled.value = value
   localStorage.setItem(STORAGE_KEYS.desktop, String(value))
+  return true
 }
 
 async function requestDesktopPermission(): Promise<boolean> {
@@ -29,6 +38,45 @@ async function requestDesktopPermission(): Promise<boolean> {
   if (Notification.permission === 'denied') return false
   const result = await Notification.requestPermission()
   return result === 'granted'
+}
+
+// Test sound audio element (lazily created)
+let testAudio: HTMLAudioElement | null = null
+let testAudioReady = false
+
+function ensureTestAudio() {
+  if (testAudio) return
+  testAudio = new Audio()
+  testAudio.volume = 0.5
+  try {
+    const ctx = new OfflineAudioContext(1, 22050 * 0.3, 22050)
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(880, 0)
+    osc.frequency.setValueAtTime(1320, 0.08)
+    gain.gain.setValueAtTime(0.3, 0)
+    gain.gain.exponentialRampToValueAtTime(0.01, 0.25)
+    osc.start(0)
+    osc.stop(0.25)
+    ctx.startRendering().then((buffer) => {
+      const wav = audioBufferToWav(buffer)
+      const blob = new Blob([wav], { type: 'audio/wav' })
+      testAudio!.src = URL.createObjectURL(blob)
+      testAudioReady = true
+    })
+  } catch {
+    // OfflineAudioContext not available
+  }
+}
+
+function playTestSound() {
+  ensureTestAudio()
+  if (!testAudio || !testAudioReady) return
+  testAudio.currentTime = 0
+  testAudio.play().catch(() => {})
 }
 
 /**
@@ -41,6 +89,7 @@ export function useNotificationSettings() {
     setSoundEnabled,
     setDesktopEnabled,
     requestDesktopPermission,
+    playTestSound,
     get desktopPermission() {
       return 'Notification' in window ? Notification.permission : 'denied'
     },

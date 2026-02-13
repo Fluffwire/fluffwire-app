@@ -25,6 +25,7 @@ export const API = {
     MESSAGE_BY_ID: (channelId: string, messageId: string) =>
       `/channels/${channelId}/messages/${messageId}`,
     TYPING: (channelId: string) => `/channels/${channelId}/typing`,
+    ACK: (channelId: string) => `/channels/${channelId}/ack`,
     REORDER: (serverId: string) => `/servers/${serverId}/channels/reorder`,
   },
   CATEGORIES: {

@@ -6,14 +6,14 @@ export function useAuth() {
   const authStore = useAuthStore()
   const router = useRouter()
 
-  async function login(credentials: LoginCredentials) {
-    await authStore.login(credentials)
+  async function login(credentials: LoginCredentials, rememberMe = true) {
+    await authStore.login(credentials, rememberMe)
     const redirect = router.currentRoute.value.query.redirect as string
     router.push(redirect || '/channels/@me')
   }
 
-  async function register(credentials: RegisterCredentials) {
-    await authStore.register(credentials)
+  async function register(credentials: RegisterCredentials, rememberMe = true) {
+    await authStore.register(credentials, rememberMe)
     router.push('/channels/@me')
   }
 

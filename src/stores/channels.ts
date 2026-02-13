@@ -4,6 +4,7 @@ import type { Channel, ChannelCategory, CreateChannelPayload } from '@/types'
 import { channelApi } from '@/services/channelApi'
 import type { ChannelPositionPayload, CategoryPositionPayload } from '@/services/channelApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { useReadStateStore } from './readState'
 
 export const useChannelsStore = defineStore('channels', () => {
   const channels = ref<Channel[]>([])
@@ -73,6 +74,11 @@ export const useChannelsStore = defineStore('channels', () => {
       const { data } = await channelApi.getChannels(serverId)
       channels.value = data.channels
       categories.value = data.categories
+      // Register channel→server mappings for unread tracking
+      const readStateStore = useReadStateStore()
+      for (const ch of data.channels) {
+        readStateStore.registerChannelServer(ch.id, ch.serverId)
+      }
     } finally {
       isLoading.value = false
     }

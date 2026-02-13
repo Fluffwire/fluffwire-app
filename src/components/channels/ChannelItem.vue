@@ -7,10 +7,16 @@ import { useUiStore } from '@/stores/ui'
 import { useChannelsStore } from '@/stores/channels'
 import { useServersStore } from '@/stores/servers'
 import { useAuthStore } from '@/stores/auth'
-import { Hash, Headphones, Pencil, Trash2 } from 'lucide-vue-next'
+import { useReadStateStore } from '@/stores/readState'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import { Hash, Headphones, Pencil, Trash2, Mic, MicOff } from 'lucide-vue-next'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import DeleteConfirmDialog from './DeleteConfirmDialog.vue'
 import { toast } from 'vue-sonner'
 
@@ -26,16 +32,29 @@ const uiStore = useUiStore()
 const channelsStore = useChannelsStore()
 const serversStore = useServersStore()
 const authStore = useAuthStore()
+const readStateStore = useReadStateStore()
 
 const showDeleteDialog = ref(false)
+const showSwitchDialog = ref(false)
 
 const isActive = computed(() => route.params.channelId === props.channel.id)
+const hasUnread = computed(() => !isActive.value && props.channel.type === 'text' && readStateStore.isUnread(props.channel.id))
 
 const isOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
 )
 
+const voiceMembers = computed(() => voiceStore.getVoiceChannelMembers(props.channel.id))
+
 function handleClick() {
+  if (props.channel.type === 'voice' && voiceStore.currentChannelId && voiceStore.currentChannelId !== props.channel.id) {
+    showSwitchDialog.value = true
+    return
+  }
+  navigateToChannel()
+}
+
+function navigateToChannel() {
   router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
   if (props.channel.type === 'voice' && voiceStore.currentChannelId !== props.channel.id) {
     voiceStore.joinChannel(props.channel.serverId, props.channel.id)
@@ -43,6 +62,11 @@ function handleClick() {
   if (uiStore.isMobileView || uiStore.isTabletView) {
     uiStore.isChannelSidebarOpen = false
   }
+}
+
+function confirmSwitch() {
+  showSwitchDialog.value = false
+  navigateToChannel()
 }
 
 function handleEdit() {
@@ -71,12 +95,15 @@ async function handleDelete() {
             'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
             isActive
               ? 'border-l-2 border-primary bg-accent text-foreground'
-              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+              : hasUnread
+                ? 'font-semibold text-foreground hover:bg-accent/50'
+                : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
           ]"
         >
           <Hash v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" />
           <Headphones v-else class="h-5 w-5 shrink-0 opacity-60" />
           <span class="truncate">{{ channel.name }}</span>
+          <span v-if="hasUnread" class="ml-auto h-2 w-2 shrink-0 rounded-full bg-primary" />
         </button>
       </ContextMenuTrigger>
 
@@ -92,6 +119,19 @@ async function handleDelete() {
       </ContextMenuContent>
     </ContextMenu>
 
+    <!-- Voice channel connected users -->
+    <div v-if="channel.type === 'voice' && voiceMembers.length > 0" class="ml-6 space-y-0.5 pb-1">
+      <div
+        v-for="member in voiceMembers"
+        :key="member.userId"
+        class="flex items-center gap-2 rounded px-2 py-0.5 text-xs text-muted-foreground"
+      >
+        <UserAvatar :src="member.avatar" :alt="member.displayName" size="xs" />
+        <span class="truncate">{{ member.displayName }}</span>
+        <MicOff v-if="member.selfMute" class="ml-auto h-3 w-3 shrink-0 text-destructive/70" />
+      </div>
+    </div>
+
     <DeleteConfirmDialog
       :open="showDeleteDialog"
       title="Delete Channel"
@@ -99,5 +139,21 @@ async function handleDelete() {
       @update:open="showDeleteDialog = $event"
       @confirm="handleDelete"
     />
+
+    <!-- Voice channel switch confirmation -->
+    <AlertDialog :open="showSwitchDialog" @update:open="showSwitchDialog = $event">
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Switch Voice Channel</AlertDialogTitle>
+          <AlertDialogDescription>
+            You're already connected to a voice channel. Switch to {{ channel.name }}?
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction @click="confirmSwitch">Switch</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

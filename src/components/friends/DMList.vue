@@ -2,11 +2,13 @@
 import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
+import { useReadStateStore } from '@/stores/readState'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
 const dmStore = useDirectMessagesStore()
+const readStateStore = useReadStateStore()
 
 onMounted(() => {
   dmStore.fetchDMChannels()
@@ -23,7 +25,9 @@ onMounted(() => {
         'flex w-full items-center gap-3 rounded-lg px-2 py-1.5 transition-colors',
         route.params.dmId === dm.id
           ? 'border-l-2 border-primary bg-accent text-foreground'
-          : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+          : readStateStore.isUnread(dm.id)
+            ? 'font-semibold text-foreground hover:bg-accent/50'
+            : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
       ]"
     >
       <UserAvatar
@@ -38,6 +42,7 @@ onMounted(() => {
           {{ dm.lastMessage.content }}
         </div>
       </div>
+      <span v-if="readStateStore.isUnread(dm.id) && route.params.dmId !== dm.id" class="h-2 w-2 shrink-0 rounded-full bg-primary" />
     </button>
 
     <p v-if="dmStore.dmChannels.length === 0" class="px-2 py-4 text-center text-xs text-muted-foreground">
