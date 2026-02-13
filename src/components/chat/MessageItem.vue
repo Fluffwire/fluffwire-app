@@ -116,6 +116,7 @@ function confirmDelete() {
       showAuthor ? 'mt-4' : '',
     ]"
   >
+    <TooltipProvider>
     <!-- Hover action buttons -->
     <div
       v-if="(isOwnMessage || canDelete) && !isEditing"
@@ -139,7 +140,6 @@ function confirmDelete() {
       </Tooltip>
     </div>
 
-    <TooltipProvider>
       <template v-if="showAuthor">
         <div class="mt-0.5 shrink-0">
           <UserAvatar

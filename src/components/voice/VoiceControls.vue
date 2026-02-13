@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useVoiceStore } from '@/stores/voice'
-import { Toggle } from '@/components/ui/toggle'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff } from 'lucide-vue-next'
@@ -14,15 +13,15 @@ const voiceStore = useVoiceStore()
       <!-- Mute -->
       <Tooltip>
         <TooltipTrigger as-child>
-          <Toggle
-            :pressed="voiceStore.isMuted"
-            @update:pressed="voiceStore.toggleMute()"
-            size="sm"
-            :class="['h-8 w-8 p-0', voiceStore.isMuted ? 'bg-destructive/20 text-destructive' : '']"
+          <Button
+            variant="ghost"
+            size="icon"
+            :class="['h-8 w-8', voiceStore.isMuted ? 'bg-destructive/20 text-destructive hover:bg-destructive/30 hover:text-destructive' : 'text-muted-foreground']"
+            @click="voiceStore.toggleMute()"
           >
             <MicOff v-if="voiceStore.isMuted" class="h-4 w-4" />
             <Mic v-else class="h-4 w-4" />
-          </Toggle>
+          </Button>
         </TooltipTrigger>
         <TooltipContent>{{ voiceStore.isMuted ? 'Unmute' : 'Mute' }}</TooltipContent>
       </Tooltip>
@@ -30,15 +29,15 @@ const voiceStore = useVoiceStore()
       <!-- Deafen -->
       <Tooltip>
         <TooltipTrigger as-child>
-          <Toggle
-            :pressed="voiceStore.isDeafened"
-            @update:pressed="voiceStore.toggleDeafen()"
-            size="sm"
-            :class="['h-8 w-8 p-0', voiceStore.isDeafened ? 'bg-destructive/20 text-destructive' : '']"
+          <Button
+            variant="ghost"
+            size="icon"
+            :class="['h-8 w-8', voiceStore.isDeafened ? 'bg-destructive/20 text-destructive hover:bg-destructive/30 hover:text-destructive' : 'text-muted-foreground']"
+            @click="voiceStore.toggleDeafen()"
           >
             <HeadphoneOff v-if="voiceStore.isDeafened" class="h-4 w-4" />
             <Headphones v-else class="h-4 w-4" />
-          </Toggle>
+          </Button>
         </TooltipTrigger>
         <TooltipContent>{{ voiceStore.isDeafened ? 'Undeafen' : 'Deafen' }}</TooltipContent>
       </Tooltip>
