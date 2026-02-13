@@ -53,6 +53,8 @@ const { isLoadingMore } = useInfiniteScroll(containerRef, loadMore, { direction:
 watch(() => props.channelId, async (id) => {
   if (id) {
     await messagesStore.fetchMessages(id)
+    // Double nextTick: first for Vue reactivity, second for DOM render
+    await nextTick()
     await nextTick()
     scrollToBottom()
     readStateStore.markAsRead(id)

@@ -4,6 +4,7 @@ import type { UserStatus } from '@/types'
 import { wsService } from '@/services/websocket'
 import { WsOpCode } from '@/types/websocket'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { useAuthStore } from '@/stores/auth'
 
 interface PresenceEntry {
   userId: string
@@ -41,6 +42,15 @@ export const usePresenceStore = defineStore('presence', () => {
       op: WsOpCode.PRESENCE_UPDATE,
       d: { status, customStatus },
     })
+    // Update local state immediately (server doesn't echo back to sender)
+    const authStore = useAuthStore()
+    if (authStore.user) {
+      presences.value.set(authStore.user.id, {
+        userId: authStore.user.id,
+        status,
+        customStatus,
+      })
+    }
   }
 
   return {

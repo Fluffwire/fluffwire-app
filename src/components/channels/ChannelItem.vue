@@ -126,8 +126,11 @@ async function handleDelete() {
         :key="member.userId"
         class="flex items-center gap-2 rounded px-2 py-0.5 text-xs text-muted-foreground"
       >
-        <UserAvatar :src="member.avatar" :alt="member.displayName" size="xs" />
-        <span class="truncate">{{ member.displayName }}</span>
+        <div class="relative shrink-0">
+          <UserAvatar :src="member.avatar" :alt="member.displayName" size="xs" />
+          <div v-if="member.speaking" class="absolute inset-0 rounded-full ring-2 ring-primary" />
+        </div>
+        <span :class="['truncate', member.speaking ? 'text-primary font-medium' : '']">{{ member.displayName }}</span>
         <MicOff v-if="member.selfMute" class="ml-auto h-3 w-3 shrink-0 text-destructive/70" />
       </div>
     </div>
