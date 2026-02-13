@@ -12,7 +12,6 @@ import CreateChannelModal from '@/components/channels/CreateChannelModal.vue'
 import EditChannelModal from '@/components/channels/EditChannelModal.vue'
 import CreateCategoryModal from '@/components/channels/CreateCategoryModal.vue'
 import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
-import MobileNav from '@/components/navigation/MobileNav.vue'
 import OfflineBanner from '@/components/common/OfflineBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -23,6 +22,7 @@ import { useVoiceStore } from '@/stores/voice'
 import { useResponsive } from '@/composables/useResponsive'
 import { useNotifications } from '@/composables/useNotifications'
 import { useIdleDetection } from '@/composables/useIdleDetection'
+import { useSwipePanel } from '@/composables/useSwipePanel'
 import { wsService } from '@/services/websocket'
 import { authApi } from '@/services/authApi'
 import { getTokenStorage } from '@/services/tokenStorage'
@@ -36,6 +36,9 @@ const voiceStore = useVoiceStore()
 const { isMobile, isTablet, isDesktop } = useResponsive()
 
 useNotifications()
+
+// Touch swipe to open panels on mobile
+useSwipePanel()
 
 // Idle detection — auto-set idle after 5 minutes of inactivity
 const { isIdle } = useIdleDetection(5 * 60 * 1000)
@@ -129,27 +132,16 @@ const showChannelSidebar = computed(() => !isSettings.value)
       </SheetContent>
     </Sheet>
 
-    <!-- Mobile: server picker Sheet -->
+    <!-- Mobile: combined sidebar Sheet -->
     <Sheet v-if="isMobile" v-model:open="uiStore.isMobileSidebarOpen">
-      <SheetContent side="left" class="w-[72px] p-0">
-        <ServerSidebar is-sheet />
-      </SheetContent>
-    </Sheet>
-
-    <!-- Mobile: channel sidebar Sheet -->
-    <Sheet v-if="isMobile" v-model:open="uiStore.isChannelSidebarOpen">
-      <SheetContent side="left" class="w-60 p-0">
-        <ChannelSidebar is-sheet />
+      <SheetContent side="left" class="w-[312px] p-0 flex">
+        <ServerSidebar class="w-[72px] shrink-0" is-sheet />
+        <ChannelSidebar class="flex-1" is-sheet />
       </SheetContent>
     </Sheet>
 
     <!-- Main content area -->
-    <main
-      :class="[
-        'relative flex min-w-0 flex-1 flex-col bg-background',
-        isMobile ? 'pb-14' : '',
-      ]"
-    >
+    <main class="relative flex min-w-0 flex-1 flex-col bg-background">
       <slot />
     </main>
 
@@ -162,9 +154,6 @@ const showChannelSidebar = computed(() => !isSettings.value)
         <MemberSidebar is-sheet />
       </SheetContent>
     </Sheet>
-
-    <!-- Mobile bottom nav -->
-    <MobileNav v-if="isMobile" />
 
     <!-- Modals -->
     <CreateServerModal />

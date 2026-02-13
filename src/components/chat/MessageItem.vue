@@ -9,10 +9,15 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem,
+  ContextMenuSeparator, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
 import { renderMarkdown } from '@/composables/useMarkdown'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiPicker from './EmojiPicker.vue'
-import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
+import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight, Copy, Link, Hash, Eye } from 'lucide-vue-next'
 
 interface Props {
   message: Message
@@ -34,6 +39,7 @@ const emit = defineEmits<{
   reaction: [messageId: string, emoji: string]
   reply: [message: Message]
   jumpTo: [messageId: string]
+  markUnread: [messageId: string]
 }>()
 
 const isEditing = ref(false)
@@ -138,16 +144,33 @@ function confirmDelete() {
   emit('delete', props.message.id)
   showDeleteDialog.value = false
 }
+
+function copyText() {
+  navigator.clipboard.writeText(props.message.content)
+  toast.success('Copied text to clipboard')
+}
+
+function copyMessageLink() {
+  navigator.clipboard.writeText(window.location.origin + window.location.pathname + '?msg=' + props.message.id)
+  toast.success('Copied message link to clipboard')
+}
+
+function copyMessageId() {
+  navigator.clipboard.writeText(props.message.id)
+  toast.success('Copied message ID to clipboard')
+}
 </script>
 
 <template>
-  <div
-    :data-message-id="message.id"
-    :class="[
-      'group relative flex gap-4 px-4 py-0.5 transition-colors hover:bg-accent/30 rounded-lg mx-2',
-      showAuthor ? 'mt-4' : '',
-    ]"
-  >
+  <ContextMenu>
+    <ContextMenuTrigger as-child>
+      <div
+        :data-message-id="message.id"
+        :class="[
+          'group relative flex gap-4 px-4 py-0.5 transition-colors hover:bg-accent/30 rounded-lg mx-2',
+          showAuthor ? 'mt-4' : '',
+        ]"
+      >
     <TooltipProvider>
     <!-- Hover action buttons -->
     <div
@@ -470,5 +493,41 @@ function confirmDelete() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  </div>
+      </div>
+    </ContextMenuTrigger>
+    <ContextMenuContent class="w-56">
+      <ContextMenuItem class="gap-2" @select="emit('reply', message)">
+        <CornerDownRight class="h-4 w-4" /> Reply
+      </ContextMenuItem>
+      <ContextMenuItem class="gap-2" @select="showReactionPicker = true">
+        <SmilePlus class="h-4 w-4" /> Add Reaction
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem v-if="isOwnMessage" class="gap-2" @select="startEditing()">
+        <Pencil class="h-4 w-4" /> Edit Message
+      </ContextMenuItem>
+      <ContextMenuItem v-if="isOwnMessage || canDelete" class="gap-2" @select="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)">
+        <Pin class="h-4 w-4" /> {{ message.pinned ? 'Unpin Message' : 'Pin Message' }}
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem class="gap-2" @select="emit('markUnread', message.id)">
+        <Eye class="h-4 w-4" /> Mark as Unread
+      </ContextMenuItem>
+      <ContextMenuItem class="gap-2" @select="copyText()">
+        <Copy class="h-4 w-4" /> Copy Text
+      </ContextMenuItem>
+      <ContextMenuItem class="gap-2" @select="copyMessageLink()">
+        <Link class="h-4 w-4" /> Copy Message Link
+      </ContextMenuItem>
+      <ContextMenuItem class="gap-2" @select="copyMessageId()">
+        <Hash class="h-4 w-4" /> Copy Message ID
+      </ContextMenuItem>
+      <template v-if="isOwnMessage || canDelete">
+        <ContextMenuSeparator />
+        <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @select="showDeleteDialog = true">
+          <Trash2 class="h-4 w-4" /> Delete Message
+        </ContextMenuItem>
+      </template>
+    </ContextMenuContent>
+  </ContextMenu>
 </template>

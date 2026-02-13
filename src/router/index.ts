@@ -15,6 +15,12 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'auth', requiresAuth: false },
   },
   {
+    path: '/login/2fa',
+    name: 'TwoFactor',
+    component: () => import('@/views/auth/TwoFactorView.vue'),
+    meta: { layout: 'auth', requiresAuth: false },
+  },
+  {
     path: '/channels/@me',
     name: 'Home',
     component: () => import('@/views/app/FriendsView.vue'),

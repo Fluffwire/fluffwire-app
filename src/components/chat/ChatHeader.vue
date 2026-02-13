@@ -35,7 +35,7 @@ function openInviteModal() {
         variant="ghost"
         size="icon"
         class="h-8 w-8"
-        @click="uiStore.isChannelSidebarOpen = true"
+        @click="isMobile ? (uiStore.isMobileSidebarOpen = true) : (uiStore.isChannelSidebarOpen = true)"
       >
         <Menu class="h-5 w-5" />
       </Button>

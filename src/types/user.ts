@@ -14,6 +14,22 @@ export interface User {
 export interface CurrentUser extends User {
   email: string
   deleteScheduledAt?: string | null
+  totpEnabled: boolean
+}
+
+export interface SessionInfo {
+  id: string
+  userAgent: string
+  ipAddress: string
+  createdAt: string
+  lastUsedAt: string
+  isCurrent: boolean
+}
+
+export interface TotpSetup {
+  secret: string
+  qrUri: string
+  backupCodes: string[]
 }
 
 export interface UserSettings {
@@ -24,6 +40,13 @@ export interface UserSettings {
   outputVolume: number
   noiseSuppression: boolean
   echoCancellation: boolean
+  serverOrder: string[]
+  userStatus: string
+  voiceMode: 'voice-activity' | 'push-to-talk'
+  vadThreshold: number
+  pttKey: string
+  notificationSound: boolean
+  notificationDesktop: boolean
 }
 
 export interface AuthTokens {

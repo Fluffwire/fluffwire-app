@@ -3,7 +3,7 @@ import { API } from '@/constants/endpoints'
 import type { LoginCredentials, RegisterCredentials, AuthTokens, CurrentUser } from '@/types'
 
 export const authApi = {
-  login(credentials: LoginCredentials): Promise<{ data: AuthTokens & { user: CurrentUser } }> {
+  login(credentials: LoginCredentials): Promise<{ data: AuthTokens & { user: CurrentUser } & { requiresTwoFactor?: boolean; ticket?: string } }> {
     return api.post(API.AUTH.LOGIN, credentials)
   },
 

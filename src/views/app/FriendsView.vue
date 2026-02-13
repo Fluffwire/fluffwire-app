@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useFriendsStore } from '@/stores/friends'
+import { useUiStore } from '@/stores/ui'
+import { useResponsive } from '@/composables/useResponsive'
 import FriendsList from '@/components/friends/FriendsList.vue'
 import AddFriendForm from '@/components/friends/AddFriendForm.vue'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
-import { Users } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { Users, Menu } from 'lucide-vue-next'
 
 const friendsStore = useFriendsStore()
+const uiStore = useUiStore()
+const { isMobile, isTablet } = useResponsive()
 
 const activeTab = ref('online')
 
@@ -22,7 +27,16 @@ const pendingCount = computed(() => friendsStore.pendingRequests.length)
 <template>
   <div class="flex h-full flex-col">
     <!-- Header -->
-    <div class="flex h-12 items-center gap-4 border-b border-primary/20 px-4">
+    <div class="flex h-12 items-center gap-2 border-b border-primary/20 px-4">
+      <Button
+        v-if="isTablet || isMobile"
+        variant="ghost"
+        size="icon"
+        class="h-8 w-8"
+        @click="isMobile ? (uiStore.isMobileSidebarOpen = true) : (uiStore.isChannelSidebarOpen = true)"
+      >
+        <Menu class="h-5 w-5" />
+      </Button>
       <Users class="h-5 w-5 text-muted-foreground" />
       <h3 class="font-semibold text-foreground">Friends</h3>
     </div>

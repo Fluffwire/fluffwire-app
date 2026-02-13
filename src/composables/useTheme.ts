@@ -86,6 +86,13 @@ export function useTheme() {
     currentTheme.value = name
     localStorage.setItem(STORAGE_KEY, name)
 
+    import('@/stores/settings').then(({ useSettingsStore }) => {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.isFetched) {
+        settingsStore.updateSetting({ theme: name as 'dark' | 'light' })
+      }
+    })
+
     // Remove transition class after animation completes
     setTimeout(() => el.classList.remove('theme-transitioning'), 350)
   }

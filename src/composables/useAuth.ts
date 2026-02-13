@@ -8,7 +8,11 @@ export function useAuth() {
 
   async function login(credentials: LoginCredentials, rememberMe = true) {
     try {
-      await authStore.login(credentials, rememberMe)
+      const result = await authStore.login(credentials, rememberMe)
+      if (result === '2fa') {
+        router.push('/login/2fa')
+        return
+      }
       const redirect = router.currentRoute.value.query.redirect as string
       router.push(redirect || '/channels/@me')
     } catch {

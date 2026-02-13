@@ -290,6 +290,16 @@ export const useVoiceStore = defineStore('voice', () => {
       pttKey: pttKey.value,
     }))
     webrtcService.saveVoiceSettings()
+    import('@/stores/settings').then(({ useSettingsStore }) => {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.isFetched) {
+        settingsStore.updateSetting({
+          voiceMode: voiceMode.value,
+          vadThreshold: vadThreshold.value,
+          pttKey: pttKey.value,
+        })
+      }
+    })
   }
 
   return {

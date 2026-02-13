@@ -19,11 +19,13 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useVoiceStore } from '@/stores/voice'
 import { webrtcService } from '@/services/webrtc'
-import type { MediaDeviceOption } from '@/types'
+import type { MediaDeviceOption, TotpSetup, SessionInfo } from '@/types'
+import api from '@/services/api'
+import { API } from '@/constants/endpoints'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -230,6 +232,167 @@ function handleLogout() {
   router.push('/login')
 }
 
+// --- Security tab state ---
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordSaving = ref(false)
+const showCurrentPassword = ref(false)
+const showNewPassword = ref(false)
+
+async function handleChangePassword() {
+  if (!currentPassword.value || !newPassword.value) return
+  if (newPassword.value !== confirmPassword.value) {
+    toast.error('Passwords do not match')
+    return
+  }
+  if (newPassword.value.length < 8) {
+    toast.error('Password must be at least 8 characters')
+    return
+  }
+  passwordSaving.value = true
+  try {
+    await authStore.changePassword(currentPassword.value, newPassword.value)
+    toast.success('Password changed successfully')
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    toast.error(err.response?.data?.message || 'Failed to change password')
+  } finally {
+    passwordSaving.value = false
+  }
+}
+
+// 2FA state
+const totpSetup = ref<TotpSetup | null>(null)
+const totpEnableCode = ref('')
+const totpEnabling = ref(false)
+const totpDisableCode = ref('')
+const totpDisablePassword = ref('')
+const totpDisabling = ref(false)
+const showBackupCodes = ref(false)
+const backupCodes = ref<string[]>([])
+
+async function handleSetupTotp() {
+  try {
+    const { data } = await api.post<TotpSetup>(API.USERS.TOTP_SETUP)
+    totpSetup.value = data
+    totpEnableCode.value = ''
+  } catch {
+    toast.error('Failed to generate 2FA setup')
+  }
+}
+
+async function handleEnableTotp() {
+  if (!totpSetup.value || !totpEnableCode.value.trim()) return
+  totpEnabling.value = true
+  try {
+    const { data } = await api.post<{ backupCodes: string[] }>(API.USERS.TOTP_ENABLE, {
+      secret: totpSetup.value.secret,
+      code: totpEnableCode.value.trim(),
+    })
+    if (authStore.user) authStore.user.totpEnabled = true
+    backupCodes.value = data.backupCodes
+    showBackupCodes.value = true
+    totpSetup.value = null
+    totpEnableCode.value = ''
+    toast.success('Two-factor authentication enabled')
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    toast.error(err.response?.data?.message || 'Invalid code')
+  } finally {
+    totpEnabling.value = false
+  }
+}
+
+async function handleDisableTotp() {
+  if (!totpDisablePassword.value || !totpDisableCode.value.trim()) return
+  totpDisabling.value = true
+  try {
+    await api.post(API.USERS.TOTP_DISABLE, {
+      password: totpDisablePassword.value,
+      code: totpDisableCode.value.trim(),
+    })
+    if (authStore.user) authStore.user.totpEnabled = false
+    totpDisableCode.value = ''
+    totpDisablePassword.value = ''
+    toast.success('Two-factor authentication disabled')
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { message?: string } } }
+    toast.error(err.response?.data?.message || 'Failed to disable 2FA')
+  } finally {
+    totpDisabling.value = false
+  }
+}
+
+function copyBackupCodes() {
+  navigator.clipboard.writeText(backupCodes.value.join('\n'))
+  toast.success('Backup codes copied to clipboard')
+}
+
+// Sessions state
+const sessions = ref<SessionInfo[]>([])
+const sessionsLoading = ref(false)
+const revokingSession = ref<string | null>(null)
+const revokingAll = ref(false)
+
+async function loadSessions() {
+  sessionsLoading.value = true
+  try {
+    sessions.value = await authStore.fetchSessions()
+  } catch {
+    toast.error('Failed to load sessions')
+  } finally {
+    sessionsLoading.value = false
+  }
+}
+
+async function handleRevokeSession(sessionId: string) {
+  revokingSession.value = sessionId
+  try {
+    await authStore.revokeSession(sessionId)
+    sessions.value = sessions.value.filter(s => s.id !== sessionId)
+    toast.success('Session revoked')
+  } catch {
+    toast.error('Failed to revoke session')
+  } finally {
+    revokingSession.value = null
+  }
+}
+
+async function handleRevokeAllSessions() {
+  revokingAll.value = true
+  try {
+    await authStore.revokeAllSessions()
+    sessions.value = sessions.value.filter(s => s.isCurrent)
+    toast.success('All other sessions revoked')
+  } catch {
+    toast.error('Failed to revoke sessions')
+  } finally {
+    revokingAll.value = false
+  }
+}
+
+function getDeviceIcon(userAgent: string) {
+  const ua = userAgent.toLowerCase()
+  if (ua.includes('mobile') || ua.includes('android') || ua.includes('iphone')) return Smartphone
+  return Monitor
+}
+
+function formatSessionDate(date: string) {
+  return new Date(date).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  })
+}
+
+// Load sessions when security tab is opened
+watch(activeTab, (tab) => {
+  if (tab === 'security') loadSessions()
+})
+
 function close() {
   router.back()
 }
@@ -245,6 +408,7 @@ const tabs = [
   { key: 'account', label: 'My Account', icon: User },
   { key: 'voice', label: 'Voice & Audio', icon: Volume2 },
   { key: 'notifications', label: 'Notifications', icon: Bell },
+  { key: 'security', label: 'Security', icon: Shield },
   { key: 'appearance', label: 'Appearance', icon: Palette },
 ]
 
@@ -692,6 +856,259 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <p v-if="desktopPermissionDenied" class="mt-2 text-sm text-destructive">
                     Notification permission was denied by the browser. Please allow notifications in your browser settings.
                   </p>
+                </CardContent>
+              </Card>
+            </template>
+
+            <!-- Security -->
+            <template v-if="activeTab === 'security'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">Security</h2>
+
+              <!-- Change Password -->
+              <Card class="mb-4">
+                <CardHeader>
+                  <CardTitle class="text-base">Change Password</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                  <div class="space-y-2">
+                    <Label for="current-password">Current Password</Label>
+                    <div class="relative">
+                      <Input
+                        id="current-password"
+                        v-model="currentPassword"
+                        :type="showCurrentPassword ? 'text' : 'password'"
+                        placeholder="Enter current password"
+                        autocomplete="current-password"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        @click="showCurrentPassword = !showCurrentPassword"
+                      >
+                        <component :is="showCurrentPassword ? EyeOff : Eye" class="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="new-password">New Password</Label>
+                    <div class="relative">
+                      <Input
+                        id="new-password"
+                        v-model="newPassword"
+                        :type="showNewPassword ? 'text' : 'password'"
+                        placeholder="Enter new password"
+                        autocomplete="new-password"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        @click="showNewPassword = !showNewPassword"
+                      >
+                        <component :is="showNewPassword ? EyeOff : Eye" class="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div class="space-y-2">
+                    <Label for="confirm-password">Confirm New Password</Label>
+                    <Input
+                      id="confirm-password"
+                      v-model="confirmPassword"
+                      type="password"
+                      placeholder="Confirm new password"
+                      autocomplete="new-password"
+                    />
+                    <p v-if="confirmPassword && newPassword !== confirmPassword" class="text-xs text-destructive">
+                      Passwords do not match
+                    </p>
+                  </div>
+                  <Button
+                    :disabled="!currentPassword || !newPassword || newPassword !== confirmPassword || passwordSaving"
+                    @click="handleChangePassword"
+                    size="sm"
+                  >
+                    <Loader2 v-if="passwordSaving" class="mr-2 h-4 w-4 animate-spin" />
+                    Change Password
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <!-- Two-Factor Authentication -->
+              <Card class="mb-4">
+                <CardHeader>
+                  <CardTitle class="text-base">Two-Factor Authentication</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                  <template v-if="!authStore.user?.totpEnabled">
+                    <p class="text-sm text-muted-foreground">
+                      Add an extra layer of security to your account by requiring a verification code from your authenticator app.
+                    </p>
+
+                    <!-- Setup flow -->
+                    <template v-if="!totpSetup">
+                      <Button @click="handleSetupTotp" size="sm">
+                        <Shield class="mr-2 h-4 w-4" />
+                        Enable Two-Factor Auth
+                      </Button>
+                    </template>
+
+                    <template v-else>
+                      <div class="space-y-4">
+                        <p class="text-sm text-foreground">Scan this QR code with your authenticator app:</p>
+                        <div class="flex justify-center rounded-lg bg-white p-4">
+                          <img :src="totpSetup.qrUri" alt="QR Code" class="h-48 w-48" />
+                        </div>
+                        <div class="space-y-1">
+                          <p class="text-xs text-muted-foreground">Or enter this secret manually:</p>
+                          <code class="block break-all rounded bg-muted px-3 py-2 text-sm">{{ totpSetup.secret }}</code>
+                        </div>
+                        <div class="space-y-2">
+                          <Label for="totp-verify-code">Enter verification code</Label>
+                          <Input
+                            id="totp-verify-code"
+                            v-model="totpEnableCode"
+                            placeholder="6-digit code"
+                            maxlength="6"
+                            class="text-center text-lg tracking-widest"
+                          />
+                        </div>
+                        <div class="flex gap-2">
+                          <Button
+                            :disabled="!totpEnableCode.trim() || totpEnabling"
+                            @click="handleEnableTotp"
+                            size="sm"
+                          >
+                            <Loader2 v-if="totpEnabling" class="mr-2 h-4 w-4 animate-spin" />
+                            Verify & Enable
+                          </Button>
+                          <Button variant="ghost" size="sm" @click="totpSetup = null">
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    </template>
+                  </template>
+
+                  <template v-else>
+                    <div class="flex items-center gap-2 rounded-lg bg-primary/10 p-3">
+                      <Shield class="h-5 w-5 text-primary" />
+                      <span class="text-sm font-medium text-primary">Two-factor authentication is enabled</span>
+                    </div>
+
+                    <div class="space-y-3 border-t border-border pt-4">
+                      <p class="text-sm text-muted-foreground">To disable 2FA, enter your password and a verification code.</p>
+                      <div class="space-y-2">
+                        <Label for="totp-disable-password">Password</Label>
+                        <Input
+                          id="totp-disable-password"
+                          v-model="totpDisablePassword"
+                          type="password"
+                          placeholder="Enter your password"
+                        />
+                      </div>
+                      <div class="space-y-2">
+                        <Label for="totp-disable-code">Verification Code</Label>
+                        <Input
+                          id="totp-disable-code"
+                          v-model="totpDisableCode"
+                          placeholder="6-digit code"
+                          maxlength="8"
+                          class="text-center text-lg tracking-widest"
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        :disabled="!totpDisablePassword || !totpDisableCode.trim() || totpDisabling"
+                        @click="handleDisableTotp"
+                      >
+                        <Loader2 v-if="totpDisabling" class="mr-2 h-4 w-4 animate-spin" />
+                        Disable Two-Factor Auth
+                      </Button>
+                    </div>
+                  </template>
+
+                  <!-- Backup codes modal -->
+                  <template v-if="showBackupCodes">
+                    <div class="space-y-3 border-t border-border pt-4">
+                      <div class="flex items-start gap-2">
+                        <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+                        <div>
+                          <h4 class="text-sm font-semibold text-foreground">Save Your Backup Codes</h4>
+                          <p class="text-sm text-muted-foreground">
+                            Store these codes in a safe place. Each code can only be used once to sign in if you lose access to your authenticator app.
+                          </p>
+                        </div>
+                      </div>
+                      <div class="rounded-lg bg-muted p-4 font-mono text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                          <span v-for="code in backupCodes" :key="code">{{ code }}</span>
+                        </div>
+                      </div>
+                      <Button variant="outline" size="sm" class="gap-2" @click="copyBackupCodes">
+                        <Copy class="h-4 w-4" />
+                        Copy Codes
+                      </Button>
+                    </div>
+                  </template>
+                </CardContent>
+              </Card>
+
+              <!-- Active Sessions -->
+              <Card>
+                <CardHeader class="flex-row items-center justify-between space-y-0">
+                  <CardTitle class="text-base">Active Sessions</CardTitle>
+                  <Button
+                    v-if="sessions.length > 1"
+                    variant="outline"
+                    size="sm"
+                    :disabled="revokingAll"
+                    @click="handleRevokeAllSessions"
+                  >
+                    <Loader2 v-if="revokingAll" class="mr-2 h-4 w-4 animate-spin" />
+                    Log Out All Other Devices
+                  </Button>
+                </CardHeader>
+                <CardContent class="space-y-3">
+                  <div v-if="sessionsLoading" class="flex items-center justify-center py-8">
+                    <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />
+                  </div>
+                  <template v-else>
+                    <div
+                      v-for="session in sessions"
+                      :key="session.id"
+                      class="flex items-center gap-3 rounded-lg border border-border p-3"
+                    >
+                      <component :is="getDeviceIcon(session.userAgent)" class="h-5 w-5 shrink-0 text-muted-foreground" />
+                      <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2">
+                          <p class="truncate text-sm font-medium text-foreground">{{ session.userAgent || 'Unknown device' }}</p>
+                          <span
+                            v-if="session.isCurrent"
+                            class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                          >
+                            Current
+                          </span>
+                        </div>
+                        <p class="text-xs text-muted-foreground">
+                          {{ session.ipAddress }} &middot; Last active {{ formatSessionDate(session.lastUsedAt) }}
+                        </p>
+                      </div>
+                      <Button
+                        v-if="!session.isCurrent"
+                        variant="ghost"
+                        size="sm"
+                        class="shrink-0 text-destructive hover:text-destructive"
+                        :disabled="revokingSession === session.id"
+                        @click="handleRevokeSession(session.id)"
+                      >
+                        <Loader2 v-if="revokingSession === session.id" class="mr-1 h-3 w-3 animate-spin" />
+                        Revoke
+                      </Button>
+                    </div>
+                    <p v-if="!sessions.length" class="py-4 text-center text-sm text-muted-foreground">
+                      No active sessions found
+                    </p>
+                  </template>
                 </CardContent>
               </Card>
             </template>

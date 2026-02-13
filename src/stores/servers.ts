@@ -44,6 +44,16 @@ export const useServersStore = defineStore('servers', () => {
     localStorage.setItem(SERVER_ORDER_KEY, JSON.stringify(ids))
   }
 
+  function saveServerOrderAndSync(ids: string[]) {
+    saveServerOrder(ids)
+    import('@/stores/settings').then(({ useSettingsStore }) => {
+      const settingsStore = useSettingsStore()
+      if (settingsStore.isFetched) {
+        settingsStore.updateSetting({ serverOrder: ids })
+      }
+    })
+  }
+
   function setServers(data: Server[]) {
     servers.value = data
   }
@@ -125,5 +135,6 @@ export const useServersStore = defineStore('servers', () => {
     deleteServer,
     leaveServer,
     saveServerOrder,
+    saveServerOrderAndSync,
   }
 })

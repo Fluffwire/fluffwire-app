@@ -5,6 +5,10 @@ export const API = {
     REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
     ME: '/auth/me',
+    SESSIONS: '/auth/sessions',
+    SESSION_BY_ID: (id: string) => `/auth/sessions/${id}`,
+    REVOKE_ALL: '/auth/sessions/revoke-all',
+    VERIFY_2FA: '/auth/2fa/verify',
   },
   USERS: {
     BASE: '/users',
@@ -13,6 +17,10 @@ export const API = {
     SETTINGS: '/users/@me/settings',
     DELETE_ACCOUNT: '/users/@me',
     CANCEL_DELETION: '/users/@me/cancel-deletion',
+    CHANGE_PASSWORD: '/users/@me/password',
+    TOTP_SETUP: '/users/@me/totp/setup',
+    TOTP_ENABLE: '/users/@me/totp/enable',
+    TOTP_DISABLE: '/users/@me/totp/disable',
   },
   SERVERS: {
     BASE: '/servers',

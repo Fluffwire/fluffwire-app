@@ -63,6 +63,12 @@ export const usePresenceStore = defineStore('presence', () => {
       userChosenStatus.value = status
       isAutoIdle.value = false
       localStorage.setItem('fluffwire-user-status', status)
+      import('@/stores/settings').then(({ useSettingsStore }) => {
+        const settingsStore = useSettingsStore()
+        if (settingsStore.isFetched) {
+          settingsStore.updateSetting({ userStatus: status })
+        }
+      })
     }
   }
 

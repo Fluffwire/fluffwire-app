@@ -53,7 +53,7 @@ onMounted(() => {
           const id = (el as HTMLElement).dataset.serverId
           if (id) ids.push(id)
         })
-        serversStore.saveServerOrder(ids)
+        serversStore.saveServerOrderAndSync(ids)
       },
     })
   }

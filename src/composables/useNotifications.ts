@@ -20,6 +20,12 @@ function setSoundEnabled(value: boolean) {
   soundEnabled.value = value
   localStorage.setItem(STORAGE_KEYS.sound, String(value))
   soundManager.setEnabled(value)
+  import('@/stores/settings').then(({ useSettingsStore }) => {
+    const settingsStore = useSettingsStore()
+    if (settingsStore.isFetched) {
+      settingsStore.updateSetting({ notificationSound: value })
+    }
+  })
 }
 
 async function setDesktopEnabled(value: boolean) {
@@ -33,6 +39,12 @@ async function setDesktopEnabled(value: boolean) {
   }
   desktopEnabled.value = value
   localStorage.setItem(STORAGE_KEYS.desktop, String(value))
+  import('@/stores/settings').then(({ useSettingsStore }) => {
+    const settingsStore = useSettingsStore()
+    if (settingsStore.isFetched) {
+      settingsStore.updateSetting({ notificationDesktop: value })
+    }
+  })
   return true
 }
 

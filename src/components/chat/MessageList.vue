@@ -50,6 +50,20 @@ function handleReply(message: import('@/types').Message) {
 function handleJumpTo(messageId: string) {
   scrollToMessage(messageId)
 }
+
+function handleMarkUnread(messageId: string) {
+  // Find the message before this one to set as last read
+  const msgs = messages.value
+  const idx = msgs.findIndex(m => m.id === messageId)
+  if (idx <= 0) return
+  const previousMessageId = msgs[idx - 1]!.id
+  readStateStore.readStates.set(props.channelId, previousMessageId)
+  // Ensure latestMessageIds has the actual latest so unreadChannels reacts
+  const latest = msgs[msgs.length - 1]
+  if (latest) {
+    readStateStore.latestMessageIds.set(props.channelId, latest.id)
+  }
+}
 const containerRef = ref<HTMLElement | null>(null)
 const scrollEnabled = ref(false)
 const showJumpButton = ref(false)
@@ -188,6 +202,7 @@ defineExpose({ scrollToMessage })
           @reaction="handleReaction"
           @reply="handleReply"
           @jump-to="handleJumpTo"
+          @mark-unread="handleMarkUnread"
         />
         <!-- New Messages divider -->
         <div
