@@ -53,7 +53,24 @@ export const useVoiceStore = defineStore('voice', () => {
       webrtcService.setPttActive(false)
     }
   }
+  // Mute/Deafen keyboard shortcuts
+  function handleShortcut(e: KeyboardEvent) {
+    if (!currentChannelId.value) return
+    // Ignore if typing in an input/textarea/contenteditable
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
+    const mod = e.ctrlKey || e.metaKey
+    if (mod && e.key.toLowerCase() === 'm') {
+      e.preventDefault()
+      toggleMute()
+    } else if (mod && e.key.toLowerCase() === 'd') {
+      e.preventDefault()
+      toggleDeafen()
+    }
+  }
+
   window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keydown', handleShortcut)
   window.addEventListener('keyup', handleKeyUp)
 
   const isInVoice = computed(() => currentChannelId.value !== null)

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import type { MemberWithUser } from '@/stores/members'
 import { usePresenceStore } from '@/stores/presence'
 import { useServersStore } from '@/stores/servers'
 import { useAuthStore } from '@/stores/auth'
+import { useRolesStore } from '@/stores/roles'
 import { serverApi } from '@/services/serverApi'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserProfilePopover from '@/components/common/UserProfilePopover.vue'
@@ -25,12 +27,14 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const presenceStore = usePresenceStore()
 const serversStore = useServersStore()
 const authStore = useAuthStore()
 const dmStore = useDirectMessagesStore()
+const rolesStore = useRolesStore()
 
 const serverId = computed(() => route.params.serverId as string)
 const isOwner = computed(() => serversStore.currentServer?.ownerId === authStore.user?.id)
@@ -44,7 +48,7 @@ async function handleKick() {
     await serverApi.kickMember(serverId.value, props.member.userId)
     toast.success(`Kicked ${props.member.user?.displayName}`)
   } catch {
-    toast.error('Failed to kick member')
+    toast.error(t('members.failedKick'))
   }
   showKickDialog.value = false
 }
@@ -54,7 +58,7 @@ async function handleBan() {
     await serverApi.banMember(serverId.value, props.member.userId)
     toast.success(`Banned ${props.member.user?.displayName}`)
   } catch {
-    toast.error('Failed to ban member')
+    toast.error(t('members.failedBan'))
   }
   showBanDialog.value = false
 }
@@ -66,8 +70,23 @@ async function openDM() {
 
 function copyUserId() {
   navigator.clipboard.writeText(props.member.userId)
-  toast.success('User ID copied')
+  toast.success(t('members.userIdCopied'))
 }
+
+const memberRoleColor = computed(() => {
+  if (!props.member.roles?.length) return undefined
+  const serverRoles = rolesStore.getRoles(serverId.value)
+  if (!serverRoles.length) return undefined
+  // Find the highest positioned role (lowest position number) that has a color
+  let bestRole: { color?: string; position: number } | null = null
+  for (const roleId of props.member.roles) {
+    const role = serverRoles.find(r => r.id === roleId)
+    if (role?.color && (bestRole === null || role.position < bestRole.position)) {
+      bestRole = role
+    }
+  }
+  return bestRole?.color
+})
 
 const profileUser = computed(() => ({
   id: props.member.userId,
@@ -91,7 +110,11 @@ const profileUser = computed(() => ({
             :status="presenceStore.getStatus(member.userId)"
           />
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-medium text-muted-foreground">
+            <div
+              class="truncate text-sm font-medium"
+              :class="memberRoleColor ? '' : 'text-muted-foreground'"
+              :style="memberRoleColor ? { color: memberRoleColor } : undefined"
+            >
               {{ member.nickname ?? member.user?.displayName ?? 'Unknown' }}
             </div>
           </div>
@@ -102,21 +125,21 @@ const profileUser = computed(() => ({
     <ContextMenuContent class="w-48">
       <ContextMenuItem v-if="!isSelf" class="gap-2" @click="openDM">
         <MessageSquare class="h-4 w-4" />
-        Message
+        {{ $t('friends.message') }}
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @click="copyUserId">
         <Copy class="h-4 w-4" />
-        Copy User ID
+        {{ $t('members.copyUserId') }}
       </ContextMenuItem>
       <template v-if="isOwner && !isSelf">
         <ContextMenuSeparator />
         <ContextMenuItem class="gap-2 text-destructive" @click="showKickDialog = true">
           <UserX class="h-4 w-4" />
-          Kick
+          {{ $t('members.kickMember') }}
         </ContextMenuItem>
         <ContextMenuItem class="gap-2 text-destructive" @click="showBanDialog = true">
           <Ban class="h-4 w-4" />
-          Ban
+          {{ $t('members.banMember') }}
         </ContextMenuItem>
       </template>
     </ContextMenuContent>
@@ -132,9 +155,9 @@ const profileUser = computed(() => ({
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleKick">
-          Kick
+          {{ $t('members.kickMember') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
@@ -150,9 +173,9 @@ const profileUser = computed(() => ({
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleBan">
-          Ban
+          {{ $t('members.banMember') }}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

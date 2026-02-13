@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useChannelsStore } from '@/stores/channels'
 import { useUiStore } from '@/stores/ui'
@@ -17,6 +18,7 @@ import {
 import { Loader2, Hash, Headphones } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
+const { t } = useI18n()
 const route = useRoute()
 const channelsStore = useChannelsStore()
 const uiStore = useUiStore()
@@ -52,11 +54,11 @@ async function handleCreate() {
       type: channelType.value,
       categoryId: selectedCategoryId.value !== 'none' ? selectedCategoryId.value : undefined,
     })
-    toast.success('Channel created')
+    toast.success(t('channel.channelCreated'))
     uiStore.closeModal()
     channelName.value = ''
   } catch {
-    toast.error('Failed to create channel')
+    toast.error(t('channel.failedCreateChannel'))
   } finally {
     isLoading.value = false
   }
@@ -67,12 +69,12 @@ async function handleCreate() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Create Channel</DialogTitle>
+        <DialogTitle>{{ $t('channel.createChannel') }}</DialogTitle>
       </DialogHeader>
 
       <form @submit.prevent="handleCreate" class="space-y-4">
         <div class="space-y-2">
-          <Label>Channel Type</Label>
+          <Label>{{ $t('channel.channelType') }}</Label>
           <RadioGroup v-model="channelType" class="grid grid-cols-2 gap-2">
             <Label
               for="type-text"
@@ -86,8 +88,8 @@ async function handleCreate() {
               <RadioGroupItem id="type-text" value="text" class="sr-only" />
               <Hash class="h-5 w-5 text-muted-foreground" />
               <div>
-                <div class="text-sm font-medium text-foreground">Text</div>
-                <div class="text-xs text-muted-foreground">Messages & media</div>
+                <div class="text-sm font-medium text-foreground">{{ $t('channel.text') }}</div>
+                <div class="text-xs text-muted-foreground">{{ $t('channel.textDesc') }}</div>
               </div>
             </Label>
 
@@ -103,25 +105,25 @@ async function handleCreate() {
               <RadioGroupItem id="type-voice" value="voice" class="sr-only" />
               <Headphones class="h-5 w-5 text-muted-foreground" />
               <div>
-                <div class="text-sm font-medium text-foreground">Voice</div>
-                <div class="text-xs text-muted-foreground">Voice chat</div>
+                <div class="text-sm font-medium text-foreground">{{ $t('channel.voice') }}</div>
+                <div class="text-xs text-muted-foreground">{{ $t('channel.voiceDesc') }}</div>
               </div>
             </Label>
           </RadioGroup>
         </div>
 
         <div class="space-y-2">
-          <Label for="channel-name">Channel Name</Label>
+          <Label for="channel-name">{{ $t('channel.channelName') }}</Label>
           <Input
             id="channel-name"
             v-model="channelName"
-            placeholder="new-channel"
+            :placeholder="$t('channel.channelNamePlaceholder')"
             required
           />
         </div>
 
         <div v-if="channelsStore.categories.length > 0" class="space-y-2">
-          <Label>Category</Label>
+          <Label>{{ $t('channel.createCategory') }}</Label>
           <Select v-model="selectedCategoryId">
             <SelectTrigger>
               <SelectValue placeholder="No category" />
@@ -140,10 +142,10 @@ async function handleCreate() {
         </div>
 
         <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">Cancel</Button>
+          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
           <Button type="submit" :disabled="isLoading">
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Create Channel
+            {{ $t('channel.createChannel') }}
           </Button>
         </DialogFooter>
       </form>

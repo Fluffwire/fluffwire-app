@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { User } from '@/types'
 import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
@@ -31,6 +32,7 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), { side: 'right', disableContextMenu: false })
 
+const { t } = useI18n()
 const authStore = useAuthStore()
 const presenceStore = usePresenceStore()
 const friendsStore = useFriendsStore()
@@ -92,7 +94,7 @@ async function addFriend() {
 
 function copyUserId() {
   navigator.clipboard.writeText(props.user.id)
-  toast.success('Copied user ID')
+  toast.success(t('members.copiedUserId'))
 }
 </script>
 
@@ -119,21 +121,21 @@ function copyUserId() {
           </div>
           <Separator class="my-3" />
           <div v-if="bio" class="mb-3">
-            <div class="text-[11px] font-semibold uppercase text-muted-foreground">About Me</div>
+            <div class="text-[11px] font-semibold uppercase text-muted-foreground">{{ $t('settings.aboutMe') }}</div>
             <div class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ bio }}</div>
           </div>
           <div v-if="joinedDate">
-            <div class="text-[11px] font-semibold uppercase text-muted-foreground">Member Since</div>
+            <div class="text-[11px] font-semibold uppercase text-muted-foreground">{{ $t('members.memberSince') }}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{{ joinedDate }}</div>
           </div>
           <div v-if="!isOwnProfile" class="mt-3 flex gap-2">
             <Button size="sm" variant="secondary" class="flex-1 gap-1.5" @click="sendMessage">
               <MessageSquare class="h-3.5 w-3.5" />
-              Message
+              {{ $t('friends.message') }}
             </Button>
             <Button v-if="!isFriend" size="sm" variant="outline" class="flex-1 gap-1.5" @click="addFriend">
               <UserPlus class="h-3.5 w-3.5" />
-              Add Friend
+              {{ $t('friends.addFriend') }}
             </Button>
           </div>
         </div>
@@ -165,21 +167,21 @@ function copyUserId() {
           </div>
           <Separator class="my-3" />
           <div v-if="bio" class="mb-3">
-            <div class="text-[11px] font-semibold uppercase text-muted-foreground">About Me</div>
+            <div class="text-[11px] font-semibold uppercase text-muted-foreground">{{ $t('settings.aboutMe') }}</div>
             <div class="mt-1 text-sm text-foreground whitespace-pre-wrap">{{ bio }}</div>
           </div>
           <div v-if="joinedDate">
-            <div class="text-[11px] font-semibold uppercase text-muted-foreground">Member Since</div>
+            <div class="text-[11px] font-semibold uppercase text-muted-foreground">{{ $t('members.memberSince') }}</div>
             <div class="mt-0.5 text-xs text-muted-foreground">{{ joinedDate }}</div>
           </div>
           <div v-if="!isOwnProfile" class="mt-3 flex gap-2">
             <Button size="sm" variant="secondary" class="flex-1 gap-1.5" @click="sendMessage">
               <MessageSquare class="h-3.5 w-3.5" />
-              Message
+              {{ $t('friends.message') }}
             </Button>
             <Button v-if="!isFriend" size="sm" variant="outline" class="flex-1 gap-1.5" @click="addFriend">
               <UserPlus class="h-3.5 w-3.5" />
-              Add Friend
+              {{ $t('friends.addFriend') }}
             </Button>
           </div>
         </div>
@@ -189,16 +191,16 @@ function copyUserId() {
     <ContextMenuContent class="w-48">
       <ContextMenuItem v-if="!isOwnProfile" @click="sendMessage" class="gap-2">
         <MessageSquare class="h-4 w-4" />
-        Message
+        {{ $t('friends.message') }}
       </ContextMenuItem>
       <ContextMenuItem v-if="!isOwnProfile && !isFriend" @click="addFriend" class="gap-2">
         <UserPlus class="h-4 w-4" />
-        Add Friend
+        {{ $t('friends.addFriend') }}
       </ContextMenuItem>
       <ContextMenuSeparator v-if="!isOwnProfile" />
       <ContextMenuItem @click="copyUserId" class="gap-2">
         <Copy class="h-4 w-4" />
-        Copy User ID
+        {{ $t('members.copyUserId') }}
       </ContextMenuItem>
     </ContextMenuContent>
   </ContextMenu>

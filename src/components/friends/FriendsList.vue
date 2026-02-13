@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFriendsStore } from '@/stores/friends'
 import FriendItem from './FriendItem.vue'
 import FriendRequestItem from './FriendRequestItem.vue'
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const friendsStore = useFriendsStore()
 
 const filteredFriends = computed(() => {
@@ -18,8 +20,8 @@ const filteredFriends = computed(() => {
 })
 
 const label = computed(() => {
-  if (props.tab === 'pending') return `Pending — ${friendsStore.pendingRequests.length}`
-  return `${props.tab === 'online' ? 'Online' : 'All Friends'} — ${filteredFriends.value.length}`
+  if (props.tab === 'pending') return `${t('friends.pending')} — ${friendsStore.pendingRequests.length}`
+  return `${props.tab === 'online' ? t('friends.online') : t('friends.all')} — ${filteredFriends.value.length}`
 })
 </script>
 
@@ -34,7 +36,7 @@ const label = computed(() => {
         :request="request"
       />
       <p v-if="friendsStore.pendingRequests.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-        No pending requests
+        {{ $t('friends.noPending') }}
       </p>
     </template>
 
@@ -45,7 +47,7 @@ const label = computed(() => {
         :friend="friend"
       />
       <p v-if="filteredFriends.length === 0" class="py-8 text-center text-sm text-muted-foreground">
-        {{ tab === 'online' ? 'No friends are online right now' : 'No friends yet' }}
+        {{ tab === 'online' ? $t('friends.noOnline') : $t('friends.noFriends') }}
       </p>
     </template>
   </div>

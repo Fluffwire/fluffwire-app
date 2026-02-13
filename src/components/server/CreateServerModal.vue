@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const uiStore = useUiStore()
@@ -51,7 +53,7 @@ async function handleCreate() {
       <div class="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-primary/60 to-transparent" />
 
       <DialogHeader>
-        <DialogTitle>Create a Server</DialogTitle>
+        <DialogTitle>{{ $t('server.createServer') }}</DialogTitle>
       </DialogHeader>
 
       <form @submit.prevent="handleCreate" class="space-y-4">
@@ -64,20 +66,20 @@ async function handleCreate() {
         </div>
 
         <div class="space-y-2">
-          <Label for="server-name">Server Name</Label>
+          <Label for="server-name">{{ $t('server.serverName') }}</Label>
           <Input
             id="server-name"
             v-model="serverName"
-            placeholder="My Awesome Server"
+            :placeholder="$t('server.serverNamePlaceholder')"
             required
           />
         </div>
 
         <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">Cancel</Button>
+          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
           <Button type="submit" :disabled="isLoading">
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Create
+            {{ $t('common.create') }}
           </Button>
         </DialogFooter>
       </form>

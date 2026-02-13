@@ -201,3 +201,17 @@ html.theme-transitioning *::after {
     @apply bg-background text-foreground;
   }
 }
+
+/* @mention highlighting */
+.mention {
+  background-color: oklch(from var(--primary) l c h / 0.15);
+  color: var(--primary);
+  border-radius: 3px;
+  padding: 0 2px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mention:hover {
+  background-color: oklch(from var(--primary) l c h / 0.25);
+}

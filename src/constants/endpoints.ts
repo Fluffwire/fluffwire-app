@@ -27,6 +27,7 @@ export const API = {
     BY_ID: (id: string) => `/servers/${id}`,
     MEMBERS: (id: string) => `/servers/${id}/members`,
     INVITES: (id: string) => `/servers/${id}/invites`,
+    INVITE: (serverId: string, code: string) => `/servers/${serverId}/invites/${code}`,
     JOIN: '/servers/join',
     KICK: (serverId: string, userId: string) => `/servers/${serverId}/members/${userId}`,
     BANS: (serverId: string) => `/servers/${serverId}/bans`,

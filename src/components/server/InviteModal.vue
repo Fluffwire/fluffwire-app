@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { serverApi } from '@/services/serverApi'
 import { useUiStore } from '@/stores/ui'
 import {
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Copy, Check, Loader2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const uiStore = useUiStore()
 const inviteLink = ref('')
 const isLoading = ref(false)
@@ -45,12 +47,12 @@ async function copyToClipboard() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Invite Friends</DialogTitle>
+        <DialogTitle>{{ $t('server.inviteModal') }}</DialogTitle>
       </DialogHeader>
 
       <div class="space-y-4">
         <p class="text-sm text-muted-foreground">
-          Share this invite link with others to grant access to this server.
+          {{ $t('server.inviteDesc') }}
         </p>
 
         <div v-if="isLoading" class="flex justify-center py-4">
@@ -62,7 +64,7 @@ async function copyToClipboard() {
           <Button size="sm" @click="copyToClipboard" class="shrink-0">
             <Check v-if="copied" class="mr-1.5 h-4 w-4" />
             <Copy v-else class="mr-1.5 h-4 w-4" />
-            {{ copied ? 'Copied!' : 'Copy' }}
+            {{ copied ? $t('server.inviteLinkCopied') : $t('server.copyInvite') }}
           </Button>
         </div>
       </div>

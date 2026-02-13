@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Sortable from 'sortablejs'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
@@ -28,6 +29,7 @@ interface Props {
 
 withDefaults(defineProps<Props>(), { isSheet: false })
 
+const { t } = useI18n()
 const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const readStateStore = useReadStateStore()
@@ -100,12 +102,12 @@ function handleCreateCategory(server: Server) {
 
 function handleCopyId(serverId: string) {
   navigator.clipboard.writeText(serverId)
-  toast.success('Server ID copied')
+  toast.success(t('server.serverIdCopied'))
 }
 
 function handleToggleMute(serverId: string) {
   notifSettings.toggleMute(serverId)
-  toast.success(notifSettings.isMuted(serverId) ? 'Server muted' : 'Server unmuted')
+  toast.success(notifSettings.isMuted(serverId) ? t('server.serverMuted') : t('server.serverUnmuted'))
 }
 
 function handleLeaveServer(server: Server) {
@@ -120,7 +122,7 @@ async function confirmLeave() {
     toast.success(`Left ${leaveTarget.value.name}`)
     router.push('/channels/@me')
   } catch {
-    toast.error('Failed to leave server')
+    toast.error(t('server.failedLeave'))
   } finally {
     showLeaveDialog.value = false
     leaveTarget.value = null
@@ -184,38 +186,38 @@ async function confirmLeave() {
             <ContextMenuContent class="w-52">
               <ContextMenuItem @click="handleInvite(server)" class="gap-2">
                 <UserPlus class="h-4 w-4" />
-                Invite People
+                {{ $t('server.inviteModal') }}
               </ContextMenuItem>
               <template v-if="isOwner(server)">
                 <ContextMenuItem @click="handleServerSettings(server)" class="gap-2">
                   <Settings class="h-4 w-4" />
-                  Server Settings
+                  {{ $t('server.serverSettings') }}
                 </ContextMenuItem>
                 <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
                   <Hash class="h-4 w-4" />
-                  Create Channel
+                  {{ $t('channel.createChannel') }}
                 </ContextMenuItem>
                 <ContextMenuItem @click="handleCreateCategory(server)" class="gap-2">
                   <FolderPlus class="h-4 w-4" />
-                  Create Category
+                  {{ $t('channel.createCategory') }}
                 </ContextMenuItem>
               </template>
               <ContextMenuSeparator />
               <ContextMenuItem @click="handleToggleMute(server.id)" class="gap-2">
                 <BellOff v-if="!notifSettings.isMuted(server.id)" class="h-4 w-4" />
                 <Bell v-else class="h-4 w-4" />
-                {{ notifSettings.isMuted(server.id) ? 'Unmute Server' : 'Mute Server' }}
+                {{ notifSettings.isMuted(server.id) ? $t('server.unmuteServer') : $t('server.muteServer') }}
               </ContextMenuItem>
               <ContextMenuSeparator />
               <ContextMenuItem @click="handleCopyId(server.id)" class="gap-2">
                 <Copy class="h-4 w-4" />
-                Copy Server ID
+                {{ $t('server.copyServerId') }}
               </ContextMenuItem>
               <template v-if="!isOwner(server)">
                 <ContextMenuSeparator />
                 <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
                   <LogOut class="h-4 w-4" />
-                  Leave Server
+                  {{ $t('server.leaveServer') }}
                 </ContextMenuItem>
               </template>
             </ContextMenuContent>
@@ -242,14 +244,14 @@ async function confirmLeave() {
   <AlertDialog :open="showLeaveDialog" @update:open="showLeaveDialog = $event">
     <AlertDialogContent>
       <AlertDialogHeader>
-        <AlertDialogTitle>Leave Server</AlertDialogTitle>
+        <AlertDialogTitle>{{ $t('server.leaveServer') }}</AlertDialogTitle>
         <AlertDialogDescription>
           Are you sure you want to leave <strong>{{ leaveTarget?.name }}</strong>? You won't be able to rejoin unless you're re-invited.
         </AlertDialogDescription>
       </AlertDialogHeader>
       <AlertDialogFooter>
-        <AlertDialogCancel>Cancel</AlertDialogCancel>
-        <AlertDialogAction @click="confirmLeave" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">Leave</AlertDialogAction>
+        <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
+        <AlertDialogAction @click="confirmLeave" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">{{ $t('server.leaveServer') }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

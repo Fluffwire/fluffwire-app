@@ -47,6 +47,7 @@ export interface Message {
   pinnedAt?: string | null
   webhookId?: string | null
   replyTo?: MessageReply
+  mentions?: string[]
 }
 
 export interface Reaction {

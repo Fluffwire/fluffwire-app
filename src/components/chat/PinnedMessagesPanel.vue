@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useMessagesStore } from '@/stores/messages'
 import { useAuthStore } from '@/stores/auth'
 import { useServersStore } from '@/stores/servers'
@@ -18,6 +19,7 @@ interface Props {
 const props = defineProps<Props>()
 const emit = defineEmits<{ close: []; jumpTo: [messageId: string] }>()
 
+const { t } = useI18n()
 const messagesStore = useMessagesStore()
 const authStore = useAuthStore()
 const serversStore = useServersStore()
@@ -52,9 +54,9 @@ const isOwner = serversStore.currentServer?.ownerId === authStore.user?.id
 async function handleUnpin(messageId: string) {
   try {
     await messagesStore.unpinMessage(props.channelId, messageId)
-    toast.success('Message unpinned')
+    toast.success(t('chat.messageUnpinned'))
   } catch {
-    toast.error('Failed to unpin message')
+    toast.error(t('chat.failedUnpin'))
   }
 }
 </script>
@@ -67,7 +69,7 @@ async function handleUnpin(messageId: string) {
     <div class="flex h-12 items-center justify-between border-b border-border/50 px-4">
       <div class="flex items-center gap-2">
         <Pin class="h-4 w-4 text-primary" />
-        <h3 class="text-sm font-semibold text-foreground">Pinned Messages</h3>
+        <h3 class="text-sm font-semibold text-foreground">{{ $t('chat.pinnedMessages') }}</h3>
       </div>
       <Button variant="ghost" size="icon" class="h-7 w-7" @click="emit('close')">
         <X class="h-4 w-4" />
@@ -85,7 +87,7 @@ async function handleUnpin(messageId: string) {
           class="flex flex-col items-center justify-center py-12 text-center"
         >
           <Pin class="mb-3 h-10 w-10 text-muted-foreground/30" />
-          <p class="text-sm text-muted-foreground">No pinned messages yet</p>
+          <p class="text-sm text-muted-foreground">{{ $t('chat.noPinnedMessages') }}</p>
           <p class="mt-1 text-xs text-muted-foreground/60">
             Pin important messages to find them later
           </p>

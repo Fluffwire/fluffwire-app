@@ -52,6 +52,15 @@ marked.use({
 const ALLOWED_TAGS = ['strong', 'em', 'del', 'code', 'pre', 'a', 'br']
 const ALLOWED_ATTR = ['href', 'target', 'rel', 'class']
 
+function highlightMentions(html: string): string {
+  // Match @username that is NOT inside an HTML tag attribute or code block
+  // Only match at word boundaries in text content
+  return html.replace(
+    /(?<![<\w])@(\w{1,32})(?![^<]*>)/g,
+    '<span class="mention">@$1</span>'
+  )
+}
+
 export function renderMarkdown(content: string): string {
   const raw = marked.parse(replaceEmoticons(content), { async: false }) as string
   const clean = DOMPurify.sanitize(raw.trim(), {
@@ -60,6 +69,8 @@ export function renderMarkdown(content: string): string {
   })
   // Trim trailing <br> tags from paragraph rendering
   const trimmed = clean.replace(/(<br>)+$/, '')
+  // Highlight @mentions (post-sanitization, so spans are safe)
+  const withMentions = highlightMentions(trimmed)
   // Ensure links open in new tabs
-  return trimmed.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
+  return withMentions.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
 }

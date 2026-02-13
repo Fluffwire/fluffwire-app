@@ -27,7 +27,7 @@ async function handleSubmit() {
 <template>
   <Card class="border-border/50 shadow-lg">
     <CardHeader class="text-center">
-      <h1 class="text-2xl font-bold text-foreground">Create an account</h1>
+      <h1 class="text-2xl font-bold text-foreground">{{ $t('auth.createAccount') }}</h1>
     </CardHeader>
 
     <CardContent>
@@ -37,7 +37,7 @@ async function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label for="reg-email">Email</Label>
+          <Label for="reg-email">{{ $t('auth.email') }}</Label>
           <Input
             id="reg-email"
             v-model="email"
@@ -48,7 +48,7 @@ async function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label for="reg-username">Username</Label>
+          <Label for="reg-username">{{ $t('auth.username') }}</Label>
           <Input
             id="reg-username"
             v-model="username"
@@ -59,7 +59,7 @@ async function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label for="reg-password">Password</Label>
+          <Label for="reg-password">{{ $t('auth.password') }}</Label>
           <Input
             id="reg-password"
             v-model="password"
@@ -71,18 +71,18 @@ async function handleSubmit() {
 
         <div class="flex items-center gap-2">
           <Checkbox id="reg-remember-me" :checked="rememberMe" @update:checked="rememberMe = $event" />
-          <Label for="reg-remember-me" class="cursor-pointer text-sm text-muted-foreground">Remember me</Label>
+          <Label for="reg-remember-me" class="cursor-pointer text-sm text-muted-foreground">{{ $t('auth.rememberMe') }}</Label>
         </div>
 
         <Button type="submit" :disabled="isLoading" class="w-full">
           <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-          Register
+          {{ $t('auth.register') }}
         </Button>
 
         <p class="text-sm text-muted-foreground">
-          Already have an account?
+          {{ $t('auth.haveAccount') }}
           <RouterLink to="/login" class="text-primary hover:underline">
-            Log In
+            {{ $t('auth.logIn') }}
           </RouterLink>
         </p>
       </form>

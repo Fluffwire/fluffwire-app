@@ -47,6 +47,9 @@ export interface UserSettings {
   pttKey: string
   notificationSound: boolean
   notificationDesktop: boolean
+  showOnlineStatus: boolean
+  allowFriendRequests: boolean
+  allowDMsFromServerMembers: boolean
 }
 
 export interface AuthTokens {

@@ -26,7 +26,7 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
             <Mic v-else class="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ voiceStore.isMuted ? 'Unmute' : 'Mute' }}</TooltipContent>
+        <TooltipContent>{{ voiceStore.isMuted ? $t('voice.unmute') : $t('voice.mute') }} ({{ $t('voice.ctrlM') }})</TooltipContent>
       </Tooltip>
 
       <!-- Deafen -->
@@ -42,7 +42,7 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
             <Headphones v-else class="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ voiceStore.isDeafened ? 'Undeafen' : 'Deafen' }}</TooltipContent>
+        <TooltipContent>{{ voiceStore.isDeafened ? $t('voice.undeafen') : $t('voice.deafen') }} ({{ $t('voice.ctrlD') }})</TooltipContent>
       </Tooltip>
 
       <!-- Share Screen -->
@@ -59,7 +59,7 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
             <Monitor v-else class="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ voiceStore.isScreenSharing ? 'Stop Sharing' : anyoneStreaming ? 'Someone is already sharing' : 'Share Screen' }}</TooltipContent>
+        <TooltipContent>{{ voiceStore.isScreenSharing ? $t('voice.stopSharing') : anyoneStreaming ? $t('voice.someoneSharing') : $t('voice.shareScreen') }}</TooltipContent>
       </Tooltip>
 
       <!-- Disconnect -->
@@ -74,7 +74,7 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
             <PhoneOff class="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Disconnect</TooltipContent>
+        <TooltipContent>{{ $t('voice.disconnect') }}</TooltipContent>
       </Tooltip>
     </div>
   </TooltipProvider>

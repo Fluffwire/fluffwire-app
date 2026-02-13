@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
+import i18n, { loadLocale } from './i18n'
 import './assets/styles/main.css'
 
 const app = createApp(App)
@@ -9,6 +10,13 @@ const pinia = createPinia()
 
 app.use(pinia)
 app.use(router)
+app.use(i18n)
+
+// Load saved locale
+const savedLocale = localStorage.getItem('fluffwire-locale')
+if (savedLocale && savedLocale !== 'en') {
+  loadLocale(savedLocale)
+}
 
 // Initialize theme before anything renders
 import { useTheme } from './composables/useTheme'

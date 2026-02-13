@@ -1,6 +1,6 @@
 import api from './api'
 import { API } from '@/constants/endpoints'
-import type { Server, ServerMember, CreateServerPayload, JoinServerPayload, ServerInvite, Webhook } from '@/types'
+import type { Server, ServerMember, CreateServerPayload, JoinServerPayload, ServerInvite, Webhook, Role } from '@/types'
 
 export const serverApi = {
   getServers(): Promise<{ data: Server[] }> {
@@ -33,6 +33,14 @@ export const serverApi = {
 
   createInvite(serverId: string): Promise<{ data: ServerInvite }> {
     return api.post(API.SERVERS.INVITES(serverId))
+  },
+
+  getInvites(serverId: string): Promise<{ data: ServerInvite[] }> {
+    return api.get(API.SERVERS.INVITES(serverId))
+  },
+
+  deleteInvite(serverId: string, code: string): Promise<void> {
+    return api.delete(API.SERVERS.INVITE(serverId, code))
   },
 
   leaveServer(id: string): Promise<void> {
@@ -69,5 +77,41 @@ export const serverApi = {
 
   deleteWebhook(serverId: string, webhookId: string): Promise<void> {
     return api.delete(API.SERVERS.WEBHOOK(serverId, webhookId))
+  },
+
+  async updateMemberPrivacy(serverId: string, allowDMs: boolean, showProfile: boolean) {
+    const { data } = await api.patch(`${API.SERVERS.BASE}/${serverId}/members/@me/privacy`, {
+      allowDMs,
+      showProfile,
+    })
+    return data
+  },
+
+  async getRoles(serverId: string): Promise<Role[]> {
+    const { data } = await api.get(`${API.SERVERS.BASE}/${serverId}/roles`)
+    return data
+  },
+
+  async createRole(serverId: string, name: string, color?: string, permissions?: number): Promise<Role> {
+    const { data } = await api.post(`${API.SERVERS.BASE}/${serverId}/roles`, { name, color, permissions })
+    return data as Role
+  },
+
+  async updateRole(serverId: string, roleId: string, updates: { name?: string; color?: string; permissions?: number }): Promise<Role> {
+    const { data } = await api.patch(`${API.SERVERS.BASE}/${serverId}/roles/${roleId}`, updates)
+    return data as Role
+  },
+
+  async deleteRole(serverId: string, roleId: string): Promise<void> {
+    await api.delete(`${API.SERVERS.BASE}/${serverId}/roles/${roleId}`)
+  },
+
+  async reorderRoles(serverId: string, roleIds: string[]): Promise<void> {
+    await api.put(`${API.SERVERS.BASE}/${serverId}/roles/reorder`, { roleIds })
+  },
+
+  async assignMemberRoles(serverId: string, memberId: string, roleIds: string[]) {
+    const { data } = await api.put(`${API.SERVERS.BASE}/${serverId}/members/${memberId}/roles`, { roleIds })
+    return data
   },
 }

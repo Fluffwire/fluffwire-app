@@ -31,6 +31,19 @@ export interface ServerInvite {
   expiresAt: string | null
   maxUses: number | null
   uses: number
+  createdAt?: string
+  creatorName?: string
+}
+
+export interface Role {
+  id: string
+  serverId: string
+  name: string
+  color?: string
+  permissions: number
+  position: number
+  isDefault: boolean
+  createdAt: string
 }
 
 export interface Webhook {

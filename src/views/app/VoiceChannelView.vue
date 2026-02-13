@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useVoiceStore } from '@/stores/voice'
 import { useChannelsStore } from '@/stores/channels'
@@ -17,6 +18,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Headphones, X, UserPlus, Users } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
+const { t } = useI18n()
 const route = useRoute()
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
@@ -69,7 +71,7 @@ function sendVoiceInvite(targetUserId: string) {
     serverId: serverId.value,
   })
   showInvitePicker.value = false
-  toast.success('Voice invite sent')
+  toast.success(t('voice.inviteSent'))
 }
 
 function handleWatchStream(userId: string) {
@@ -93,7 +95,7 @@ function handleAddFriend(userId: string) {
     <div class="flex h-12 items-center justify-between border-b border-primary/20 px-4">
       <div class="flex items-center gap-2">
         <Headphones class="h-5 w-5 text-primary/70" />
-        <h3 class="font-semibold text-foreground">{{ channel?.name ?? 'Voice Channel' }}</h3>
+        <h3 class="font-semibold text-foreground">{{ channel?.name ?? $t('voice.voiceChannel') }}</h3>
         <span class="text-xs text-muted-foreground">{{ voiceStore.peers.length }} connected</span>
       </div>
       <div class="flex items-center gap-1">
@@ -111,12 +113,12 @@ function handleAddFriend(userId: string) {
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
-              <TooltipContent>Invite to Voice</TooltipContent>
+              <TooltipContent>{{ $t('voice.sendInvite') }}</TooltipContent>
             </Tooltip>
             <PopoverContent align="end" class="w-64 p-2">
-              <p class="mb-2 px-2 text-xs font-semibold text-muted-foreground">Invite to Voice</p>
+              <p class="mb-2 px-2 text-xs font-semibold text-muted-foreground">{{ $t('voice.sendInvite') }}</p>
               <div v-if="invitableMembers.length === 0" class="px-2 py-3 text-center text-sm text-muted-foreground">
-                No members to invite
+                {{ $t('voice.noMembers') }}
               </div>
               <div v-else class="max-h-48 overflow-y-auto">
                 <button
@@ -147,7 +149,7 @@ function handleAddFriend(userId: string) {
                 <Users class="h-5 w-5" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Toggle Member List</TooltipContent>
+            <TooltipContent>{{ $t('voice.toggleMemberList') }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
@@ -202,7 +204,7 @@ function handleAddFriend(userId: string) {
 
       <div v-if="voiceStore.peers.length === 0" class="text-center text-muted-foreground">
         <Headphones class="mx-auto mb-4 h-16 w-16 opacity-50" />
-        <p>No one is in this voice channel yet</p>
+        <p>{{ $t('voice.noOneInChannel') }}</p>
       </div>
     </div>
   </div>

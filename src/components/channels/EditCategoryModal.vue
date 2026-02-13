@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useChannelsStore } from '@/stores/channels'
 import { useUiStore } from '@/stores/ui'
 import type { ChannelCategory } from '@/types'
@@ -14,6 +15,7 @@ import { Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
 const route = useRoute()
+const { t } = useI18n()
 const channelsStore = useChannelsStore()
 const uiStore = useUiStore()
 
@@ -42,10 +44,10 @@ async function handleSave() {
       category.value.id,
       categoryName.value.trim(),
     )
-    toast.success('Category updated')
+    toast.success(t('channel.categoryUpdated'))
     uiStore.closeModal()
   } catch {
-    toast.error('Failed to update category')
+    toast.error(t('channel.failedUpdateCategory'))
   } finally {
     isLoading.value = false
   }
@@ -56,25 +58,25 @@ async function handleSave() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Edit Category</DialogTitle>
+        <DialogTitle>{{ $t('channel.editCategory') }}</DialogTitle>
       </DialogHeader>
 
       <form @submit.prevent="handleSave" class="space-y-4">
         <div class="space-y-2">
-          <Label for="edit-category-name">Category Name</Label>
+          <Label for="edit-category-name">{{ $t('channel.categoryName') }}</Label>
           <Input
             id="edit-category-name"
             v-model="categoryName"
-            placeholder="Category name"
+            :placeholder="$t('channel.categoryNamePlaceholder')"
             required
           />
         </div>
 
         <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">Cancel</Button>
+          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
           <Button type="submit" :disabled="isLoading">
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Save Changes
+            {{ $t('settings.saveChanges') }}
           </Button>
         </DialogFooter>
       </form>

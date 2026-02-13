@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useVoiceStore } from '@/stores/voice'
 import { useChannelsStore } from '@/stores/channels'
 import VoiceControls from './VoiceControls.vue'
 import { Badge } from '@/components/ui/badge'
 
+const { t } = useI18n()
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
 
@@ -34,7 +36,7 @@ const elapsedTime = computed(() => {
       <div class="min-w-0">
         <div class="flex items-center gap-2">
           <div class="h-2 w-2 animate-pulse rounded-full bg-online shadow-sm shadow-online/50" />
-          <span class="text-xs font-medium text-online">Voice Connected</span>
+          <span class="text-xs font-medium text-online">{{ $t('voice.connected') }}</span>
           <span v-if="elapsedTime" class="text-[10px] tabular-nums text-muted-foreground">{{ elapsedTime }}</span>
         </div>
         <div class="truncate text-xs text-muted-foreground">{{ channelName }}</div>

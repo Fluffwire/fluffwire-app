@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { Channel } from '@/types'
 import { useVoiceStore } from '@/stores/voice'
 import { useUiStore } from '@/stores/ui'
@@ -27,6 +28,7 @@ interface Props {
 const props = defineProps<Props>()
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const voiceStore = useVoiceStore()
 const uiStore = useUiStore()
 const channelsStore = useChannelsStore()
@@ -76,10 +78,10 @@ function handleEdit() {
 async function handleDelete() {
   try {
     await channelsStore.deleteChannel(props.channel.id)
-    toast.success('Channel deleted')
+    toast.success(t('channel.channelDeleted'))
     showDeleteDialog.value = false
   } catch {
-    toast.error('Failed to delete channel')
+    toast.error(t('channel.failedDeleteChannel'))
   }
 }
 </script>
@@ -110,11 +112,11 @@ async function handleDelete() {
       <ContextMenuContent v-if="isOwner" class="w-48">
         <ContextMenuItem @click="handleEdit" class="gap-2">
           <Pencil class="h-4 w-4" />
-          Edit Channel
+          {{ $t('channel.editChannel') }}
         </ContextMenuItem>
         <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
           <Trash2 class="h-4 w-4" />
-          Delete Channel
+          {{ $t('channel.deleteChannel') }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

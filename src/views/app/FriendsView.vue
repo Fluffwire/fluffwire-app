@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFriendsStore } from '@/stores/friends'
 import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
@@ -10,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, Menu } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const friendsStore = useFriendsStore()
 const uiStore = useUiStore()
 const { isMobile, isTablet } = useResponsive()
@@ -38,23 +40,23 @@ const pendingCount = computed(() => friendsStore.pendingRequests.length)
         <Menu class="h-5 w-5" />
       </Button>
       <Users class="h-5 w-5 text-muted-foreground" />
-      <h3 class="font-semibold text-foreground">Friends</h3>
+      <h3 class="font-semibold text-foreground">{{ $t('friends.friends') }}</h3>
     </div>
 
     <!-- Tabs -->
     <Tabs v-model="activeTab" class="flex flex-1 flex-col">
       <div class="border-b border-border/50 px-4 pt-2">
         <TabsList class="bg-transparent">
-          <TabsTrigger value="online">Online</TabsTrigger>
-          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="online">{{ $t('friends.online') }}</TabsTrigger>
+          <TabsTrigger value="all">{{ $t('friends.all') }}</TabsTrigger>
           <TabsTrigger value="pending" class="gap-1.5">
-            Pending
+            {{ $t('friends.pending') }}
             <Badge v-if="pendingCount > 0" variant="destructive" class="ml-1 h-4 min-w-[16px] px-1 text-[10px]">
               {{ pendingCount }}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="add" class="text-primary data-[state=active]:text-primary">
-            Add Friend
+            {{ $t('friends.addFriend') }}
           </TabsTrigger>
         </TabsList>
       </div>

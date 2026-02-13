@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import type { FriendRequest } from '@/types'
 import { useFriendsStore } from '@/stores/friends'
 import { useAuthStore } from '@/stores/auth'
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+const { t } = useI18n()
 const friendsStore = useFriendsStore()
 const authStore = useAuthStore()
 
@@ -30,7 +32,7 @@ const user = isIncoming ? props.request.from : props.request.to
     <div class="min-w-0 flex-1">
       <div class="text-sm font-medium text-foreground">{{ user.displayName }}</div>
       <div class="text-xs text-muted-foreground">
-        {{ isIncoming ? 'Incoming Friend Request' : 'Outgoing Friend Request' }}
+        {{ isIncoming ? $t('friends.incoming') : $t('friends.outgoing') }}
       </div>
     </div>
 
@@ -42,7 +44,7 @@ const user = isIncoming ? props.request.from : props.request.to
               <Check class="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Accept</TooltipContent>
+          <TooltipContent>{{ $t('friends.accept') }}</TooltipContent>
         </Tooltip>
 
         <Tooltip>
@@ -51,7 +53,7 @@ const user = isIncoming ? props.request.from : props.request.to
               <X class="h-4 w-4" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Reject</TooltipContent>
+          <TooltipContent>{{ $t('friends.decline') }}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useChannelsStore } from '@/stores/channels'
 import { useUiStore } from '@/stores/ui'
 import type { Channel } from '@/types'
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
+const { t } = useI18n()
 const channelsStore = useChannelsStore()
 const uiStore = useUiStore()
 
@@ -41,10 +43,10 @@ async function handleSave() {
       name: channelName.value.trim().toLowerCase().replace(/\s+/g, '-'),
       topic: channelTopic.value.trim() || undefined,
     })
-    toast.success('Channel updated')
+    toast.success(t('channel.channelUpdated'))
     uiStore.closeModal()
   } catch {
-    toast.error('Failed to update channel')
+    toast.error(t('channel.failedUpdateChannel'))
   } finally {
     isLoading.value = false
   }
@@ -55,16 +57,16 @@ async function handleSave() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Edit Channel</DialogTitle>
+        <DialogTitle>{{ $t('channel.editChannel') }}</DialogTitle>
       </DialogHeader>
 
       <form @submit.prevent="handleSave" class="space-y-4">
         <div class="space-y-2">
-          <Label for="edit-channel-name">Channel Name</Label>
+          <Label for="edit-channel-name">{{ $t('channel.channelName') }}</Label>
           <Input
             id="edit-channel-name"
             v-model="channelName"
-            placeholder="channel-name"
+            :placeholder="$t('channel.channelNamePlaceholder')"
             required
           />
         </div>
@@ -79,10 +81,10 @@ async function handleSave() {
         </div>
 
         <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">Cancel</Button>
+          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
           <Button type="submit" :disabled="isLoading">
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Save Changes
+            {{ $t('settings.saveChanges') }}
           </Button>
         </DialogFooter>
       </form>

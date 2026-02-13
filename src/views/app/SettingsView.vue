@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
@@ -7,7 +7,7 @@ import { useResponsive } from '@/composables/useResponsive'
 import { useTheme, themeLabels, themeNames, type ThemeName } from '@/composables/useTheme'
 import { uploadFile } from '@/services/api'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -19,9 +19,12 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import { useI18n } from 'vue-i18n'
+import { loadLocale, setLocale } from '@/i18n'
 import { useVoiceStore } from '@/stores/voice'
+import { useSettingsStore } from '@/stores/settings'
 import { webrtcService } from '@/services/webrtc'
 import type { MediaDeviceOption, TotpSetup, SessionInfo } from '@/types'
 import api from '@/services/api'
@@ -32,6 +35,7 @@ const uiStore = useUiStore()
 const router = useRouter()
 const { isMobile } = useResponsive()
 const { theme, setTheme } = useTheme()
+const { t, locale } = useI18n()
 const {
   soundEnabled,
   desktopEnabled,
@@ -46,7 +50,7 @@ const desktopPermissionDenied = ref(false)
 
 function handleSoundToggle(value: boolean) {
   setSoundEnabled(value)
-  toast.success(value ? 'Sound enabled' : 'Sound disabled')
+  toast.success(value ? t('settings.soundEnabled') : t('settings.soundDisabled'))
 }
 
 async function handleDesktopToggle(value: boolean) {
@@ -102,17 +106,18 @@ async function saveProfile() {
     }
     if (Object.keys(updates).length > 0) {
       await authStore.updateProfile(updates)
-      toast.success('Profile updated')
+      toast.success(t('settings.profileUpdated'))
     }
     profileAvatarFile.value = null
     profileAvatarPreview.value = null
   } catch {
-    toast.error('Failed to update profile')
+    toast.error(t('settings.failedUpdateProfile'))
   } finally {
     profileSaving.value = false
   }
 }
 
+const settingsStore = useSettingsStore()
 const voiceStore = useVoiceStore()
 const audioDevices = ref<MediaDeviceOption[]>([])
 const capturingPttKey = ref(false)
@@ -141,7 +146,7 @@ async function startMicTest() {
     }
     tick()
   } catch {
-    toast.error('Could not access microphone')
+    toast.error(t('settings.failedMic'))
   }
 }
 
@@ -179,6 +184,23 @@ watch([profileDisplayName, profileBio, profileAvatarFile], () => {
   hasProfileChanges.value = nameChanged || bioChanged || !!profileAvatarFile.value
 })
 
+// Data export
+async function exportData() {
+  try {
+    const { data } = await api.get('/users/@me/export')
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'user-data-export.json'
+    a.click()
+    URL.revokeObjectURL(url)
+    toast.success(t('settings.dataExported'))
+  } catch {
+    toast.error(t('settings.failedExportData'))
+  }
+}
+
 // Account deletion
 const showDeleteDialog = ref(false)
 const deletePassword = ref('')
@@ -212,9 +234,9 @@ async function handleCancelDeletion() {
   cancellingDeletion.value = true
   try {
     await authStore.cancelDeletion()
-    toast.success('Account deletion cancelled')
+    toast.success(t('settings.deletionCancelled'))
   } catch {
-    toast.error('Failed to cancel deletion')
+    toast.error(t('settings.failedCancelDeletion'))
   } finally {
     cancellingDeletion.value = false
   }
@@ -243,17 +265,17 @@ const showNewPassword = ref(false)
 async function handleChangePassword() {
   if (!currentPassword.value || !newPassword.value) return
   if (newPassword.value !== confirmPassword.value) {
-    toast.error('Passwords do not match')
+    toast.error(t('settings.passwordsNoMatch'))
     return
   }
   if (newPassword.value.length < 8) {
-    toast.error('Password must be at least 8 characters')
+    toast.error(t('settings.passwordTooShort'))
     return
   }
   passwordSaving.value = true
   try {
     await authStore.changePassword(currentPassword.value, newPassword.value)
-    toast.success('Password changed successfully')
+    toast.success(t('settings.passwordChanged'))
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
@@ -281,7 +303,7 @@ async function handleSetupTotp() {
     totpSetup.value = data
     totpEnableCode.value = ''
   } catch {
-    toast.error('Failed to generate 2FA setup')
+    toast.error(t('settings.failedSetup2fa'))
   }
 }
 
@@ -298,7 +320,7 @@ async function handleEnableTotp() {
     showBackupCodes.value = true
     totpSetup.value = null
     totpEnableCode.value = ''
-    toast.success('Two-factor authentication enabled')
+    toast.success(t('settings.twoFactorEnabledSuccess'))
   } catch (e: unknown) {
     const err = e as { response?: { data?: { message?: string } } }
     toast.error(err.response?.data?.message || 'Invalid code')
@@ -318,7 +340,7 @@ async function handleDisableTotp() {
     if (authStore.user) authStore.user.totpEnabled = false
     totpDisableCode.value = ''
     totpDisablePassword.value = ''
-    toast.success('Two-factor authentication disabled')
+    toast.success(t('settings.twoFactorDisabledSuccess'))
   } catch (e: unknown) {
     const err = e as { response?: { data?: { message?: string } } }
     toast.error(err.response?.data?.message || 'Failed to disable 2FA')
@@ -329,7 +351,7 @@ async function handleDisableTotp() {
 
 function copyBackupCodes() {
   navigator.clipboard.writeText(backupCodes.value.join('\n'))
-  toast.success('Backup codes copied to clipboard')
+  toast.success(t('settings.codesCopied'))
 }
 
 // Sessions state
@@ -343,7 +365,7 @@ async function loadSessions() {
   try {
     sessions.value = await authStore.fetchSessions()
   } catch {
-    toast.error('Failed to load sessions')
+    toast.error(t('settings.failedLoadSessions'))
   } finally {
     sessionsLoading.value = false
   }
@@ -354,9 +376,9 @@ async function handleRevokeSession(sessionId: string) {
   try {
     await authStore.revokeSession(sessionId)
     sessions.value = sessions.value.filter(s => s.id !== sessionId)
-    toast.success('Session revoked')
+    toast.success(t('settings.sessionRevoked'))
   } catch {
-    toast.error('Failed to revoke session')
+    toast.error(t('settings.failedRevokeSession'))
   } finally {
     revokingSession.value = null
   }
@@ -367,9 +389,9 @@ async function handleRevokeAllSessions() {
   try {
     await authStore.revokeAllSessions()
     sessions.value = sessions.value.filter(s => s.isCurrent)
-    toast.success('All other sessions revoked')
+    toast.success(t('settings.allSessionsRevoked'))
   } catch {
-    toast.error('Failed to revoke sessions')
+    toast.error(t('settings.failedRevokeSessions'))
   } finally {
     revokingAll.value = false
   }
@@ -404,13 +426,20 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
-const tabs = [
-  { key: 'account', label: 'My Account', icon: User },
-  { key: 'voice', label: 'Voice & Audio', icon: Volume2 },
-  { key: 'notifications', label: 'Notifications', icon: Bell },
-  { key: 'security', label: 'Security', icon: Shield },
-  { key: 'appearance', label: 'Appearance', icon: Palette },
-]
+const tabs = computed(() => [
+  { key: 'account', label: t('settings.myAccount'), icon: User },
+  { key: 'voice', label: t('settings.voiceAudio'), icon: Volume2 },
+  { key: 'notifications', label: t('settings.notifications'), icon: Bell },
+  { key: 'security', label: t('settings.security'), icon: Shield },
+  { key: 'privacy', label: t('settings.privacy'), icon: EyeOff },
+  { key: 'appearance', label: t('settings.appearance'), icon: Palette },
+  { key: 'language', label: t('settings.language'), icon: Globe },
+])
+
+async function handleLocaleChange(code: string) {
+  await loadLocale(code)
+  setLocale(code)
+}
 
 const themePreviewColors: Record<ThemeName, string> = {
   green: 'oklch(0.696 0.178 149.58)',
@@ -428,12 +457,12 @@ const themePreviewColors: Record<ThemeName, string> = {
     <template v-if="!isMobile">
       <aside class="flex h-full w-60 shrink-0 flex-col bg-card border-r border-border/50">
         <div class="flex h-12 items-center border-b border-border/50 px-4">
-          <h2 class="font-semibold text-foreground">Settings</h2>
+          <h2 class="font-semibold text-foreground">{{ $t('nav.settings') }}</h2>
         </div>
         <ScrollArea class="flex-1">
           <nav class="space-y-0.5 px-2 py-2">
             <h3 class="mb-1 px-2 text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              User Settings
+              {{ $t('nav.userSettings') }}
             </h3>
             <button
               v-for="tab in tabs"
@@ -457,7 +486,7 @@ const themePreviewColors: Record<ThemeName, string> = {
               class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10"
             >
               <LogOut class="h-4 w-4" />
-              Log Out
+              {{ $t('nav.logOut') }}
             </button>
           </nav>
         </ScrollArea>
@@ -490,7 +519,7 @@ const themePreviewColors: Record<ThemeName, string> = {
           class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive"
         >
           <LogOut class="h-4 w-4" />
-          Log Out
+          {{ $t('nav.logOut') }}
         </button>
       </div>
 
@@ -499,7 +528,7 @@ const themePreviewColors: Record<ThemeName, string> = {
           <div class="w-full max-w-2xl">
             <!-- My Account -->
             <template v-if="activeTab === 'account'">
-              <h2 class="mb-6 text-xl font-bold text-foreground">My Account</h2>
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.myAccount') }}</h2>
               <Card class="mb-4">
                 <CardContent class="p-6">
                   <div class="flex items-start gap-4">
@@ -530,23 +559,23 @@ const themePreviewColors: Record<ThemeName, string> = {
                       </div>
 
                       <div class="space-y-2">
-                        <Label for="profile-display-name">Display Name</Label>
+                        <Label for="profile-display-name">{{ $t('settings.displayName') }}</Label>
                         <Input
                           id="profile-display-name"
                           v-model="profileDisplayName"
-                          placeholder="Display name"
+                          :placeholder="$t('settings.displayNamePlaceholder')"
                           maxlength="32"
                         />
                       </div>
 
                       <div class="space-y-2">
-                        <Label for="profile-bio">About Me</Label>
+                        <Label for="profile-bio">{{ $t('settings.aboutMe') }}</Label>
                         <textarea
                           id="profile-bio"
                           v-model="profileBio"
                           maxlength="500"
                           rows="3"
-                          placeholder="Tell us about yourself"
+                          :placeholder="$t('settings.aboutMePlaceholder')"
                           class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
                         />
                         <p class="text-xs text-muted-foreground">{{ profileBio.length }}/500</p>
@@ -558,7 +587,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                         size="sm"
                       >
                         <Loader2 v-if="profileSaving" class="mr-2 h-4 w-4 animate-spin" />
-                        Save Changes
+                        {{ $t('settings.saveChanges') }}
                       </Button>
                     </div>
                   </div>
@@ -571,13 +600,9 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <div class="flex items-start gap-3">
                     <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                     <div class="flex-1 space-y-2">
-                      <h3 class="text-sm font-semibold text-amber-500">Account Scheduled for Deletion</h3>
+                      <h3 class="text-sm font-semibold text-amber-500">{{ $t('settings.accountScheduled') }}</h3>
                       <p class="text-sm text-muted-foreground">
-                        Your account is scheduled to be permanently deleted on
-                        <span class="font-medium text-foreground">
-                          {{ new Date(authStore.user.deleteScheduledAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) }}
-                        </span>.
-                        You can cancel this at any time before that date.
+                        {{ $t('settings.accountScheduledDesc', { date: new Date(authStore.user.deleteScheduledAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) }) }}
                       </p>
                       <Button
                         variant="outline"
@@ -586,10 +611,23 @@ const themePreviewColors: Record<ThemeName, string> = {
                         @click="handleCancelDeletion"
                       >
                         <Loader2 v-if="cancellingDeletion" class="mr-2 h-4 w-4 animate-spin" />
-                        Cancel Deletion
+                        {{ $t('settings.cancelDeletion') }}
                       </Button>
                     </div>
                   </div>
+                </CardContent>
+              </Card>
+
+              <!-- Export data -->
+              <Card class="mb-4">
+                <CardHeader>
+                  <CardTitle class="text-base">{{ $t('settings.exportData') }}</CardTitle>
+                  <CardDescription>{{ $t('settings.exportDataDesc') }}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" @click="exportData">
+                    {{ $t('settings.exportData') }}
+                  </Button>
                 </CardContent>
               </Card>
 
@@ -598,11 +636,11 @@ const themePreviewColors: Record<ThemeName, string> = {
                 <CardContent class="p-6">
                   <div class="flex items-center justify-between">
                     <div>
-                      <h3 class="text-sm font-medium text-destructive">Delete Account</h3>
-                      <p class="text-sm text-muted-foreground">Permanently delete your account and all data</p>
+                      <h3 class="text-sm font-medium text-destructive">{{ $t('settings.deleteAccount') }}</h3>
+                      <p class="text-sm text-muted-foreground">{{ $t('settings.deleteAccountDesc') }}</p>
                     </div>
                     <Button variant="destructive" size="sm" @click="openDeleteDialog">
-                      Delete Account
+                      {{ $t('settings.deleteAccount') }}
                     </Button>
                   </div>
                 </CardContent>
@@ -614,15 +652,11 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <AlertDialogHeader>
                     <AlertDialogTitle class="flex items-center gap-2 text-destructive">
                       <AlertTriangle class="h-5 w-5" />
-                      Delete Account
+                      {{ $t('settings.deleteAccount') }}
                     </AlertDialogTitle>
                     <AlertDialogDescription class="space-y-3">
-                      <p>
-                        This will schedule your account for permanent deletion. You will have
-                        <span class="font-semibold text-foreground">30 days</span> to cancel before
-                        your account and all associated data are permanently removed.
-                      </p>
-                      <p>This includes your messages, servers you own, and all other data.</p>
+                      <p>{{ $t('settings.deleteAccountWarning', { days: 30 }) }}</p>
+                      <p>{{ $t('settings.deleteAccountIncludes') }}</p>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
 
@@ -632,37 +666,37 @@ const themePreviewColors: Record<ThemeName, string> = {
                     </div>
 
                     <div class="space-y-2">
-                      <Label for="delete-password">Confirm your password</Label>
+                      <Label for="delete-password">{{ $t('settings.confirmPassword') }}</Label>
                       <Input
                         id="delete-password"
                         v-model="deletePassword"
                         type="password"
-                        placeholder="Enter your password"
+                        :placeholder="$t('settings.enterPassword')"
                         autocomplete="current-password"
                       />
                     </div>
 
                     <div class="space-y-2">
                       <Label for="delete-confirm">
-                        Type <span class="font-mono font-bold text-destructive">DELETE</span> to confirm
+                        {{ $t('settings.typeDelete', { text: 'DELETE' }) }}
                       </Label>
                       <Input
                         id="delete-confirm"
                         v-model="deleteConfirmText"
-                        placeholder="Type DELETE"
+                        :placeholder="$t('settings.typePlaceholder')"
                       />
                     </div>
                   </div>
 
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel>{{ $t('settings.cancel') }}</AlertDialogCancel>
                     <Button
                       variant="destructive"
                       :disabled="deleteConfirmText !== 'DELETE' || !deletePassword || deleteLoading"
                       @click="handleDeleteAccount"
                     >
                       <Loader2 v-if="deleteLoading" class="mr-2 h-4 w-4 animate-spin" />
-                      Delete Account
+                      {{ $t('settings.deleteAccount') }}
                     </Button>
                   </AlertDialogFooter>
                 </AlertDialogContent>
@@ -671,12 +705,12 @@ const themePreviewColors: Record<ThemeName, string> = {
 
             <!-- Voice & Audio -->
             <template v-if="activeTab === 'voice'">
-              <h2 class="mb-6 text-xl font-bold text-foreground">Voice & Audio</h2>
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.voiceAudio') }}</h2>
 
               <!-- Input Mode -->
               <Card class="mb-4">
                 <CardHeader>
-                  <CardTitle class="text-base">Input Mode</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.inputMode') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                   <div class="flex gap-3">
@@ -689,8 +723,8 @@ const themePreviewColors: Record<ThemeName, string> = {
                           : 'border-border hover:border-primary/40',
                       ]"
                     >
-                      <div class="text-sm font-medium text-foreground">Voice Activity</div>
-                      <div class="mt-1 text-xs text-muted-foreground">Automatically transmit when you speak</div>
+                      <div class="text-sm font-medium text-foreground">{{ $t('settings.voiceActivity') }}</div>
+                      <div class="mt-1 text-xs text-muted-foreground">{{ $t('settings.voiceActivityDesc') }}</div>
                     </button>
                     <button
                       @click="voiceStore.setVoiceMode('push-to-talk')"
@@ -701,15 +735,15 @@ const themePreviewColors: Record<ThemeName, string> = {
                           : 'border-border hover:border-primary/40',
                       ]"
                     >
-                      <div class="text-sm font-medium text-foreground">Push to Talk</div>
-                      <div class="mt-1 text-xs text-muted-foreground">Hold a key to transmit</div>
+                      <div class="text-sm font-medium text-foreground">{{ $t('settings.pushToTalk') }}</div>
+                      <div class="mt-1 text-xs text-muted-foreground">{{ $t('settings.pushToTalkDesc') }}</div>
                     </button>
                   </div>
 
                   <!-- VAD Sensitivity -->
                   <div v-if="voiceStore.voiceMode === 'voice-activity'" class="space-y-2">
                     <div class="flex items-center justify-between">
-                      <label class="text-sm font-medium text-foreground">Sensitivity</label>
+                      <label class="text-sm font-medium text-foreground">{{ $t('settings.sensitivity') }}</label>
                       <span class="text-xs text-muted-foreground">{{ voiceStore.vadThreshold }}</span>
                     </div>
                     <input
@@ -721,14 +755,14 @@ const themePreviewColors: Record<ThemeName, string> = {
                       class="w-full accent-primary"
                     />
                     <div class="flex justify-between text-[10px] text-muted-foreground">
-                      <span>Sensitive</span>
-                      <span>Less sensitive</span>
+                      <span>{{ $t('settings.sensitive') }}</span>
+                      <span>{{ $t('settings.lessSensitive') }}</span>
                     </div>
                   </div>
 
                   <!-- PTT Key -->
                   <div v-if="voiceStore.voiceMode === 'push-to-talk'" class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Shortcut</label>
+                    <label class="text-sm font-medium text-foreground">{{ $t('settings.shortcut') }}</label>
                     <Button
                       variant="outline"
                       @click="startPttCapture"
@@ -736,7 +770,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     >
                       <Mic class="h-4 w-4" />
                       <template v-if="capturingPttKey">
-                        <span class="animate-pulse text-primary">Press a key...</span>
+                        <span class="animate-pulse text-primary">{{ $t('settings.pressKey') }}</span>
                       </template>
                       <template v-else>
                         {{ formatKeyCode(voiceStore.pttKey) }}
@@ -749,7 +783,7 @@ const themePreviewColors: Record<ThemeName, string> = {
               <!-- Mic Test -->
               <Card class="mb-4">
                 <CardHeader>
-                  <CardTitle class="text-base">Mic Test</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.micTest') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-3">
                   <Button
@@ -759,7 +793,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     @click="startMicTest"
                   >
                     <Mic class="h-4 w-4" />
-                    Start Mic Test
+                    {{ $t('settings.startMicTest') }}
                   </Button>
                   <Button
                     v-else
@@ -768,7 +802,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     @click="stopMicTest"
                   >
                     <Mic class="h-4 w-4" />
-                    Stop Test
+                    {{ $t('settings.stopTest') }}
                   </Button>
                   <div v-if="micTestActive" class="space-y-1">
                     <div class="h-3 w-full overflow-hidden rounded-full bg-muted">
@@ -777,7 +811,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                         :style="{ width: micTestLevel + '%' }"
                       />
                     </div>
-                    <p class="text-xs text-muted-foreground">Speak into your microphone to test</p>
+                    <p class="text-xs text-muted-foreground">{{ $t('settings.speakToTest') }}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -785,17 +819,17 @@ const themePreviewColors: Record<ThemeName, string> = {
               <!-- Audio Devices -->
               <Card>
                 <CardHeader>
-                  <CardTitle class="text-base">Audio Devices</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.audioDevices') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                   <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Input Device</label>
+                    <label class="text-sm font-medium text-foreground">{{ $t('settings.inputDevice') }}</label>
                     <select
                       @focus="loadAudioDevices"
                       @change="webrtcService.setInputDevice(($event.target as HTMLSelectElement).value)"
                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                     >
-                      <option value="">Default</option>
+                      <option value="">{{ $t('settings.default') }}</option>
                       <option
                         v-for="d in audioDevices.filter(d => d.kind === 'audioinput')"
                         :key="d.deviceId"
@@ -806,12 +840,12 @@ const themePreviewColors: Record<ThemeName, string> = {
                     </select>
                   </div>
                   <div class="space-y-2">
-                    <label class="text-sm font-medium text-foreground">Output Device</label>
+                    <label class="text-sm font-medium text-foreground">{{ $t('settings.outputDevice') }}</label>
                     <select
                       @focus="loadAudioDevices"
                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                     >
-                      <option value="">Default</option>
+                      <option value="">{{ $t('settings.default') }}</option>
                       <option
                         v-for="d in audioDevices.filter(d => d.kind === 'audiooutput')"
                         :key="d.deviceId"
@@ -827,17 +861,17 @@ const themePreviewColors: Record<ThemeName, string> = {
 
             <!-- Notifications -->
             <template v-if="activeTab === 'notifications'">
-              <h2 class="mb-6 text-xl font-bold text-foreground">Notifications</h2>
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.notifications') }}</h2>
 
               <Card class="mb-4">
                 <CardContent class="flex items-center justify-between p-6">
                   <div>
-                    <h3 class="text-sm font-medium text-foreground">Notification Sound</h3>
-                    <p class="text-sm text-muted-foreground">Play a sound when a new message arrives</p>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.notificationSound') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.notificationSoundDesc') }}</p>
                   </div>
                   <div class="flex items-center gap-3">
                     <Button size="sm" variant="outline" @click="playTestSound">
-                      Test Sound
+                      {{ $t('settings.testSound') }}
                     </Button>
                     <Switch :model-value="soundEnabled" @update:model-value="handleSoundToggle" />
                   </div>
@@ -848,13 +882,13 @@ const themePreviewColors: Record<ThemeName, string> = {
                 <CardContent class="p-6">
                   <div class="flex items-center justify-between">
                     <div>
-                      <h3 class="text-sm font-medium text-foreground">Desktop Notifications</h3>
-                      <p class="text-sm text-muted-foreground">Show native desktop notifications for new messages</p>
+                      <h3 class="text-sm font-medium text-foreground">{{ $t('settings.desktopNotifications') }}</h3>
+                      <p class="text-sm text-muted-foreground">{{ $t('settings.desktopNotificationsDesc') }}</p>
                     </div>
                     <Switch :model-value="desktopEnabled" @update:model-value="handleDesktopToggle" />
                   </div>
                   <p v-if="desktopPermissionDenied" class="mt-2 text-sm text-destructive">
-                    Notification permission was denied by the browser. Please allow notifications in your browser settings.
+                    {{ $t('settings.desktopPermDenied') }}
                   </p>
                 </CardContent>
               </Card>
@@ -862,22 +896,22 @@ const themePreviewColors: Record<ThemeName, string> = {
 
             <!-- Security -->
             <template v-if="activeTab === 'security'">
-              <h2 class="mb-6 text-xl font-bold text-foreground">Security</h2>
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.security') }}</h2>
 
               <!-- Change Password -->
               <Card class="mb-4">
                 <CardHeader>
-                  <CardTitle class="text-base">Change Password</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.changePassword') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                   <div class="space-y-2">
-                    <Label for="current-password">Current Password</Label>
+                    <Label for="current-password">{{ $t('settings.currentPassword') }}</Label>
                     <div class="relative">
                       <Input
                         id="current-password"
                         v-model="currentPassword"
                         :type="showCurrentPassword ? 'text' : 'password'"
-                        placeholder="Enter current password"
+                        :placeholder="$t('settings.currentPasswordPlaceholder')"
                         autocomplete="current-password"
                       />
                       <button
@@ -890,13 +924,13 @@ const themePreviewColors: Record<ThemeName, string> = {
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <Label for="new-password">New Password</Label>
+                    <Label for="new-password">{{ $t('settings.newPassword') }}</Label>
                     <div class="relative">
                       <Input
                         id="new-password"
                         v-model="newPassword"
                         :type="showNewPassword ? 'text' : 'password'"
-                        placeholder="Enter new password"
+                        :placeholder="$t('settings.newPasswordPlaceholder')"
                         autocomplete="new-password"
                       />
                       <button
@@ -909,16 +943,16 @@ const themePreviewColors: Record<ThemeName, string> = {
                     </div>
                   </div>
                   <div class="space-y-2">
-                    <Label for="confirm-password">Confirm New Password</Label>
+                    <Label for="confirm-password">{{ $t('settings.confirmNewPassword') }}</Label>
                     <Input
                       id="confirm-password"
                       v-model="confirmPassword"
                       type="password"
-                      placeholder="Confirm new password"
+                      :placeholder="$t('settings.confirmNewPasswordPlaceholder')"
                       autocomplete="new-password"
                     />
                     <p v-if="confirmPassword && newPassword !== confirmPassword" class="text-xs text-destructive">
-                      Passwords do not match
+                      {{ $t('settings.passwordsNoMatch') }}
                     </p>
                   </div>
                   <Button
@@ -927,7 +961,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     size="sm"
                   >
                     <Loader2 v-if="passwordSaving" class="mr-2 h-4 w-4 animate-spin" />
-                    Change Password
+                    {{ $t('settings.changePassword') }}
                   </Button>
                 </CardContent>
               </Card>
@@ -935,38 +969,38 @@ const themePreviewColors: Record<ThemeName, string> = {
               <!-- Two-Factor Authentication -->
               <Card class="mb-4">
                 <CardHeader>
-                  <CardTitle class="text-base">Two-Factor Authentication</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.twoFactorAuth') }}</CardTitle>
                 </CardHeader>
                 <CardContent class="space-y-4">
                   <template v-if="!authStore.user?.totpEnabled">
                     <p class="text-sm text-muted-foreground">
-                      Add an extra layer of security to your account by requiring a verification code from your authenticator app.
+                      {{ $t('settings.twoFactorDesc') }}
                     </p>
 
                     <!-- Setup flow -->
                     <template v-if="!totpSetup">
                       <Button @click="handleSetupTotp" size="sm">
                         <Shield class="mr-2 h-4 w-4" />
-                        Enable Two-Factor Auth
+                        {{ $t('settings.enableTwoFactor') }}
                       </Button>
                     </template>
 
                     <template v-else>
                       <div class="space-y-4">
-                        <p class="text-sm text-foreground">Scan this QR code with your authenticator app:</p>
+                        <p class="text-sm text-foreground">{{ $t('settings.scanQrCode') }}</p>
                         <div class="flex justify-center rounded-lg bg-white p-4">
                           <img :src="totpSetup.qrUri" alt="QR Code" class="h-48 w-48" />
                         </div>
                         <div class="space-y-1">
-                          <p class="text-xs text-muted-foreground">Or enter this secret manually:</p>
+                          <p class="text-xs text-muted-foreground">{{ $t('settings.enterSecretManually') }}</p>
                           <code class="block break-all rounded bg-muted px-3 py-2 text-sm">{{ totpSetup.secret }}</code>
                         </div>
                         <div class="space-y-2">
-                          <Label for="totp-verify-code">Enter verification code</Label>
+                          <Label for="totp-verify-code">{{ $t('settings.enterVerificationCode') }}</Label>
                           <Input
                             id="totp-verify-code"
                             v-model="totpEnableCode"
-                            placeholder="6-digit code"
+                            :placeholder="$t('settings.sixDigitCode')"
                             maxlength="6"
                             class="text-center text-lg tracking-widest"
                           />
@@ -978,10 +1012,10 @@ const themePreviewColors: Record<ThemeName, string> = {
                             size="sm"
                           >
                             <Loader2 v-if="totpEnabling" class="mr-2 h-4 w-4 animate-spin" />
-                            Verify & Enable
+                            {{ $t('settings.verifyEnable') }}
                           </Button>
                           <Button variant="ghost" size="sm" @click="totpSetup = null">
-                            Cancel
+                            {{ $t('settings.cancel') }}
                           </Button>
                         </div>
                       </div>
@@ -991,26 +1025,26 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <template v-else>
                     <div class="flex items-center gap-2 rounded-lg bg-primary/10 p-3">
                       <Shield class="h-5 w-5 text-primary" />
-                      <span class="text-sm font-medium text-primary">Two-factor authentication is enabled</span>
+                      <span class="text-sm font-medium text-primary">{{ $t('settings.twoFactorEnabled') }}</span>
                     </div>
 
                     <div class="space-y-3 border-t border-border pt-4">
-                      <p class="text-sm text-muted-foreground">To disable 2FA, enter your password and a verification code.</p>
+                      <p class="text-sm text-muted-foreground">{{ $t('settings.disableTwoFactorDesc') }}</p>
                       <div class="space-y-2">
-                        <Label for="totp-disable-password">Password</Label>
+                        <Label for="totp-disable-password">{{ $t('settings.password') }}</Label>
                         <Input
                           id="totp-disable-password"
                           v-model="totpDisablePassword"
                           type="password"
-                          placeholder="Enter your password"
+                          :placeholder="$t('settings.enterPassword')"
                         />
                       </div>
                       <div class="space-y-2">
-                        <Label for="totp-disable-code">Verification Code</Label>
+                        <Label for="totp-disable-code">{{ $t('auth.verificationCode') }}</Label>
                         <Input
                           id="totp-disable-code"
                           v-model="totpDisableCode"
-                          placeholder="6-digit code"
+                          :placeholder="$t('settings.sixDigitCode')"
                           maxlength="8"
                           class="text-center text-lg tracking-widest"
                         />
@@ -1022,7 +1056,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                         @click="handleDisableTotp"
                       >
                         <Loader2 v-if="totpDisabling" class="mr-2 h-4 w-4 animate-spin" />
-                        Disable Two-Factor Auth
+                        {{ $t('settings.disableTwoFactor') }}
                       </Button>
                     </div>
                   </template>
@@ -1033,9 +1067,9 @@ const themePreviewColors: Record<ThemeName, string> = {
                       <div class="flex items-start gap-2">
                         <AlertTriangle class="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
                         <div>
-                          <h4 class="text-sm font-semibold text-foreground">Save Your Backup Codes</h4>
+                          <h4 class="text-sm font-semibold text-foreground">{{ $t('settings.saveBackupCodes') }}</h4>
                           <p class="text-sm text-muted-foreground">
-                            Store these codes in a safe place. Each code can only be used once to sign in if you lose access to your authenticator app.
+                            {{ $t('settings.backupCodesDesc') }}
                           </p>
                         </div>
                       </div>
@@ -1046,7 +1080,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                       </div>
                       <Button variant="outline" size="sm" class="gap-2" @click="copyBackupCodes">
                         <Copy class="h-4 w-4" />
-                        Copy Codes
+                        {{ $t('settings.copyCodes') }}
                       </Button>
                     </div>
                   </template>
@@ -1056,7 +1090,7 @@ const themePreviewColors: Record<ThemeName, string> = {
               <!-- Active Sessions -->
               <Card>
                 <CardHeader class="flex-row items-center justify-between space-y-0">
-                  <CardTitle class="text-base">Active Sessions</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.activeSessions') }}</CardTitle>
                   <Button
                     v-if="sessions.length > 1"
                     variant="outline"
@@ -1065,7 +1099,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                     @click="handleRevokeAllSessions"
                   >
                     <Loader2 v-if="revokingAll" class="mr-2 h-4 w-4 animate-spin" />
-                    Log Out All Other Devices
+                    {{ $t('settings.logOutAllOther') }}
                   </Button>
                 </CardHeader>
                 <CardContent class="space-y-3">
@@ -1081,16 +1115,16 @@ const themePreviewColors: Record<ThemeName, string> = {
                       <component :is="getDeviceIcon(session.userAgent)" class="h-5 w-5 shrink-0 text-muted-foreground" />
                       <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2">
-                          <p class="truncate text-sm font-medium text-foreground">{{ session.userAgent || 'Unknown device' }}</p>
+                          <p class="truncate text-sm font-medium text-foreground">{{ session.userAgent || $t('settings.unknownDevice') }}</p>
                           <span
                             v-if="session.isCurrent"
                             class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
                           >
-                            Current
+                            {{ $t('settings.current') }}
                           </span>
                         </div>
                         <p class="text-xs text-muted-foreground">
-                          {{ session.ipAddress }} &middot; Last active {{ formatSessionDate(session.lastUsedAt) }}
+                          {{ session.ipAddress }} &middot; {{ $t('settings.lastActive', { date: formatSessionDate(session.lastUsedAt) }) }}
                         </p>
                       </div>
                       <Button
@@ -1102,33 +1136,80 @@ const themePreviewColors: Record<ThemeName, string> = {
                         @click="handleRevokeSession(session.id)"
                       >
                         <Loader2 v-if="revokingSession === session.id" class="mr-1 h-3 w-3 animate-spin" />
-                        Revoke
+                        {{ $t('settings.revoke') }}
                       </Button>
                     </div>
                     <p v-if="!sessions.length" class="py-4 text-center text-sm text-muted-foreground">
-                      No active sessions found
+                      {{ $t('settings.noSessions') }}
                     </p>
                   </template>
                 </CardContent>
               </Card>
             </template>
 
+            <!-- Privacy -->
+            <template v-else-if="activeTab === 'privacy'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.privacy') }}</h2>
+
+              <!-- Online Status -->
+              <Card class="mb-4">
+                <CardContent class="flex items-center justify-between p-6">
+                  <div>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.showOnlineStatus') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.showOnlineStatusDesc') }}</p>
+                  </div>
+                  <Switch
+                    :model-value="settingsStore.settings?.showOnlineStatus ?? true"
+                    @update:model-value="settingsStore.updateSetting({ showOnlineStatus: $event })"
+                  />
+                </CardContent>
+              </Card>
+
+              <!-- Direct Messages -->
+              <Card class="mb-4">
+                <CardContent class="flex items-center justify-between p-6">
+                  <div>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.allowDMsFromServerMembers') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.allowDMsFromServerMembersDesc') }}</p>
+                  </div>
+                  <Switch
+                    :model-value="settingsStore.settings?.allowDMsFromServerMembers ?? true"
+                    @update:model-value="settingsStore.updateSetting({ allowDMsFromServerMembers: $event })"
+                  />
+                </CardContent>
+              </Card>
+
+              <!-- Friend Requests -->
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.allowFriendRequests') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.allowFriendRequestsDesc') }}</p>
+                  </div>
+                  <Switch
+                    :model-value="settingsStore.settings?.allowFriendRequests ?? true"
+                    @update:model-value="settingsStore.updateSetting({ allowFriendRequests: $event })"
+                  />
+                </CardContent>
+              </Card>
+            </template>
+
             <!-- Appearance / Theme Picker -->
             <template v-if="activeTab === 'appearance'">
-              <h2 class="mb-6 text-xl font-bold text-foreground">Appearance</h2>
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.appearance') }}</h2>
               <Card>
                 <CardHeader>
-                  <CardTitle class="text-base">Theme Color</CardTitle>
+                  <CardTitle class="text-base">{{ $t('settings.themeColor') }}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p class="mb-4 text-sm text-muted-foreground">
-                    Choose your accent color. This changes the primary color throughout the interface.
+                    {{ $t('settings.themeColorDesc') }}
                   </p>
                   <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
                     <button
                       v-for="name in themeNames"
                       :key="name"
-                      @click="uiStore.setTheme(name); toast.success('Theme updated')"
+                      @click="uiStore.setTheme(name); toast.success($t('settings.themeUpdated'))"
                       :class="[
                         'flex items-center gap-3 rounded-xl border-2 p-4 transition-all',
                         theme === name
@@ -1144,6 +1225,35 @@ const themePreviewColors: Record<ThemeName, string> = {
                         <div class="text-sm font-medium text-foreground">{{ themeLabels[name] }}</div>
                         <div class="text-xs text-muted-foreground capitalize">{{ name }}</div>
                       </div>
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            </template>
+
+            <!-- Language -->
+            <template v-if="activeTab === 'language'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.language') }}</h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle class="text-base">{{ $t('settings.selectLanguage') }}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p class="mb-4 text-sm text-muted-foreground">{{ $t('settings.languageDesc') }}</p>
+                  <div class="grid grid-cols-2 gap-3">
+                    <button
+                      v-for="lang in [{ code: 'en', name: 'English', flag: '\uD83C\uDDEC\uD83C\uDDE7' }, { code: 'sv', name: 'Svenska', flag: '\uD83C\uDDF8\uD83C\uDDEA' }]"
+                      :key="lang.code"
+                      @click="handleLocaleChange(lang.code)"
+                      :class="[
+                        'flex items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                        locale === lang.code
+                          ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
+                          : 'border-border hover:border-primary/40',
+                      ]"
+                    >
+                      <span class="text-2xl">{{ lang.flag }}</span>
+                      <span class="text-sm font-medium text-foreground">{{ lang.name }}</span>
                     </button>
                   </div>
                 </CardContent>

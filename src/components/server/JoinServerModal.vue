@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
 import { useUiStore } from '@/stores/ui'
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const serversStore = useServersStore()
 const uiStore = useUiStore()
 const router = useRouter()
@@ -45,7 +47,7 @@ async function handleJoin() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-md">
       <DialogHeader>
-        <DialogTitle>Join a Server</DialogTitle>
+        <DialogTitle>{{ $t('server.joinServer') }}</DialogTitle>
       </DialogHeader>
 
       <form @submit.prevent="handleJoin" class="space-y-4">
@@ -58,20 +60,20 @@ async function handleJoin() {
         </div>
 
         <div class="space-y-2">
-          <Label for="invite-code">Invite Code</Label>
+          <Label for="invite-code">{{ $t('server.inviteCode') }}</Label>
           <Input
             id="invite-code"
             v-model="inviteCode"
-            placeholder="Enter an invite code"
+            :placeholder="$t('server.inviteCodePlaceholder')"
             required
           />
         </div>
 
         <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">Cancel</Button>
+          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
           <Button type="submit" :disabled="isLoading">
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Join Server
+            {{ $t('server.join') }}
           </Button>
         </DialogFooter>
       </form>

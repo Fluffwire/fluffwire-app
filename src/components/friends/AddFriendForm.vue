@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useFriendsStore } from '@/stores/friends'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader2 } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const friendsStore = useFriendsStore()
 const username = ref('')
 const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -28,7 +30,7 @@ async function handleSubmit() {
 
 <template>
   <div>
-    <h4 class="mb-1 text-sm font-bold uppercase text-foreground">Add Friend</h4>
+    <h4 class="mb-1 text-sm font-bold uppercase text-foreground">{{ $t('friends.addFriend') }}</h4>
     <p class="mb-4 text-sm text-muted-foreground">
       You can add friends with their username.
     </p>
@@ -36,12 +38,12 @@ async function handleSubmit() {
     <form @submit.prevent="handleSubmit" class="flex items-center gap-3 rounded-xl border border-input bg-card p-2">
       <Input
         v-model="username"
-        placeholder="Enter a username"
+        :placeholder="$t('friends.addFriendPlaceholder')"
         class="flex-1 border-0 bg-transparent focus-visible:ring-0"
       />
       <Button type="submit" :disabled="isLoading || !username.trim()" size="sm">
         <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-        Send Friend Request
+        {{ $t('friends.sendRequest') }}
       </Button>
     </form>
 

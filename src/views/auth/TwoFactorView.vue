@@ -40,15 +40,15 @@ function handleKeydown(e: KeyboardEvent) {
         <div class="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           <ShieldCheck class="h-6 w-6 text-primary" />
         </div>
-        <CardTitle>Two-Factor Authentication</CardTitle>
+        <CardTitle>{{ $t('auth.twoFactorTitle') }}</CardTitle>
         <CardDescription>
-          Enter the 6-digit code from your authenticator app, or use a backup code.
+          {{ $t('auth.twoFactorSubtitle') }}
         </CardDescription>
       </CardHeader>
       <CardContent class="space-y-4">
         <Input
           v-model="code"
-          placeholder="Enter code"
+          :placeholder="$t('auth.verificationCode')"
           class="text-center text-lg tracking-widest"
           maxlength="8"
           autofocus
@@ -56,10 +56,10 @@ function handleKeydown(e: KeyboardEvent) {
         />
         <p v-if="errorMessage" class="text-sm text-destructive">{{ errorMessage }}</p>
         <Button class="w-full" :disabled="isSubmitting || !code.trim()" @click="submit">
-          {{ isSubmitting ? 'Verifying...' : 'Verify' }}
+          {{ isSubmitting ? '...' : $t('auth.verify') }}
         </Button>
         <Button variant="ghost" class="w-full" @click="router.push('/login')">
-          Back to Login
+          {{ $t('auth.backToLogin') }}
         </Button>
       </CardContent>
     </Card>

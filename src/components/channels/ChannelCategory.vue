@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, inject } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
 import { useUiStore } from '@/stores/ui'
 import { useChannelsStore } from '@/stores/channels'
@@ -22,6 +23,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const route = useRoute()
+const { t } = useI18n()
 const uiStore = useUiStore()
 const channelsStore = useChannelsStore()
 const serversStore = useServersStore()
@@ -70,10 +72,10 @@ async function handleDeleteCategory() {
       route.params.serverId as string,
       props.category.id,
     )
-    toast.success('Category deleted')
+    toast.success(t('channel.categoryDeleted'))
     showDeleteDialog.value = false
   } catch {
-    toast.error('Failed to delete category')
+    toast.error(t('channel.failedDeleteCategory'))
   }
 }
 </script>
@@ -106,16 +108,16 @@ async function handleDeleteCategory() {
       <ContextMenuContent v-if="isOwner" class="w-52">
         <ContextMenuItem @click="handleCreateChannel" class="gap-2">
           <Plus class="h-4 w-4" />
-          Create Channel
+          {{ $t('channel.createChannel') }}
         </ContextMenuItem>
         <ContextMenuSeparator />
         <ContextMenuItem @click="handleEditCategory" class="gap-2">
           <Pencil class="h-4 w-4" />
-          Edit Category
+          {{ $t('channel.editCategory') }}
         </ContextMenuItem>
         <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
           <Trash2 class="h-4 w-4" />
-          Delete Category
+          {{ $t('channel.deleteCategory') }}
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>

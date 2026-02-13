@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '@/types'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserProfilePopover from '@/components/common/UserProfilePopover.vue'
@@ -30,6 +31,8 @@ const props = withDefaults(defineProps<Props>(), {
   showAuthor: true,
   canDelete: false,
 })
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   edit: [messageId: string, content: string]
@@ -147,17 +150,17 @@ function confirmDelete() {
 
 function copyText() {
   navigator.clipboard.writeText(props.message.content)
-  toast.success('Copied text to clipboard')
+  toast.success(t('chat.copiedText'))
 }
 
 function copyMessageLink() {
   navigator.clipboard.writeText(window.location.origin + window.location.pathname + '?msg=' + props.message.id)
-  toast.success('Copied message link to clipboard')
+  toast.success(t('chat.copiedLink'))
 }
 
 function copyMessageId() {
   navigator.clipboard.writeText(props.message.id)
-  toast.success('Copied message ID to clipboard')
+  toast.success(t('chat.copiedId'))
 }
 </script>
 
@@ -183,7 +186,7 @@ function copyMessageId() {
             <CornerDownRight class="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Reply</TooltipContent>
+        <TooltipContent>{{ $t('chat.reply') }}</TooltipContent>
       </Tooltip>
       <Popover v-model:open="showReactionPicker">
         <PopoverTrigger as-child>
@@ -206,7 +209,7 @@ function copyMessageId() {
             <Pin class="h-3.5 w-3.5" :class="message.pinned ? 'text-primary' : ''" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ message.pinned ? 'Unpin' : 'Pin' }}</TooltipContent>
+        <TooltipContent>{{ message.pinned ? $t('chat.unpinMessage') : $t('chat.pinMessage') }}</TooltipContent>
       </Tooltip>
       <Tooltip v-if="isOwnMessage">
         <TooltipTrigger as-child>
@@ -214,7 +217,7 @@ function copyMessageId() {
             <Pencil class="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Edit</TooltipContent>
+        <TooltipContent>{{ $t('common.edit') }}</TooltipContent>
       </Tooltip>
       <Tooltip v-if="isOwnMessage || canDelete">
         <TooltipTrigger as-child>
@@ -222,7 +225,7 @@ function copyMessageId() {
             <Trash2 class="h-3.5 w-3.5" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>Delete</TooltipContent>
+        <TooltipContent>{{ $t('common.delete') }}</TooltipContent>
       </Tooltip>
     </div>
 
@@ -260,7 +263,7 @@ function copyMessageId() {
               </TooltipTrigger>
               <TooltipContent>{{ formattedTime }}</TooltipContent>
             </Tooltip>
-            <span v-if="message.editedAt" class="text-xs text-muted-foreground">(edited)</span>
+            <span v-if="message.editedAt" class="text-xs text-muted-foreground">{{ $t('chat.edited') }}</span>
           </div>
 
           <!-- Inline edit mode -->
@@ -497,35 +500,35 @@ function copyMessageId() {
     </ContextMenuTrigger>
     <ContextMenuContent class="w-56">
       <ContextMenuItem class="gap-2" @select="emit('reply', message)">
-        <CornerDownRight class="h-4 w-4" /> Reply
+        <CornerDownRight class="h-4 w-4" /> {{ $t('chat.reply') }}
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @select="showReactionPicker = true">
-        <SmilePlus class="h-4 w-4" /> Add Reaction
+        <SmilePlus class="h-4 w-4" /> {{ $t('chat.addReaction') }}
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem v-if="isOwnMessage" class="gap-2" @select="startEditing()">
-        <Pencil class="h-4 w-4" /> Edit Message
+        <Pencil class="h-4 w-4" /> {{ $t('chat.editMessage') }}
       </ContextMenuItem>
       <ContextMenuItem v-if="isOwnMessage || canDelete" class="gap-2" @select="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)">
-        <Pin class="h-4 w-4" /> {{ message.pinned ? 'Unpin Message' : 'Pin Message' }}
+        <Pin class="h-4 w-4" /> {{ message.pinned ? $t('chat.unpinMessage') : $t('chat.pinMessage') }}
       </ContextMenuItem>
       <ContextMenuSeparator />
       <ContextMenuItem class="gap-2" @select="emit('markUnread', message.id)">
         <Eye class="h-4 w-4" /> Mark as Unread
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @select="copyText()">
-        <Copy class="h-4 w-4" /> Copy Text
+        <Copy class="h-4 w-4" /> {{ $t('chat.copyText') }}
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @select="copyMessageLink()">
-        <Link class="h-4 w-4" /> Copy Message Link
+        <Link class="h-4 w-4" /> {{ $t('chat.copyLink') }}
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @select="copyMessageId()">
-        <Hash class="h-4 w-4" /> Copy Message ID
+        <Hash class="h-4 w-4" /> {{ $t('chat.copyId') }}
       </ContextMenuItem>
       <template v-if="isOwnMessage || canDelete">
         <ContextMenuSeparator />
         <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @select="showDeleteDialog = true">
-          <Trash2 class="h-4 w-4" /> Delete Message
+          <Trash2 class="h-4 w-4" /> {{ $t('chat.deleteMessage') }}
         </ContextMenuItem>
       </template>
     </ContextMenuContent>
