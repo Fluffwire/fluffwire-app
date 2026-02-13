@@ -90,6 +90,12 @@ function formatFileSize(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
 }
 
+function resizeEditTextarea(event: Event) {
+  const el = event.target as HTMLTextAreaElement
+  el.style.height = 'auto'
+  el.style.height = el.scrollHeight + 'px'
+}
+
 function startEditing() {
   editContent.value = props.message.content
   isEditing.value = true
@@ -97,6 +103,8 @@ function startEditing() {
     if (editTextarea.value) {
       editTextarea.value.focus()
       editTextarea.value.selectionStart = editTextarea.value.value.length
+      editTextarea.value.style.height = 'auto'
+      editTextarea.value.style.height = editTextarea.value.scrollHeight + 'px'
     }
   })
 }
@@ -155,16 +163,11 @@ function confirmDelete() {
         <TooltipContent>Reply</TooltipContent>
       </Tooltip>
       <Popover v-model:open="showReactionPicker">
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <PopoverTrigger as-child>
-              <Button variant="ghost" size="icon" class="h-7 w-7">
-                <SmilePlus class="h-3.5 w-3.5" />
-              </Button>
-            </PopoverTrigger>
-          </TooltipTrigger>
-          <TooltipContent>Add Reaction</TooltipContent>
-        </Tooltip>
+        <PopoverTrigger as-child>
+          <Button variant="ghost" size="icon" class="h-7 w-7">
+            <SmilePlus class="h-3.5 w-3.5" />
+          </Button>
+        </PopoverTrigger>
         <PopoverContent side="top" align="end" class="w-auto border-0 bg-transparent p-0 shadow-none">
           <EmojiPicker @select="handleReactionSelect" />
         </PopoverContent>
@@ -243,8 +246,9 @@ function confirmDelete() {
               ref="editTextarea"
               v-model="editContent"
               @keydown="handleEditKeydown"
-              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-              rows="2"
+              @input="resizeEditTextarea"
+              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
+              rows="1"
             />
             <p class="mt-1 text-xs text-muted-foreground">
               Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,
@@ -359,8 +363,9 @@ function confirmDelete() {
               ref="editTextarea"
               v-model="editContent"
               @keydown="handleEditKeydown"
-              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-              rows="2"
+              @input="resizeEditTextarea"
+              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
+              rows="1"
             />
             <p class="mt-1 text-xs text-muted-foreground">
               Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,

@@ -8,7 +8,7 @@ import MessageItem from './MessageItem.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Hash } from 'lucide-vue-next'
+import { Hash, ArrowDown } from 'lucide-vue-next'
 
 interface Props {
   channelId: string
@@ -52,6 +52,18 @@ function handleJumpTo(messageId: string) {
 }
 const containerRef = ref<HTMLElement | null>(null)
 const scrollEnabled = ref(false)
+const showJumpButton = ref(false)
+const dividerMessageId = ref<string | null>(null)
+
+function handleScroll() {
+  if (!containerRef.value) return
+  const el = containerRef.value
+  const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  showJumpButton.value = distanceFromBottom > 300
+  if (distanceFromBottom < 100) {
+    dividerMessageId.value = null
+  }
+}
 
 const messages = computed(() => messagesStore.getMessages(props.channelId))
 const hasMore = computed(() => messagesStore.channelHasMore(props.channelId))
@@ -66,7 +78,17 @@ const { isLoadingMore } = useInfiniteScroll(containerRef, loadMore, { direction:
 watch(() => props.channelId, async (id) => {
   if (id) {
     scrollEnabled.value = false
+    showJumpButton.value = false
+    // Capture last read message before marking as read
+    const lastRead = readStateStore.readStates.get(id)
+    const latest = readStateStore.latestMessageIds.get(id)
     await messagesStore.fetchMessages(id)
+    // Set divider if there are unread messages
+    if (lastRead && latest && lastRead !== latest) {
+      dividerMessageId.value = lastRead
+    } else {
+      dividerMessageId.value = null
+    }
     await nextTick()
     // Use rAF to ensure layout is complete before scrolling
     requestAnimationFrame(() => {
@@ -98,6 +120,7 @@ function scrollToBottom() {
   if (containerRef.value) {
     containerRef.value.scrollTop = containerRef.value.scrollHeight
   }
+  showJumpButton.value = false
 }
 
 function scrollToMessage(messageId: string) {
@@ -114,7 +137,7 @@ defineExpose({ scrollToMessage })
 </script>
 
 <template>
-  <div ref="containerRef" class="flex-1 overflow-y-auto">
+  <div ref="containerRef" class="relative flex-1 overflow-y-auto" @scroll="handleScroll">
     <div class="flex min-h-full flex-col">
       <!-- Spacer pushes messages to bottom when few -->
       <div class="flex-1" />
@@ -152,24 +175,43 @@ defineExpose({ scrollToMessage })
         </div>
       </div>
 
-      <MessageItem
-        v-for="(message, index) in messages"
-        :key="message.id"
-        :message="message"
-        :show-author="index === 0 || messages[index - 1]?.author.id !== message.author.id || !!message.replyTo"
-        :current-user-id="authStore.user?.id"
-        :can-delete="isServerOwner"
-        @edit="handleEdit"
-        @delete="handleDelete"
-        @pin="handlePin"
-        @unpin="handleUnpin"
-        @reaction="handleReaction"
-        @reply="handleReply"
-        @jump-to="handleJumpTo"
-      />
+      <template v-for="(message, index) in messages" :key="message.id">
+        <MessageItem
+          :message="message"
+          :show-author="index === 0 || messages[index - 1]?.author.id !== message.author.id || !!message.replyTo"
+          :current-user-id="authStore.user?.id"
+          :can-delete="isServerOwner"
+          @edit="handleEdit"
+          @delete="handleDelete"
+          @pin="handlePin"
+          @unpin="handleUnpin"
+          @reaction="handleReaction"
+          @reply="handleReply"
+          @jump-to="handleJumpTo"
+        />
+        <!-- New Messages divider -->
+        <div
+          v-if="message.id === dividerMessageId && index < messages.length - 1"
+          class="flex items-center gap-2 px-4 py-1"
+        >
+          <div class="flex-1 border-t border-red-500" />
+          <span class="text-xs font-semibold text-red-500">New Messages</span>
+          <div class="flex-1 border-t border-red-500" />
+        </div>
+      </template>
 
       <!-- Bottom padding so last message isn't flush against input -->
       <div class="h-4" />
     </div>
+
+    <!-- Jump to Latest button -->
+    <button
+      v-if="showJumpButton"
+      @click="scrollToBottom"
+      class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
+    >
+      <ArrowDown class="size-4" />
+      Jump to Latest
+    </button>
   </div>
 </template>

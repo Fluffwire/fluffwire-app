@@ -330,7 +330,7 @@ const themePreviewColors: Record<ThemeName, string> = {
         </button>
       </div>
 
-      <ScrollArea class="flex-1">
+      <ScrollArea class="flex-1 min-h-0">
         <div class="flex p-4 sm:p-8">
           <div class="w-full max-w-2xl">
             <!-- My Account -->
