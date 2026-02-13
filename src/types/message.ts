@@ -30,6 +30,9 @@ export interface Message {
   timestamp: string
   editedAt: string | null
   attachments: Attachment[]
+  pinned?: boolean
+  pinnedBy?: string | null
+  pinnedAt?: string | null
 }
 
 export interface Attachment {

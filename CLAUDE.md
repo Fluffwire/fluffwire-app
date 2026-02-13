@@ -109,7 +109,7 @@ src/
 - WebRTC handled by `webrtc.ts` service, state in `voice.ts` store
 
 ## API Contract
-See `BACKEND_REQUIREMENTS.md` for the full API specification. The backend is at `/home/cryo/fluffwire-server/`.
+See `/home/cryo/fluffwire-server/BACKEND_REQUIREMENTS.md` for the full API specification.
 
 ## Environment
 - Node.js via nvm: `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"`

@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { VoicePeer, VoiceSignal } from '@/types'
 import { webrtcService } from '@/services/webrtc'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { soundManager } from '@/composables/useSounds'
 
 export const useVoiceStore = defineStore('voice', () => {
   const currentChannelId = ref<string | null>(null)
@@ -13,6 +14,39 @@ export const useVoiceStore = defineStore('voice', () => {
   const isConnecting = ref(false)
   // All voice channel members across the server: channelId -> VoicePeer[]
   const voiceChannelMembers = ref<Map<string, VoicePeer[]>>(new Map())
+
+  // Voice settings
+  const voiceMode = ref<'voice-activity' | 'push-to-talk'>('voice-activity')
+  const vadThreshold = ref(15)
+  const pttKey = ref('Space')
+
+  // Load persisted settings
+  try {
+    const stored = localStorage.getItem('fluffwire-voice-settings')
+    if (stored) {
+      const s = JSON.parse(stored)
+      if (s.voiceMode) voiceMode.value = s.voiceMode
+      if (typeof s.vadThreshold === 'number') vadThreshold.value = s.vadThreshold
+      if (s.pttKey) pttKey.value = s.pttKey
+    }
+  } catch { /* ignore */ }
+
+  // PTT key listeners
+  function handleKeyDown(e: KeyboardEvent) {
+    if (voiceMode.value !== 'push-to-talk') return
+    if (!currentChannelId.value) return
+    if (e.code === pttKey.value && !e.repeat) {
+      webrtcService.setPttActive(true)
+    }
+  }
+  function handleKeyUp(e: KeyboardEvent) {
+    if (voiceMode.value !== 'push-to-talk') return
+    if (e.code === pttKey.value) {
+      webrtcService.setPttActive(false)
+    }
+  }
+  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
 
   const isInVoice = computed(() => currentChannelId.value !== null)
 
@@ -34,6 +68,10 @@ export const useVoiceStore = defineStore('voice', () => {
 
       // Remove user from all voice channels first
       if (state.channelId === null) {
+        // Play leave sound if the departing user was in our voice channel
+        if (currentChannelId.value && peers.value.some((p) => p.userId === state.userId)) {
+          soundManager.play('voiceLeave')
+        }
         peers.value = peers.value.filter((p) => p.userId !== state.userId)
         // Remove from voiceChannelMembers
         for (const [chId, members] of voiceChannelMembers.value) {
@@ -87,6 +125,7 @@ export const useVoiceStore = defineStore('voice', () => {
           existing.selfDeaf = state.selfDeaf
         } else {
           peers.value.push({ ...peer })
+          soundManager.play('voiceJoin')
         }
       }
     })
@@ -108,6 +147,7 @@ export const useVoiceStore = defineStore('voice', () => {
       await webrtcService.joinVoiceChannel(serverId, channelId)
       currentChannelId.value = channelId
       currentServerId.value = serverId
+      soundManager.play('voiceJoin')
     } finally {
       isConnecting.value = false
     }
@@ -130,6 +170,32 @@ export const useVoiceStore = defineStore('voice', () => {
     if (isDeafened.value) isMuted.value = true
   }
 
+  function setVoiceMode(mode: 'voice-activity' | 'push-to-talk') {
+    voiceMode.value = mode
+    webrtcService.setVoiceMode(mode)
+    saveVoiceSettings()
+  }
+
+  function setVadThreshold(threshold: number) {
+    vadThreshold.value = threshold
+    webrtcService.setVadThreshold(threshold)
+    saveVoiceSettings()
+  }
+
+  function setPttKey(key: string) {
+    pttKey.value = key
+    saveVoiceSettings()
+  }
+
+  function saveVoiceSettings() {
+    localStorage.setItem('fluffwire-voice-settings', JSON.stringify({
+      voiceMode: voiceMode.value,
+      vadThreshold: vadThreshold.value,
+      pttKey: pttKey.value,
+    }))
+    webrtcService.saveVoiceSettings()
+  }
+
   return {
     currentChannelId,
     currentServerId,
@@ -140,9 +206,15 @@ export const useVoiceStore = defineStore('voice', () => {
     isInVoice,
     voiceChannelMembers,
     getVoiceChannelMembers,
+    voiceMode,
+    vadThreshold,
+    pttKey,
     joinChannel,
     leaveChannel,
     toggleMute,
     toggleDeafen,
+    setVoiceMode,
+    setVadThreshold,
+    setPttKey,
   }
 })

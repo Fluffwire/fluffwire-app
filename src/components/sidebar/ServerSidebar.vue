@@ -1,13 +1,25 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useReadStateStore } from '@/stores/readState'
+import { useAuthStore } from '@/stores/auth'
+import { useNotificationSettingsStore } from '@/stores/notificationSettings'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import ServerIcon from './ServerIcon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
-import { Plus } from 'lucide-vue-next'
+import {
+  ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
+} from '@/components/ui/context-menu'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { Plus, UserPlus, Settings, Hash, FolderPlus, Copy, LogOut, BellOff, Bell } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
+import type { Server } from '@/types'
 
 interface Props {
   isSheet?: boolean
@@ -18,12 +30,21 @@ withDefaults(defineProps<Props>(), { isSheet: false })
 const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const readStateStore = useReadStateStore()
+const authStore = useAuthStore()
+const notifSettings = useNotificationSettingsStore()
 const route = useRoute()
 const router = useRouter()
 const uiStore = useUiStore()
 
+const showLeaveDialog = ref(false)
+const leaveTarget = ref<Server | null>(null)
+
 function isActive(serverId: string) {
   return route.params.serverId === serverId
+}
+
+function isOwner(server: Server) {
+  return server.ownerId === authStore.user?.id
 }
 
 function navigateHome() {
@@ -36,6 +57,54 @@ async function navigateToServer(serverId: string) {
   const firstChannel = channelsStore.textChannels[0]
   router.push(`/channels/${serverId}/${firstChannel?.id ?? ''}`)
   if (uiStore.isMobileView) uiStore.isMobileSidebarOpen = false
+}
+
+function handleInvite(server: Server) {
+  uiStore.openModal('invite', server)
+}
+
+function handleServerSettings(server: Server) {
+  uiStore.openModal('serverSettings', server)
+}
+
+function handleCreateChannel(server: Server) {
+  // Navigate to server first, then open create channel modal
+  navigateToServer(server.id)
+  uiStore.openModal('createChannel')
+}
+
+function handleCreateCategory(server: Server) {
+  navigateToServer(server.id)
+  uiStore.openModal('createCategory')
+}
+
+function handleCopyId(serverId: string) {
+  navigator.clipboard.writeText(serverId)
+  toast.success('Server ID copied')
+}
+
+function handleToggleMute(serverId: string) {
+  notifSettings.toggleMute(serverId)
+  toast.success(notifSettings.isMuted(serverId) ? 'Server muted' : 'Server unmuted')
+}
+
+function handleLeaveServer(server: Server) {
+  leaveTarget.value = server
+  showLeaveDialog.value = true
+}
+
+async function confirmLeave() {
+  if (!leaveTarget.value) return
+  try {
+    await serversStore.leaveServer(leaveTarget.value.id)
+    toast.success(`Left ${leaveTarget.value.name}`)
+    router.push('/channels/@me')
+  } catch {
+    toast.error('Failed to leave server')
+  } finally {
+    showLeaveDialog.value = false
+    leaveTarget.value = null
+  }
 }
 </script>
 
@@ -70,22 +139,65 @@ async function navigateToServer(serverId: string) {
       <Separator class="mx-auto w-8" />
 
       <!-- Server icons -->
-      <Tooltip v-for="server in serversStore.servers" :key="server.id">
-        <TooltipTrigger as-child>
-          <div class="relative">
-            <ServerIcon
-              :server="server"
-              :active="isActive(server.id)"
-              @click="navigateToServer(server.id)"
-            />
-            <span
-              v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
-              class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
-            />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="right">{{ server.name }}</TooltipContent>
-      </Tooltip>
+      <ContextMenu v-for="server in serversStore.servers" :key="server.id">
+        <Tooltip>
+          <ContextMenuTrigger as-child>
+            <TooltipTrigger as-child>
+              <div class="relative">
+                <ServerIcon
+                  :server="server"
+                  :active="isActive(server.id)"
+                  @click="navigateToServer(server.id)"
+                />
+                <span
+                  v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
+                  class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
+                />
+              </div>
+            </TooltipTrigger>
+          </ContextMenuTrigger>
+          <TooltipContent side="right">{{ server.name }}</TooltipContent>
+        </Tooltip>
+
+        <ContextMenuContent class="w-52">
+          <ContextMenuItem @click="handleInvite(server)" class="gap-2">
+            <UserPlus class="h-4 w-4" />
+            Invite People
+          </ContextMenuItem>
+          <template v-if="isOwner(server)">
+            <ContextMenuItem @click="handleServerSettings(server)" class="gap-2">
+              <Settings class="h-4 w-4" />
+              Server Settings
+            </ContextMenuItem>
+            <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
+              <Hash class="h-4 w-4" />
+              Create Channel
+            </ContextMenuItem>
+            <ContextMenuItem @click="handleCreateCategory(server)" class="gap-2">
+              <FolderPlus class="h-4 w-4" />
+              Create Category
+            </ContextMenuItem>
+          </template>
+          <ContextMenuSeparator />
+          <ContextMenuItem @click="handleToggleMute(server.id)" class="gap-2">
+            <BellOff v-if="!notifSettings.isMuted(server.id)" class="h-4 w-4" />
+            <Bell v-else class="h-4 w-4" />
+            {{ notifSettings.isMuted(server.id) ? 'Unmute Server' : 'Mute Server' }}
+          </ContextMenuItem>
+          <ContextMenuSeparator />
+          <ContextMenuItem @click="handleCopyId(server.id)" class="gap-2">
+            <Copy class="h-4 w-4" />
+            Copy Server ID
+          </ContextMenuItem>
+          <template v-if="!isOwner(server)">
+            <ContextMenuSeparator />
+            <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
+              <LogOut class="h-4 w-4" />
+              Leave Server
+            </ContextMenuItem>
+          </template>
+        </ContextMenuContent>
+      </ContextMenu>
 
       <!-- Add server button -->
       <Tooltip>
@@ -101,4 +213,20 @@ async function navigateToServer(serverId: string) {
       </Tooltip>
     </nav>
   </TooltipProvider>
+
+  <!-- Leave server confirmation -->
+  <AlertDialog :open="showLeaveDialog" @update:open="showLeaveDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>Leave Server</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to leave <strong>{{ leaveTarget?.name }}</strong>? You won't be able to rejoin unless you're re-invited.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Cancel</AlertDialogCancel>
+        <AlertDialogAction @click="confirmLeave" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">Leave</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>

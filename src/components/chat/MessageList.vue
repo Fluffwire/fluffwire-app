@@ -30,6 +30,14 @@ async function handleEdit(messageId: string, content: string) {
 async function handleDelete(messageId: string) {
   await messagesStore.deleteMessage(props.channelId, messageId)
 }
+
+async function handlePin(messageId: string) {
+  await messagesStore.pinMessage(props.channelId, messageId)
+}
+
+async function handleUnpin(messageId: string) {
+  await messagesStore.unpinMessage(props.channelId, messageId)
+}
 const containerRef = ref<HTMLElement | null>(null)
 
 const messages = computed(() => messagesStore.getMessages(props.channelId))
@@ -119,6 +127,8 @@ function scrollToBottom() {
         :can-delete="isServerOwner"
         @edit="handleEdit"
         @delete="handleDelete"
+        @pin="handlePin"
+        @unpin="handleUnpin"
       />
     </div>
   </div>

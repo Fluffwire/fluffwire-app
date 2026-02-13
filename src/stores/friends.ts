@@ -3,6 +3,7 @@ import { ref, computed } from 'vue'
 import type { Friend, FriendRequest } from '@/types'
 import { friendApi } from '@/services/friendApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { soundManager } from '@/composables/useSounds'
 
 export const useFriendsStore = defineStore('friends', () => {
   const friends = ref<Friend[]>([])
@@ -20,6 +21,7 @@ export const useFriendsStore = defineStore('friends', () => {
   function setupWsHandlers() {
     wsDispatcher.register(WS_EVENTS.FRIEND_REQUEST, (data: unknown) => {
       pendingRequests.value.push(data as FriendRequest)
+      soundManager.play('friendRequest')
     })
 
     wsDispatcher.register(WS_EVENTS.FRIEND_ACCEPT, (data: unknown) => {

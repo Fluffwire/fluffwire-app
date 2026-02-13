@@ -24,4 +24,28 @@ export const messageApi = {
   sendTyping(channelId: string): Promise<void> {
     return api.post(API.CHANNELS.TYPING(channelId))
   },
+
+  pinMessage(channelId: string, messageId: string): Promise<{ data: Message }> {
+    return api.put(API.CHANNELS.PIN(channelId, messageId))
+  },
+
+  unpinMessage(channelId: string, messageId: string): Promise<void> {
+    return api.delete(API.CHANNELS.PIN(channelId, messageId))
+  },
+
+  getPinnedMessages(channelId: string): Promise<{ data: Message[] }> {
+    return api.get(API.CHANNELS.PINS(channelId))
+  },
+
+  searchMessages(channelId: string, params: {
+    q: string
+    from?: string
+    has?: string
+    before?: string
+    after?: string
+    limit?: number
+    offset?: number
+  }): Promise<{ data: { messages: Message[]; total: number } }> {
+    return api.get(API.CHANNELS.SEARCH(channelId), { params })
+  },
 }

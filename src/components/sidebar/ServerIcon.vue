@@ -35,7 +35,9 @@ function getInitials(name: string): string {
         active
           ? 'rounded-2xl shadow-lg shadow-primary/25'
           : 'rounded-[28px] hover:rounded-2xl hover:shadow-md hover:shadow-primary/15',
-        server.icon ? '' : active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground',
+        server.icon
+          ? active ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
+          : active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground',
       ]"
     >
       <img

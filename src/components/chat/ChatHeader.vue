@@ -4,7 +4,7 @@ import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Hash, AtSign, Menu, Users, UserPlus } from 'lucide-vue-next'
+import { Hash, AtSign, Menu, Users, UserPlus, Pin, Search } from 'lucide-vue-next'
 
 interface Props {
   channelName: string
@@ -12,6 +12,10 @@ interface Props {
 }
 
 defineProps<Props>()
+const emit = defineEmits<{
+  togglePins: []
+  openSearch: []
+}>()
 const route = useRoute()
 const uiStore = useUiStore()
 const { isMobile, isTablet } = useResponsive()
@@ -57,6 +61,32 @@ function openInviteModal() {
             </Button>
           </TooltipTrigger>
           <TooltipContent>Invite People</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground"
+              @click="emit('openSearch')"
+            >
+              <Search class="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Search</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              variant="ghost"
+              size="icon"
+              class="h-8 w-8 text-muted-foreground hover:text-foreground"
+              @click="emit('togglePins')"
+            >
+              <Pin class="h-5 w-5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Pinned Messages</TooltipContent>
         </Tooltip>
         <Tooltip v-if="!isDm">
           <TooltipTrigger as-child>

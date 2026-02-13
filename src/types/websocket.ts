@@ -49,3 +49,5 @@ export type WsEventName =
   | 'FRIEND_ACCEPT'
   | 'FRIEND_REMOVE'
   | 'DM_CREATE'
+  | 'MESSAGE_PIN'
+  | 'MESSAGE_UNPIN'

@@ -9,6 +9,7 @@ export const API = {
   USERS: {
     BASE: '/users',
     BY_ID: (id: string) => `/users/${id}`,
+    PROFILE: '/users/@me',
     SETTINGS: '/users/@me/settings',
   },
   SERVERS: {
@@ -27,6 +28,9 @@ export const API = {
     TYPING: (channelId: string) => `/channels/${channelId}/typing`,
     ACK: (channelId: string) => `/channels/${channelId}/ack`,
     REORDER: (serverId: string) => `/servers/${serverId}/channels/reorder`,
+    PIN: (channelId: string, messageId: string) => `/channels/${channelId}/messages/${messageId}/pin`,
+    PINS: (channelId: string) => `/channels/${channelId}/pins`,
+    SEARCH: (channelId: string) => `/channels/${channelId}/messages/search`,
   },
   CATEGORIES: {
     BY_SERVER: (serverId: string) => `/servers/${serverId}/categories`,

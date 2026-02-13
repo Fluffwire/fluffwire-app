@@ -23,11 +23,19 @@ class WebRTCService {
   private remoteAudioElements = new Map<string, HTMLAudioElement>()
   private audioContext: AudioContext | null = null
   private analyserNodes = new Map<string, AnalyserNode>()
+  private remoteVadIntervals = new Map<string, number>()
 
   private _isMuted = false
   private _isDeafened = false
   private _currentChannelId: string | null = null
   private _currentServerId: string | null = null
+
+  // Voice settings
+  private _voiceMode: 'voice-activity' | 'push-to-talk' = 'voice-activity'
+  private _vadThreshold = 15
+  private _pttActive = false
+  private _inputDeviceId: string | null = null
+  private _outputDeviceId: string | null = null
 
   // ICE candidate buffer — queued until remote description is set
   private iceCandidateBuffer: RTCIceCandidateInit[] = []
@@ -43,6 +51,60 @@ class WebRTCService {
   get isMuted(): boolean { return this._isMuted }
   get isDeafened(): boolean { return this._isDeafened }
   get currentChannelId(): string | null { return this._currentChannelId }
+  get voiceMode(): 'voice-activity' | 'push-to-talk' { return this._voiceMode }
+  get vadThreshold(): number { return this._vadThreshold }
+
+  setVoiceMode(mode: 'voice-activity' | 'push-to-talk') {
+    this._voiceMode = mode
+    if (mode === 'push-to-talk') {
+      // When switching to PTT, mute track until key is held
+      this._pttActive = false
+      this.updateTrackEnabled()
+    } else {
+      this.updateTrackEnabled()
+    }
+  }
+
+  setVadThreshold(threshold: number) {
+    this._vadThreshold = Math.max(0, Math.min(100, threshold))
+  }
+
+  setPttActive(active: boolean) {
+    this._pttActive = active
+    this.updateTrackEnabled()
+  }
+
+  private updateTrackEnabled() {
+    if (!this.localStream) return
+    const shouldEnable = this._voiceMode === 'push-to-talk'
+      ? this._pttActive && !this._isMuted
+      : !this._isMuted
+    this.localStream.getAudioTracks().forEach((track) => {
+      track.enabled = shouldEnable
+    })
+  }
+
+  loadVoiceSettings() {
+    try {
+      const stored = localStorage.getItem('fluffwire-voice-settings')
+      if (stored) {
+        const s = JSON.parse(stored)
+        if (s.voiceMode) this._voiceMode = s.voiceMode
+        if (typeof s.vadThreshold === 'number') this._vadThreshold = s.vadThreshold
+        if (s.inputDeviceId) this._inputDeviceId = s.inputDeviceId
+        if (s.outputDeviceId) this._outputDeviceId = s.outputDeviceId
+      }
+    } catch { /* ignore parse errors */ }
+  }
+
+  saveVoiceSettings() {
+    localStorage.setItem('fluffwire-voice-settings', JSON.stringify({
+      voiceMode: this._voiceMode,
+      vadThreshold: this._vadThreshold,
+      inputDeviceId: this._inputDeviceId,
+      outputDeviceId: this._outputDeviceId,
+    }))
+  }
 
   async joinVoiceChannel(serverId: string, channelId: string): Promise<void> {
     await this.leaveVoiceChannel()
@@ -82,6 +144,12 @@ class WebRTCService {
           audio.muted = this._isDeafened
           audio.play().catch(() => {})
           this.remoteAudioElements.set(stream.id, audio)
+
+          // Parse userId from Pion stream ID format: "stream-{userId}"
+          const userId = stream.id.startsWith('stream-') ? stream.id.slice(7) : null
+          if (userId) {
+            this.setupRemoteVAD(stream, userId)
+          }
         }
       }
 
@@ -201,9 +269,7 @@ class WebRTCService {
 
   toggleMute(): boolean {
     this._isMuted = !this._isMuted
-    this.localStream?.getAudioTracks().forEach((track) => {
-      track.enabled = !this._isMuted
-    })
+    this.updateTrackEnabled()
     this.sendVoiceStateUpdate()
     return this._isMuted
   }
@@ -257,6 +323,8 @@ class WebRTCService {
     })
     this.remoteAudioElements.clear()
     this.analyserNodes.clear()
+    this.remoteVadIntervals.forEach((id) => clearInterval(id))
+    this.remoteVadIntervals.clear()
     this.audioContext?.close()
     this.audioContext = null
 
@@ -265,6 +333,34 @@ class WebRTCService {
     // Persist mute/deafen state across leave/join
     this.hasRemoteDescription = false
     this.iceCandidateBuffer = []
+  }
+
+  private setupRemoteVAD(stream: MediaStream, userId: string): void {
+    if (!this.audioContext) return
+    try {
+      const source = this.audioContext.createMediaStreamSource(stream)
+      const analyser = this.audioContext.createAnalyser()
+      analyser.fftSize = 256
+      source.connect(analyser)
+
+      const dataArray = new Uint8Array(analyser.frequencyBinCount)
+      let wasSpeaking = false
+
+      const intervalId = window.setInterval(() => {
+        analyser.getByteFrequencyData(dataArray)
+        const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
+        const isSpeaking = avg > 15
+
+        if (isSpeaking !== wasSpeaking) {
+          wasSpeaking = isSpeaking
+          this.onPeerSpeaking?.(userId, isSpeaking)
+        }
+      }, 50)
+
+      this.remoteVadIntervals.set(userId, intervalId)
+    } catch {
+      // AudioContext may not support this stream
+    }
   }
 
   private setupVoiceActivityDetection(): void {
@@ -283,7 +379,7 @@ class WebRTCService {
       if (!this.audioContext) return
       analyser.getByteFrequencyData(dataArray)
       const avg = dataArray.reduce((a, b) => a + b, 0) / dataArray.length
-      const isSpeaking = avg > 15 && !this._isMuted
+      const isSpeaking = avg > this._vadThreshold && !this._isMuted
 
       if (isSpeaking !== wasSpeaking) {
         wasSpeaking = isSpeaking

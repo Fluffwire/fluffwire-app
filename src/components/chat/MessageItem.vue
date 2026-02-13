@@ -2,6 +2,7 @@
 import { computed, ref, nextTick } from 'vue'
 import type { Message } from '@/types'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import UserProfilePopover from '@/components/common/UserProfilePopover.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import {
@@ -9,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { renderMarkdown } from '@/composables/useMarkdown'
-import { Pencil, Trash2 } from 'lucide-vue-next'
+import { Pencil, Trash2, Pin } from 'lucide-vue-next'
 
 interface Props {
   message: Message
@@ -26,6 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   edit: [messageId: string, content: string]
   delete: [messageId: string]
+  pin: [messageId: string]
+  unpin: [messageId: string]
 }>()
 
 const isEditing = ref(false)
@@ -122,6 +125,19 @@ function confirmDelete() {
       v-if="(isOwnMessage || canDelete) && !isEditing"
       class="absolute -top-3 right-4 z-10 hidden gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm group-hover:flex"
     >
+      <Tooltip v-if="isOwnMessage || canDelete">
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-7 w-7"
+            @click="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)"
+          >
+            <Pin class="h-3.5 w-3.5" :class="message.pinned ? 'text-primary' : ''" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{ message.pinned ? 'Unpin' : 'Pin' }}</TooltipContent>
+      </Tooltip>
       <Tooltip v-if="isOwnMessage">
         <TooltipTrigger as-child>
           <Button variant="ghost" size="icon" class="h-7 w-7" @click="startEditing">
@@ -141,18 +157,22 @@ function confirmDelete() {
     </div>
 
       <template v-if="showAuthor">
-        <div class="mt-0.5 shrink-0">
-          <UserAvatar
-            :src="message.author.avatar"
-            :alt="message.author.displayName"
-            size="md"
-          />
-        </div>
+        <UserProfilePopover :user="message.author" side="right">
+          <div class="mt-0.5 shrink-0 cursor-pointer">
+            <UserAvatar
+              :src="message.author.avatar"
+              :alt="message.author.displayName"
+              size="md"
+            />
+          </div>
+        </UserProfilePopover>
         <div class="min-w-0 flex-1">
           <div class="flex items-baseline gap-2">
-            <span class="text-sm font-medium text-foreground hover:text-primary cursor-pointer">
-              {{ message.author.displayName }}
-            </span>
+            <UserProfilePopover :user="message.author" side="right">
+              <span class="text-sm font-medium text-foreground hover:text-primary cursor-pointer">
+                {{ message.author.displayName }}
+              </span>
+            </UserProfilePopover>
             <Tooltip>
               <TooltipTrigger as-child>
                 <span class="text-xs text-muted-foreground">{{ formattedTime }}</span>

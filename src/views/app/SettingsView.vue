@@ -1,18 +1,25 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import { useResponsive } from '@/composables/useResponsive'
 import { useTheme, themeLabels, themeNames, type ThemeName } from '@/composables/useTheme'
+import { uploadFile } from '@/services/api'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Switch } from '@/components/ui/switch'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
+import { useVoiceStore } from '@/stores/voice'
+import { webrtcService } from '@/services/webrtc'
+import type { MediaDeviceOption } from '@/types'
 
 const authStore = useAuthStore()
 const uiStore = useUiStore()
@@ -41,6 +48,89 @@ async function handleDesktopToggle(value: boolean) {
 }
 
 const activeTab = ref('account')
+
+// Profile editing
+const profileDisplayName = ref('')
+const profileBio = ref('')
+const profileAvatarFile = ref<File | null>(null)
+const profileAvatarPreview = ref<string | null>(null)
+const profileSaving = ref(false)
+const avatarInput = ref<HTMLInputElement | null>(null)
+
+watch(() => authStore.user, (u) => {
+  if (u) {
+    profileDisplayName.value = u.displayName
+    profileBio.value = (u as { bio?: string }).bio ?? ''
+  }
+}, { immediate: true })
+
+function handleAvatarSelect(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) return
+  profileAvatarFile.value = file
+  profileAvatarPreview.value = URL.createObjectURL(file)
+}
+
+async function saveProfile() {
+  profileSaving.value = true
+  try {
+    const updates: { displayName?: string; avatar?: string; bio?: string } = {}
+    const name = profileDisplayName.value.trim()
+    if (name && name !== authStore.user?.displayName) {
+      updates.displayName = name
+    }
+    const bio = profileBio.value.trim()
+    if (bio !== ((authStore.user as { bio?: string })?.bio ?? '')) {
+      updates.bio = bio
+    }
+    if (profileAvatarFile.value) {
+      const { url } = await uploadFile(profileAvatarFile.value)
+      updates.avatar = url
+    }
+    if (Object.keys(updates).length > 0) {
+      await authStore.updateProfile(updates)
+      toast.success('Profile updated')
+    }
+    profileAvatarFile.value = null
+    profileAvatarPreview.value = null
+  } catch {
+    toast.error('Failed to update profile')
+  } finally {
+    profileSaving.value = false
+  }
+}
+
+const voiceStore = useVoiceStore()
+const audioDevices = ref<MediaDeviceOption[]>([])
+const capturingPttKey = ref(false)
+
+async function loadAudioDevices() {
+  audioDevices.value = await webrtcService.getAudioDevices()
+}
+
+function startPttCapture() {
+  capturingPttKey.value = true
+  function onKey(e: KeyboardEvent) {
+    e.preventDefault()
+    voiceStore.setPttKey(e.code)
+    capturingPttKey.value = false
+    window.removeEventListener('keydown', onKey)
+  }
+  window.addEventListener('keydown', onKey)
+}
+
+function formatKeyCode(code: string): string {
+  return code.replace('Key', '').replace('Digit', '').replace('Left', 'L-').replace('Right', 'R-')
+}
+
+const hasProfileChanges = ref(false)
+watch([profileDisplayName, profileBio, profileAvatarFile], () => {
+  const nameChanged = profileDisplayName.value.trim() !== (authStore.user?.displayName ?? '')
+  const bioChanged = profileBio.value.trim() !== ((authStore.user as { bio?: string })?.bio ?? '')
+  hasProfileChanges.value = nameChanged || bioChanged || !!profileAvatarFile.value
+})
 
 function handleLogout() {
   authStore.logout()
@@ -153,25 +243,66 @@ const themePreviewColors: Record<ThemeName, string> = {
             <!-- My Account -->
             <template v-if="activeTab === 'account'">
               <h2 class="mb-6 text-xl font-bold text-foreground">My Account</h2>
-              <Card>
+              <Card class="mb-4">
                 <CardContent class="p-6">
-                  <div class="flex items-center gap-4">
-                    <UserAvatar
-                      :src="authStore.user?.avatar ?? null"
-                      :alt="authStore.user?.displayName ?? ''"
-                      size="lg"
-                    />
-                    <div>
-                      <h3 class="text-xl font-semibold text-foreground">
-                        {{ authStore.user?.displayName }}
-                      </h3>
-                      <Separator class="my-2" />
-                      <p class="text-sm text-muted-foreground">
-                        {{ authStore.user?.username }}
-                      </p>
-                      <p class="text-sm text-muted-foreground">
-                        {{ authStore.user?.email }}
-                      </p>
+                  <div class="flex items-start gap-4">
+                    <!-- Avatar with upload -->
+                    <div class="relative shrink-0">
+                      <button @click="avatarInput?.click()" class="group relative">
+                        <UserAvatar
+                          :src="profileAvatarPreview ?? authStore.user?.avatar ?? null"
+                          :alt="authStore.user?.displayName ?? ''"
+                          size="lg"
+                        />
+                        <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Camera class="h-5 w-5 text-white" />
+                        </div>
+                      </button>
+                      <input
+                        ref="avatarInput"
+                        type="file"
+                        accept="image/*"
+                        class="hidden"
+                        @change="handleAvatarSelect"
+                      />
+                    </div>
+                    <div class="min-w-0 flex-1 space-y-4">
+                      <div>
+                        <p class="text-xs text-muted-foreground">{{ authStore.user?.username }}</p>
+                        <p class="text-xs text-muted-foreground">{{ authStore.user?.email }}</p>
+                      </div>
+
+                      <div class="space-y-2">
+                        <Label for="profile-display-name">Display Name</Label>
+                        <Input
+                          id="profile-display-name"
+                          v-model="profileDisplayName"
+                          placeholder="Display name"
+                          maxlength="32"
+                        />
+                      </div>
+
+                      <div class="space-y-2">
+                        <Label for="profile-bio">About Me</Label>
+                        <textarea
+                          id="profile-bio"
+                          v-model="profileBio"
+                          maxlength="500"
+                          rows="3"
+                          placeholder="Tell us about yourself"
+                          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
+                        />
+                        <p class="text-xs text-muted-foreground">{{ profileBio.length }}/500</p>
+                      </div>
+
+                      <Button
+                        @click="saveProfile"
+                        :disabled="!hasProfileChanges || profileSaving"
+                        size="sm"
+                      >
+                        <Loader2 v-if="profileSaving" class="mr-2 h-4 w-4 animate-spin" />
+                        Save Changes
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -181,9 +312,119 @@ const themePreviewColors: Record<ThemeName, string> = {
             <!-- Voice & Audio -->
             <template v-if="activeTab === 'voice'">
               <h2 class="mb-6 text-xl font-bold text-foreground">Voice & Audio</h2>
+
+              <!-- Input Mode -->
+              <Card class="mb-4">
+                <CardHeader>
+                  <CardTitle class="text-base">Input Mode</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                  <div class="flex gap-3">
+                    <button
+                      @click="voiceStore.setVoiceMode('voice-activity')"
+                      :class="[
+                        'flex-1 rounded-lg border-2 p-4 text-left transition-all',
+                        voiceStore.voiceMode === 'voice-activity'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/40',
+                      ]"
+                    >
+                      <div class="text-sm font-medium text-foreground">Voice Activity</div>
+                      <div class="mt-1 text-xs text-muted-foreground">Automatically transmit when you speak</div>
+                    </button>
+                    <button
+                      @click="voiceStore.setVoiceMode('push-to-talk')"
+                      :class="[
+                        'flex-1 rounded-lg border-2 p-4 text-left transition-all',
+                        voiceStore.voiceMode === 'push-to-talk'
+                          ? 'border-primary bg-primary/5'
+                          : 'border-border hover:border-primary/40',
+                      ]"
+                    >
+                      <div class="text-sm font-medium text-foreground">Push to Talk</div>
+                      <div class="mt-1 text-xs text-muted-foreground">Hold a key to transmit</div>
+                    </button>
+                  </div>
+
+                  <!-- VAD Sensitivity -->
+                  <div v-if="voiceStore.voiceMode === 'voice-activity'" class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <label class="text-sm font-medium text-foreground">Sensitivity</label>
+                      <span class="text-xs text-muted-foreground">{{ voiceStore.vadThreshold }}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      :value="voiceStore.vadThreshold"
+                      @input="voiceStore.setVadThreshold(Number(($event.target as HTMLInputElement).value))"
+                      class="w-full accent-primary"
+                    />
+                    <div class="flex justify-between text-[10px] text-muted-foreground">
+                      <span>Sensitive</span>
+                      <span>Less sensitive</span>
+                    </div>
+                  </div>
+
+                  <!-- PTT Key -->
+                  <div v-if="voiceStore.voiceMode === 'push-to-talk'" class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Shortcut</label>
+                    <Button
+                      variant="outline"
+                      @click="startPttCapture"
+                      class="w-full justify-start gap-2"
+                    >
+                      <Mic class="h-4 w-4" />
+                      <template v-if="capturingPttKey">
+                        <span class="animate-pulse text-primary">Press a key...</span>
+                      </template>
+                      <template v-else>
+                        {{ formatKeyCode(voiceStore.pttKey) }}
+                      </template>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <!-- Audio Devices -->
               <Card>
-                <CardContent class="p-6">
-                  <p class="text-sm text-muted-foreground">Voice and audio settings will be available here.</p>
+                <CardHeader>
+                  <CardTitle class="text-base">Audio Devices</CardTitle>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Input Device</label>
+                    <select
+                      @focus="loadAudioDevices"
+                      @change="webrtcService.setInputDevice(($event.target as HTMLSelectElement).value)"
+                      class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="">Default</option>
+                      <option
+                        v-for="d in audioDevices.filter(d => d.kind === 'audioinput')"
+                        :key="d.deviceId"
+                        :value="d.deviceId"
+                      >
+                        {{ d.label }}
+                      </option>
+                    </select>
+                  </div>
+                  <div class="space-y-2">
+                    <label class="text-sm font-medium text-foreground">Output Device</label>
+                    <select
+                      @focus="loadAudioDevices"
+                      class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      <option value="">Default</option>
+                      <option
+                        v-for="d in audioDevices.filter(d => d.kind === 'audiooutput')"
+                        :key="d.deviceId"
+                        :value="d.deviceId"
+                      >
+                        {{ d.label }}
+                      </option>
+                    </select>
+                  </div>
                 </CardContent>
               </Card>
             </template>

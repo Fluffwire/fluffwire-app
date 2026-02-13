@@ -12,6 +12,7 @@ export const useMessagesStore = defineStore('messages', () => {
   const cursors = ref<Map<string, string | null>>(new Map())
   const hasMore = ref<Map<string, boolean>>(new Map())
   const isLoading = ref(false)
+  const pinnedMessages = ref<Map<string, Message[]>>(new Map())
 
   function getMessages(channelId: string): Message[] {
     return messagesByChannel.value.get(channelId) ?? []
@@ -42,6 +43,41 @@ export const useMessagesStore = defineStore('messages', () => {
           channelId,
           messages.filter((m) => m.id !== id)
         )
+      }
+      // Also remove from pinned cache
+      const pinned = pinnedMessages.value.get(channelId)
+      if (pinned) {
+        pinnedMessages.value.set(channelId, pinned.filter((m) => m.id !== id))
+      }
+    })
+
+    wsDispatcher.register(WS_EVENTS.MESSAGE_PIN, (data: unknown) => {
+      const message = data as Message
+      const messages = messagesByChannel.value.get(message.channelId)
+      if (messages) {
+        const idx = messages.findIndex((m) => m.id === message.id)
+        if (idx !== -1) messages[idx] = message
+      }
+      // Add to pinned cache
+      const pinned = pinnedMessages.value.get(message.channelId)
+      if (pinned) {
+        if (!pinned.find((m) => m.id === message.id)) {
+          pinned.unshift(message)
+        }
+      }
+    })
+
+    wsDispatcher.register(WS_EVENTS.MESSAGE_UNPIN, (data: unknown) => {
+      const message = data as Message
+      const messages = messagesByChannel.value.get(message.channelId)
+      if (messages) {
+        const idx = messages.findIndex((m) => m.id === message.id)
+        if (idx !== -1) messages[idx] = message
+      }
+      // Remove from pinned cache
+      const pinned = pinnedMessages.value.get(message.channelId)
+      if (pinned) {
+        pinnedMessages.value.set(message.channelId, pinned.filter((m) => m.id !== message.id))
       }
     })
   }
@@ -94,9 +130,27 @@ export const useMessagesStore = defineStore('messages', () => {
     hasMore.value.delete(channelId)
   }
 
+  async function fetchPinnedMessages(channelId: string) {
+    const { data } = await messageApi.getPinnedMessages(channelId)
+    pinnedMessages.value.set(channelId, data)
+  }
+
+  function getPinnedMessages(channelId: string): Message[] {
+    return pinnedMessages.value.get(channelId) ?? []
+  }
+
+  async function pinMessage(channelId: string, messageId: string) {
+    await messageApi.pinMessage(channelId, messageId)
+  }
+
+  async function unpinMessage(channelId: string, messageId: string) {
+    await messageApi.unpinMessage(channelId, messageId)
+  }
+
   return {
     messagesByChannel,
     isLoading,
+    pinnedMessages,
     getMessages,
     fetchMessages,
     sendMessage,
@@ -105,5 +159,9 @@ export const useMessagesStore = defineStore('messages', () => {
     deleteMessage,
     channelHasMore,
     clearChannel,
+    fetchPinnedMessages,
+    getPinnedMessages,
+    pinMessage,
+    unpinMessage,
   }
 })

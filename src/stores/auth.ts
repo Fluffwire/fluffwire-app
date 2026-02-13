@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { CurrentUser, LoginCredentials, RegisterCredentials } from '@/types'
 import { authApi } from '@/services/authApi'
+import api from '@/services/api'
+import { API } from '@/constants/endpoints'
 import { wsService } from '@/services/websocket'
 import { useServersStore } from './servers'
 import { useFriendsStore } from './friends'
@@ -108,6 +110,11 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('fluffwire-remember')
   }
 
+  async function updateProfile(data: { displayName?: string; avatar?: string; bio?: string }): Promise<void> {
+    const { data: updated } = await api.patch(API.USERS.PROFILE, data)
+    user.value = updated
+  }
+
   return {
     user,
     accessToken,
@@ -118,5 +125,6 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     initialize,
     logout,
+    updateProfile,
   }
 })

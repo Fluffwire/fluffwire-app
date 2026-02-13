@@ -25,6 +25,8 @@ export const WS_EVENTS = {
   FRIEND_ACCEPT: 'FRIEND_ACCEPT',
   FRIEND_REMOVE: 'FRIEND_REMOVE',
   DM_CREATE: 'DM_CREATE',
+  MESSAGE_PIN: 'MESSAGE_PIN',
+  MESSAGE_UNPIN: 'MESSAGE_UNPIN',
 } as const
 
 export type WsEventName = (typeof WS_EVENTS)[keyof typeof WS_EVENTS]

@@ -63,7 +63,7 @@ export const useServersStore = defineStore('servers', () => {
     return data
   }
 
-  async function updateServer(id: string, data: Partial<{ name: string }>) {
+  async function updateServer(id: string, data: Partial<{ name: string; icon: string }>) {
     const { data: updated } = await serverApi.updateServer(id, data)
     const idx = servers.value.findIndex((s) => s.id === id)
     if (idx !== -1) servers.value[idx] = updated
