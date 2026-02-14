@@ -99,6 +99,13 @@ class WebSocketService {
       this._isConnected = false
       this.stopHeartbeat()
 
+      // Clear session if invalid (4007) so next reconnect does fresh IDENTIFY
+      if (event.code === 4007) {
+        console.log('[WS] Invalid session, clearing session state')
+        this.sessionId = null
+        this.sequence = null
+      }
+
       if (event.code === 4004) {
         this._disconnectReason = 'auth_failed'
         this.notifyAuthFailureListeners()
