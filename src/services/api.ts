@@ -23,18 +23,47 @@ const tauriAdapter: AxiosAdapter = async (config) => {
       body: config.data ? JSON.stringify(config.data) : undefined,
     })
 
-    const data = await response.json()
+    debugLogger.info('API', 'Tauri response received', {
+      status: response.status,
+      ok: response.ok,
+      contentType: response.headers.get('content-type')
+    })
 
-    return {
+    // Parse response body based on content type
+    let data
+    const contentType = response.headers.get('content-type')
+    if (contentType?.includes('application/json')) {
+      const text = await response.text()
+      data = text ? JSON.parse(text) : null
+    } else {
+      data = await response.text()
+    }
+
+    // Build axios-compatible response
+    const axiosResponse = {
       data,
       status: response.status,
-      statusText: response.ok ? 'OK' : 'Error',
+      statusText: response.statusText,
       headers: Object.fromEntries(response.headers.entries()),
       config,
       request: {},
     }
-  } catch (error) {
-    debugLogger.error('API', 'Tauri fetch error', error)
+
+    // Throw error for non-2xx status codes (axios behavior)
+    if (!response.ok) {
+      const error: any = new Error(`Request failed with status ${response.status}`)
+      error.response = axiosResponse
+      error.config = config
+      throw error
+    }
+
+    return axiosResponse
+  } catch (error: any) {
+    debugLogger.error('API', 'Tauri fetch error', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    })
     throw error
   }
 }
