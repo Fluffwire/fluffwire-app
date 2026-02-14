@@ -25,13 +25,13 @@ function getInitials(name: string): string {
     <div
       :class="[
         'absolute left-0 w-1 rounded-r-full bg-primary transition-all duration-200',
-        active ? 'h-10' : 'h-0 group-hover:h-5',
+        active ? 'h-8' : 'h-0 group-hover:h-4',
       ]"
     />
     <button
       @click="$emit('click')"
       :class="[
-        'group flex h-14 w-14 items-center justify-center overflow-hidden transition-all duration-200',
+        'group flex h-12 w-12 items-center justify-center overflow-hidden transition-all duration-200',
         active
           ? 'rounded-2xl shadow-lg shadow-primary/25'
           : 'rounded-[28px] hover:rounded-2xl hover:shadow-md hover:shadow-primary/15',
@@ -46,7 +46,7 @@ function getInitials(name: string): string {
         :alt="server.name"
         class="h-full w-full object-cover"
       />
-      <span v-else class="text-sm font-semibold">
+      <span v-else class="text-xs font-semibold">
         {{ getInitials(server.name) }}
       </span>
     </button>

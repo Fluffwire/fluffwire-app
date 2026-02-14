@@ -141,8 +141,8 @@ const showChannelSidebar = computed(() => !isSettings.value)
 
     <!-- Mobile: combined sidebar Sheet -->
     <Sheet v-if="isMobile" v-model:open="uiStore.isMobileSidebarOpen">
-      <SheetContent side="left" class="w-[312px] h-full p-0 flex flex-row overflow-hidden">
-        <ServerSidebar class="w-[72px] shrink-0" is-sheet />
+      <SheetContent side="left" class="w-[300px] h-full p-0 flex flex-row overflow-hidden">
+        <ServerSidebar class="w-[60px] shrink-0" is-sheet />
         <ChannelSidebar class="flex-1" is-sheet />
       </SheetContent>
     </Sheet>

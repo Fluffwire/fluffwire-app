@@ -79,7 +79,9 @@ function categorizedChannels(categoryId: string) {
 
 function navigateAndClose(path: string) {
   router.push(path)
-  if (uiStore.isMobileView || uiStore.isTabletView) {
+  if (uiStore.isMobileView) {
+    uiStore.isMobileSidebarOpen = false
+  } else if (uiStore.isTabletView) {
     uiStore.isChannelSidebarOpen = false
   }
 }
@@ -176,7 +178,10 @@ onBeforeUnmount(destroySortables)
     ]"
   >
     <!-- Header -->
-    <div class="flex h-12 items-center border-b border-border/50 px-4">
+    <div :class="[
+      'flex h-12 items-center border-b border-border/50 px-4',
+      isSheet ? 'pr-12' : ''
+    ]">
       <template v-if="isHome">
         <h2 class="font-semibold text-foreground">Direct Messages</h2>
       </template>
