@@ -220,3 +220,17 @@ html.theme-transitioning *::after {
 button, a, [role="button"] {
   touch-action: manipulation;
 }
+
+/* Thin scrollbar for horizontal scrolling */
+.scrollbar-thin::-webkit-scrollbar {
+  height: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: oklch(0.3 0 0 / 50%);
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.3 0 0 / 70%);
+}

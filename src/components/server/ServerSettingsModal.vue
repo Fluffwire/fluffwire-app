@@ -5,6 +5,7 @@ import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useResponsive } from '@/composables/useResponsive'
 import api, { uploadFile } from '@/services/api'
 import { serverApi } from '@/services/serverApi'
 import type { Webhook, ServerInvite, Role } from '@/types'
@@ -25,6 +26,7 @@ const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const { isMobile } = useResponsive()
 
 const rolesStore = useRolesStore()
 
@@ -404,43 +406,53 @@ async function handleSave() {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent class="sm:max-w-2xl">
+    <DialogContent :class="[
+      isMobile ? 'max-w-[95vw] max-h-[90vh] p-4' : 'sm:max-w-3xl max-h-[85vh]'
+    ]">
       <div class="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-primary/60 to-transparent" />
 
       <DialogHeader>
         <DialogTitle>{{ $t('server.serverSettings') }}</DialogTitle>
       </DialogHeader>
 
-      <!-- Tabs -->
-      <div v-if="isOwner" class="flex gap-2 border-b border-border/50 pb-2">
+      <!-- Tabs (scrollable on mobile) -->
+      <div v-if="isOwner" :class="[
+        'flex gap-2 border-b border-border/50 pb-2',
+        isMobile ? 'overflow-x-auto scrollbar-thin' : ''
+      ]">
         <button
           @click="activeTab = 'general'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'general' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'general' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.general') }}</button>
         <button
           @click="activeTab = 'bans'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'bans' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'bans' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.bans') }}</button>
         <button
           @click="activeTab = 'webhooks'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'webhooks' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'webhooks' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.webhooks') }}</button>
         <button
           @click="activeTab = 'invites'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'invites' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'invites' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.invites') }}</button>
         <button
           @click="activeTab = 'roles'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'roles' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'roles' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.roles') }}</button>
         <button
           @click="activeTab = 'audit'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors', activeTab === 'audit' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'audit' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.auditLog') }}</button>
       </div>
 
-      <!-- Bans tab -->
-      <div v-if="activeTab === 'bans'" class="space-y-2">
+      <!-- Scrollable content container -->
+      <div :class="[
+        'overflow-y-auto',
+        isMobile ? 'max-h-[calc(90vh-12rem)]' : 'max-h-[calc(85vh-12rem)]'
+      ]">
+        <!-- Bans tab -->
+        <div v-if="activeTab === 'bans'" class="space-y-2">
         <p v-if="bansLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
         <p v-else-if="bans.length === 0" class="text-sm text-muted-foreground">{{ $t('server.noBans') }}</p>
         <div
@@ -761,6 +773,8 @@ async function handleSave() {
           </Button>
         </DialogFooter>
       </form>
+      </div>
+      <!-- End scrollable content container -->
 
     </DialogContent>
   </Dialog>
