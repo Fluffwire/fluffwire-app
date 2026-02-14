@@ -163,8 +163,49 @@ src/
 ## API Contract
 See `/home/cryo/fluffwire-server/BACKEND_REQUIREMENTS.md` for the full API specification.
 
+## Tauri Desktop App
+
+### Configuration
+- Located in `src-tauri/` directory
+- Tauri 2 with platform-specific webviews (WebKit on macOS/Linux, WebView2 on Windows)
+- Webview origin: `tauri://localhost` (macOS/Linux), `https://tauri.localhost` (Windows)
+
+### Required Plugins
+All plugins must be added to both Rust (`Cargo.toml` + `lib.rs`) and npm:
+- `tauri-plugin-http` — External API requests (bypasses webview CORS)
+- `tauri-plugin-notification` — Desktop notifications
+- `tauri-plugin-dialog` — Native dialogs (file picker, alerts)
+- `tauri-plugin-process` — Process control (relaunch for updates)
+- `tauri-plugin-updater` — Auto-updates from GitHub releases (desktop only)
+
+### CSP & Asset Protocol
+The CSP in `tauri.conf.json` must include:
+- `img-src 'self' asset: http://asset.localhost https://app.fluffwire.com data: blob:`
+- Asset protocol enabled with `"assetProtocol": { "enable": true, "scope": ["**"] }`
+- This allows images to load in the webview from external sources
+
+### Features
+- **HTTP Adapter**: `src/services/api.ts` detects Tauri and uses HTTP plugin for external requests
+- **Desktop Notifications**: Requests permission on login, shows notifications when app unfocused
+- **Auto-Updates**: Checks for updates on login, prompts user to download/install from GitHub releases
+- **Debug Panel**: Ctrl+Shift+D opens devtools (no visible debug button in UI)
+
+### Release Process
+1. **DO NOT** manually create git tags
+2. Use workflow dispatch: `gh workflow run release.yml -f tag=vX.Y.Z`
+3. Workflow updates version in `tauri.conf.json`, builds Windows installer, creates draft GitHub release
+4. Artifacts are signed with minisign (private key + password in GitHub secrets)
+5. Release includes: `.exe` installer, `.msi` installer, signatures, and `latest.json` for auto-updates
+6. Currently builds Windows-only for faster iteration (macOS/Linux builds commented in workflow)
+
+### Versioning
+- **Patch (0.2.x)**: Bug fixes, small improvements, no milestone required
+- **Minor (0.x.0)**: New features as part of defined GitHub milestone
+- Check milestones before bumping minor version
+
 ## Environment
 - Node.js v22.22.0 via nvm (already in PATH)
 - Dev server: http://localhost:5173
 - API base: http://localhost:3000/api (dev), proxied via nginx in prod
 - Production: https://app.fluffwire.com, static build at /var/www/app/
+- Deploy: `cd /home/cryo/fluffwire-server && ./scripts/deploy.sh all` (runs migrations automatically)
