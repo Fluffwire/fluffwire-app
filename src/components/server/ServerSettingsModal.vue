@@ -404,7 +404,7 @@ async function handleSave() {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent class="sm:max-w-md">
+    <DialogContent class="sm:max-w-2xl">
       <div class="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-primary/60 to-transparent" />
 
       <DialogHeader>
