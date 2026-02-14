@@ -22,7 +22,59 @@ Real-time chat application built with Vue 3 + TypeScript.
 npm run dev        # Dev server on :5173
 npm run build      # Type-check + production build (vue-tsc -b && vite build)
 npm run preview    # Preview production build
+npm run test       # Run tests with Vitest
+npm run test:watch # Run tests in watch mode
 ```
+
+## Testing Requirements ⚠️
+
+**IMPORTANT**: All new features and bug fixes MUST include tests before being merged.
+
+### What to Test
+- **Stores**: Test all Pinia store actions, getters, and state mutations
+- **Composables**: Test all exported composables with different scenarios
+- **Services**: Mock HTTP calls and test error handling, success cases, and edge cases
+- **Components**: Test user interactions, prop changes, and emitted events (when complex logic exists)
+- **Utils/Helpers**: Test all exported utility functions
+
+### Test Framework
+- **Vitest** for unit/integration tests
+- Tests located in `src/__tests__/` directory
+- Use `vi.mock()` to mock external dependencies (API calls, WebSocket, etc.)
+- Use `setActivePinia(createPinia())` for store tests
+
+### Test Coverage Goals
+- Critical paths: 100% (auth, payments, data loss scenarios)
+- Business logic: 80%+
+- UI components: Focus on logic, not every visual detail
+
+### Writing Tests
+```typescript
+// Example store test structure
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { setActivePinia, createPinia } from 'pinia'
+
+describe('myFeature', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createPinia())
+  })
+
+  it('should handle success case', () => {
+    // Arrange, Act, Assert
+  })
+
+  it('should handle error case', () => {
+    // Test error scenarios
+  })
+})
+```
+
+### Before Committing
+1. Write tests for your changes
+2. Run `npm run test` to verify all tests pass
+3. Ensure type checking passes: `npm run build`
+4. Only then commit and push
 
 ## Project Structure
 
