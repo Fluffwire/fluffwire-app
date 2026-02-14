@@ -1,7 +1,8 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosAdapter } from 'axios'
 import { API } from '@/constants/endpoints'
 import { getTokenStorage } from '@/services/tokenStorage'
-import { debugLogger, isTauri } from '@/utils/debug'
+import { debugLogger } from '@/utils/debug'
+import { isTauri } from '@/utils/platform'
 
 debugLogger.info('API', 'Initializing API client', {
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -45,7 +46,10 @@ const tauriAdapter: AxiosAdapter = async (config) => {
     // Prepare request body
     let body: string | undefined
     if (config.data) {
-      // If data is already a string, use it as-is. Otherwise stringify it.
+      // FormData uploads should use uploadFile() function, not this adapter
+      if (config.data instanceof FormData) {
+        throw new Error('FormData uploads must use uploadFile() function, not axios directly')
+      }
       body = typeof config.data === 'string' ? config.data : JSON.stringify(config.data)
     }
 
@@ -226,12 +230,68 @@ export async function uploadFile(file: File): Promise<{
   contentType: string
   size: number
 }> {
-  const formData = new FormData()
-  formData.append('file', file)
-  const { data } = await api.post('/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-  return data
+  if (isTauri) {
+    // Use Tauri upload plugin
+    const { upload } = await import('@tauri-apps/plugin-upload')
+    const { BaseDirectory, writeFile, remove } = await import('@tauri-apps/plugin-fs')
+
+    // Save file to temp directory
+    const tempFileName = `upload_${Date.now()}_${file.name}`
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+
+    await writeFile(tempFileName, uint8Array, {
+      baseDir: BaseDirectory.Temp
+    })
+
+    try {
+      // Get auth token
+      const token = getTokenStorage().getAccessToken()
+
+      // Upload using Tauri plugin
+      const url = `${import.meta.env.VITE_API_BASE_URL}/upload`
+      const headers = new Map<string, string>()
+      headers.set('Authorization', `Bearer ${token}`)
+
+      debugLogger.info('API', 'Uploading file via Tauri upload plugin', {
+        url,
+        fileName: file.name,
+        size: file.size
+      })
+
+      const response = await upload(
+        url,
+        tempFileName,
+        (progress) => {
+          debugLogger.info('API', 'Upload progress', progress)
+        },
+        headers
+      )
+
+      debugLogger.info('API', 'Upload complete', response)
+
+      // Parse response - the upload plugin returns raw response
+      // We need to parse it as JSON
+      const data = typeof response === 'string' ? JSON.parse(response) : response
+
+      return data
+    } finally {
+      // Clean up temp file
+      try {
+        await remove(tempFileName, { baseDir: BaseDirectory.Temp })
+      } catch (e) {
+        debugLogger.warn('API', 'Failed to clean up temp file', e)
+      }
+    }
+  } else {
+    // Browser: use FormData
+    const formData = new FormData()
+    formData.append('file', file)
+    const { data } = await api.post('/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    return data
+  }
 }
 
 export default api

@@ -17,6 +17,7 @@ import {
 import { renderMarkdown } from '@/composables/useMarkdown'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiPicker from './EmojiPicker.vue'
+import ImageAttachment from './ImageAttachment.vue'
 import { toast } from 'vue-sonner'
 import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight, Copy, Link, Hash, Eye } from 'lucide-vue-next'
 
@@ -345,20 +346,13 @@ function copyMessageId() {
             </div>
 
             <!-- Image attachments -->
-            <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
-              <a
+            <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
+              <ImageAttachment
                 v-for="att in imageAttachments"
                 :key="att.id"
-                :href="att.url"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  :src="att.url"
-                  :alt="att.filename"
-                  class="max-h-[300px] max-w-[400px] rounded-lg border border-border/50 object-contain"
-                />
-              </a>
+                :url="att.url"
+                :filename="att.filename"
+              />
             </div>
 
             <!-- File attachments -->
@@ -462,20 +456,13 @@ function copyMessageId() {
             </div>
 
             <!-- Image attachments -->
-            <div v-if="imageAttachments.length" class="mt-1 flex flex-col gap-1">
-              <a
+            <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
+              <ImageAttachment
                 v-for="att in imageAttachments"
                 :key="att.id"
-                :href="att.url"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <img
-                  :src="att.url"
-                  :alt="att.filename"
-                  class="max-h-[300px] max-w-[400px] rounded-lg border border-border/50 object-contain"
-                />
-              </a>
+                :url="att.url"
+                :filename="att.filename"
+              />
             </div>
 
             <!-- File attachments -->

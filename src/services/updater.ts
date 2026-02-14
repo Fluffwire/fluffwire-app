@@ -1,4 +1,4 @@
-import { isTauri } from '@/utils/debug'
+import { isTauri } from '@/utils/platform'
 
 export async function checkForUpdates() {
   if (!isTauri) return

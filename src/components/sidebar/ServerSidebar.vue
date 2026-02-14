@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Sortable from 'sortablejs'
+import { isTauri } from '@/utils/platform'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useReadStateStore } from '@/stores/readState'
@@ -52,6 +53,7 @@ onMounted(() => {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
+      forceFallback: isTauri,
       onEnd() {
         if (!sortableContainer.value) return
         const ids: string[] = []
@@ -180,7 +182,7 @@ async function confirmLeave() {
                       />
                       <span
                         v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
-                        class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
+                        class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary ring-2 ring-card"
                       />
                     </div>
                   </TooltipTrigger>

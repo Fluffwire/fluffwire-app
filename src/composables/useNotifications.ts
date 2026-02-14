@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
 
 // Shared reactive state (singleton across all calls)
 const soundEnabled = ref(localStorage.getItem(STORAGE_KEYS.sound) !== 'false')
-const desktopEnabled = ref(localStorage.getItem(STORAGE_KEYS.desktop) === 'true')
+const desktopEnabled = ref(localStorage.getItem(STORAGE_KEYS.desktop) !== 'false') // Default to true
 
 function setSoundEnabled(value: boolean) {
   soundEnabled.value = value

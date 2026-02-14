@@ -17,6 +17,8 @@
     "updater:default",
     "dialog:default",
     "process:default",
+    "upload:default",
+    "fs:default",
     {
       "identifier": "http:default",
       "allow": [

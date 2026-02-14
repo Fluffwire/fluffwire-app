@@ -1,4 +1,4 @@
-import { isTauri } from '@/utils/debug'
+import { isTauri } from '@/utils/platform'
 
 interface NotificationOptions {
   title: string
