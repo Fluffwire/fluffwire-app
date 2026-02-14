@@ -174,7 +174,7 @@ onBeforeUnmount(destroySortables)
     ref="sidebarEl"
     :class="[
       'flex h-full flex-col bg-card border-r border-border/50',
-      isSheet ? 'w-full h-screen' : 'w-60 shrink-0',
+      isSheet ? 'w-full max-h-full' : 'w-60 shrink-0',
     ]"
   >
     <!-- Header -->
@@ -216,7 +216,7 @@ onBeforeUnmount(destroySortables)
     <div class="h-0.5 bg-gradient-to-r from-primary/40 to-transparent" />
 
     <!-- Channel/DM list -->
-    <ScrollArea class="flex-1">
+    <ScrollArea class="flex-1 min-h-0">
       <div class="px-2 py-2">
         <!-- Home / DM view -->
         <div v-show="isHome">
