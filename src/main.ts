@@ -28,4 +28,11 @@ import { useAuthStore } from './stores/auth'
 const authStore = useAuthStore()
 authStore.initialize().finally(() => {
   app.mount('#app')
+
+  // Check for updates on app start (Tauri only)
+  import('./services/updater').then(({ checkForUpdates }) => {
+    checkForUpdates().catch(err => {
+      console.warn('Failed to check for updates:', err)
+    })
+  })
 })

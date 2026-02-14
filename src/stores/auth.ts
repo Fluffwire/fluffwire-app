@@ -6,7 +6,6 @@ import api from '@/services/api'
 import { API } from '@/constants/endpoints'
 import { wsService } from '@/services/websocket'
 import { desktopNotifications } from '@/services/desktopNotifications'
-import { checkForUpdates } from '@/services/updater'
 import { useServersStore } from './servers'
 import { useFriendsStore } from './friends'
 import { usePresenceStore } from './presence'
@@ -94,11 +93,6 @@ export const useAuthStore = defineStore('auth', () => {
       debugLogger.info('AUTH', 'Initializing desktop notifications')
       desktopNotifications.init().catch(err =>
         debugLogger.warn('AUTH', 'Failed to initialize notifications', err)
-      )
-
-      debugLogger.info('AUTH', 'Checking for updates')
-      checkForUpdates().catch(err =>
-        debugLogger.warn('AUTH', 'Failed to check for updates', err)
       )
 
       debugLogger.success('AUTH', 'Login complete!')
