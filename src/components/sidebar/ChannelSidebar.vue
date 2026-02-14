@@ -14,7 +14,7 @@ import VoicePanel from '@/components/voice/VoicePanel.vue'
 import DMList from '@/components/friends/DMList.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Users, Plus, FolderPlus, Settings } from 'lucide-vue-next'
+import { Users, Plus, FolderPlus, Settings, UserPlus } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
 
@@ -189,10 +189,23 @@ onBeforeUnmount(destroySortables)
         <h2 class="min-w-0 flex-1 truncate font-semibold text-foreground">
           {{ serversStore.currentServer.name }}
         </h2>
+        <TooltipProvider :delay-duration="200">
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <button
+                @click="uiStore.openModal('invite', serversStore.currentServer)"
+                class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <UserPlus class="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('server.inviteModal') }}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <button
           v-if="isOwner"
           @click="uiStore.openModal('serverSettings')"
-          class="ml-auto flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
         >
           <Settings class="h-4 w-4" />
         </button>
