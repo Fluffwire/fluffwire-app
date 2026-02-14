@@ -40,6 +40,13 @@ useNotifications()
 // Touch swipe to open panels on mobile
 useSwipePanel()
 
+// Hide member sidebar by default on mobile/tablet (but keep visible on desktop)
+watch([isMobile, isTablet], ([mobile, tablet]) => {
+  if (mobile || tablet) {
+    uiStore.showMemberSidebar = false
+  }
+}, { immediate: true })
+
 // Idle detection — auto-set idle after 5 minutes of inactivity
 const { isIdle } = useIdleDetection(5 * 60 * 1000)
 

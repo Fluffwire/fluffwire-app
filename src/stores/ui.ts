@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useTheme, type ThemeName } from '@/composables/useTheme'
 
 export const useUiStore = defineStore('ui', () => {
-  const showMemberSidebar = ref(false)
+  const showMemberSidebar = ref(true) // Desktop default: visible
   const activeModal = ref<string | null>(null)
   const modalData = ref<unknown>(null)
   const isMobileSidebarOpen = ref(false)
