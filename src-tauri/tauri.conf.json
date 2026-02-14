@@ -12,7 +12,14 @@
   "app": {
     "withGlobalTauri": false,
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.fluffwire.com; connect-src 'self' https://app.fluffwire.com wss://app.fluffwire.com; img-src 'self' https://app.fluffwire.com data: blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.fluffwire.com https: http:; connect-src 'self' https://app.fluffwire.com https: http: wss://app.fluffwire.com wss: ws:; img-src 'self' https://app.fluffwire.com https: http: data: blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com",
+      "dangerousRemoteDomainIpcAccess": [
+        {
+          "domain": "app.fluffwire.com",
+          "windows": ["main"],
+          "enableTauriAPI": false
+        }
+      ]
     },
     "windows": [
       {

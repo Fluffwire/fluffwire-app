@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useAuth } from '@/composables/useAuth'
 import { Card, CardHeader, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -8,15 +9,26 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2 } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
 
 const route = useRoute()
-const { login, isLoading, error } = useAuth()
+const authStore = useAuthStore()
+const { login } = useAuth()
 
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(true)
 
 const sessionExpired = computed(() => route.query.reason === 'session_expired')
+
+// Show toast when error changes
+watch(() => authStore.error, (newError) => {
+  if (newError) {
+    toast.error(newError, {
+      duration: 5000,
+    })
+  }
+})
 
 async function handleSubmit() {
   await login({ email: email.value, password: password.value }, rememberMe.value)
@@ -36,8 +48,8 @@ async function handleSubmit() {
           {{ $t('auth.sessionExpired') }}
         </div>
 
-        <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          {{ error }}
+        <div v-if="authStore.error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+          {{ authStore.error }}
         </div>
 
         <div class="space-y-2">
@@ -67,8 +79,8 @@ async function handleSubmit() {
           <Label for="remember-me" class="cursor-pointer text-sm text-muted-foreground">{{ $t('auth.rememberMe') }}</Label>
         </div>
 
-        <Button type="submit" :disabled="isLoading" class="w-full">
-          <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+        <Button type="submit" :disabled="authStore.isLoading" class="w-full">
+          <Loader2 v-if="authStore.isLoading" class="mr-2 h-4 w-4 animate-spin" />
           {{ $t('auth.logIn') }}
         </Button>
 

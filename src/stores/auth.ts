@@ -97,7 +97,15 @@ export const useAuthStore = defineStore('auth', () => {
         responseData: err.response?.data,
         fullError: JSON.stringify(err, Object.getOwnPropertyNames(err))
       })
-      error.value = err.response?.data?.message || 'Login failed'
+
+      // Handle network errors specifically
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        error.value = 'Unable to connect to server. Please check your internet connection.'
+      } else if (err.response?.status === 401) {
+        error.value = err.response?.data?.message || 'Invalid email or password'
+      } else {
+        error.value = err.response?.data?.message || err.message || 'Login failed'
+      }
       throw e
     } finally {
       isLoading.value = false
@@ -143,8 +151,14 @@ export const useAuthStore = defineStore('auth', () => {
       wsService.connect(data.accessToken)
       useSettingsStore().fetchSettings()
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { message?: string } } }
-      error.value = err.response?.data?.message || 'Registration failed'
+      const err = e as { response?: { data?: { message?: string }; status?: number }; message?: string; code?: string }
+
+      // Handle network errors specifically
+      if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
+        error.value = 'Unable to connect to server. Please check your internet connection.'
+      } else {
+        error.value = err.response?.data?.message || err.message || 'Registration failed'
+      }
       throw e
     } finally {
       isLoading.value = false
