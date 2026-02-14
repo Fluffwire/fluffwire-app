@@ -178,7 +178,10 @@ function copyMessageId() {
     <!-- Hover action buttons -->
     <div
       v-if="!isEditing"
-      class="absolute -top-3 right-4 z-10 hidden gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm group-hover:flex"
+      :class="[
+        'absolute -top-3 right-4 z-10 gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm',
+        showReactionPicker ? 'flex' : 'hidden group-hover:flex'
+      ]"
     >
       <Tooltip>
         <TooltipTrigger as-child>
