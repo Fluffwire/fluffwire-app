@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useMessagesStore } from '@/stores/messages'
@@ -55,6 +55,15 @@ const unsubConnection = wsService.addConnectionListener((connected) => {
   wsConnected.value = connected
 })
 onBeforeUnmount(() => unsubConnection())
+
+// Auto-focus input when replying to a message
+watch(replyingTo, (newReply) => {
+  if (newReply) {
+    nextTick(() => {
+      textareaRef.value?.focus()
+    })
+  }
+})
 
 function emitTyping() {
   const now = Date.now()
