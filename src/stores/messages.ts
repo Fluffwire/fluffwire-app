@@ -5,6 +5,9 @@ import { WsOpCode } from '@/types/websocket'
 import { messageApi } from '@/services/messageApi'
 import { wsService } from '@/services/websocket'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { desktopNotifications } from '@/services/desktopNotifications'
+import { useAuthStore } from './auth'
+import { useDirectMessagesStore } from './directMessages'
 
 export const useMessagesStore = defineStore('messages', () => {
   // Map of channelId -> messages
@@ -25,6 +28,19 @@ export const useMessagesStore = defineStore('messages', () => {
       const messages = messagesByChannel.value.get(message.channelId) ?? []
       messages.push(message)
       messagesByChannel.value.set(message.channelId, messages)
+
+      // Show desktop notification for DMs from other users
+      const authStore = useAuthStore()
+      const dmStore = useDirectMessagesStore()
+      if (message.author.id !== authStore.user?.id) {
+        const dm = dmStore.dmChannels.find(d => d.id === message.channelId)
+        if (dm) {
+          desktopNotifications.show({
+            title: `${message.author.displayName} (@${message.author.username})`,
+            body: message.content || '📎 Sent an attachment',
+          })
+        }
+      }
     })
 
     wsDispatcher.register(WS_EVENTS.MESSAGE_UPDATE, (data: unknown) => {

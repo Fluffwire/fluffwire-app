@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { wsService } from '@/services/websocket'
-import { getTokenStorage } from '@/services/tokenStorage'
 import { Button } from '@/components/ui/button'
 import { WifiOff, X } from 'lucide-vue-next'
 
@@ -9,11 +8,7 @@ const emit = defineEmits<{
 }>()
 
 function retry() {
-  const token = getTokenStorage().getItem('accessToken')
-  if (token) {
-    wsService.disconnect()
-    wsService.connect(token)
-  }
+  wsService.reconnect()
 }
 </script>
 

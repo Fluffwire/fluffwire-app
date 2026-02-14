@@ -5,6 +5,7 @@ import { authApi } from '@/services/authApi'
 import api from '@/services/api'
 import { API } from '@/constants/endpoints'
 import { wsService } from '@/services/websocket'
+import { desktopNotifications } from '@/services/desktopNotifications'
 import { useServersStore } from './servers'
 import { useFriendsStore } from './friends'
 import { usePresenceStore } from './presence'
@@ -88,6 +89,11 @@ export const useAuthStore = defineStore('auth', () => {
 
       debugLogger.info('AUTH', 'Fetching user settings')
       useSettingsStore().fetchSettings()
+
+      debugLogger.info('AUTH', 'Initializing desktop notifications')
+      desktopNotifications.init().catch(err =>
+        debugLogger.warn('AUTH', 'Failed to initialize notifications', err)
+      )
 
       debugLogger.success('AUTH', 'Login complete!')
       return 'success'

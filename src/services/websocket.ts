@@ -52,6 +52,27 @@ class WebSocketService {
     this.doConnect()
   }
 
+  reconnect(): void {
+    if (!this.token) {
+      console.error('[WS] Cannot reconnect: no token')
+      return
+    }
+    // Clear any pending reconnect timers
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    // Reset reconnect attempts
+    this.reconnectAttempts = 0
+    // Close existing connection if any
+    if (this.ws) {
+      this.ws.close()
+      this.ws = null
+    }
+    // Connect with existing token
+    this.doConnect()
+  }
+
   private doConnect(): void {
     if (this.ws) {
       this.ws.close()
