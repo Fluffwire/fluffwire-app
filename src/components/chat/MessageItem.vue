@@ -53,7 +53,10 @@ const showReactionPicker = ref(false)
 
 function handleReactionSelect(emoji: string) {
   emit('reaction', props.message.id, emoji)
-  showReactionPicker.value = false
+  // Delay hiding to prevent flicker during popover close animation
+  setTimeout(() => {
+    showReactionPicker.value = false
+  }, 150)
 }
 
 const isOwnMessage = computed(() => props.currentUserId === props.message.author.id)
