@@ -137,7 +137,10 @@ async function confirmLeave() {
 <template>
   <TooltipProvider :delay-duration="200">
     <nav
-      class="flex h-full w-full flex-col items-center gap-1.5 overflow-y-auto bg-gradient-to-b from-sidebar to-background py-2"
+      :class="[
+        'flex h-full flex-col items-center gap-1.5 overflow-y-auto bg-gradient-to-b from-sidebar to-background py-2',
+        isSheet ? 'w-[72px]' : 'w-[72px]'
+      ]"
     >
       <!-- Home button -->
       <Tooltip>
@@ -145,7 +148,7 @@ async function confirmLeave() {
           <button
             @click="navigateHome"
             :class="[
-              'group flex h-12 w-12 items-center justify-center transition-all duration-200',
+              'group flex h-12 w-12 items-center justify-center transition-all duration-200 ring-1 ring-primary/20',
               route.path.startsWith('/channels/@me')
                 ? 'rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25'
                 : 'rounded-[28px] bg-secondary text-foreground hover:rounded-2xl hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/15',
