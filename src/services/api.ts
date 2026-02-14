@@ -15,11 +15,19 @@ const tauriAdapter: AxiosAdapter = async (config) => {
     const { fetch } = await import('@tauri-apps/plugin-http')
     const url = config.baseURL ? `${config.baseURL}${config.url}` : config.url!
 
-    debugLogger.info('API', 'Using Tauri HTTP plugin', { url, method: config.method })
+    // Determine the Origin header based on the platform
+    // Windows uses https://tauri.localhost, Linux/macOS uses tauri://localhost
+    const isWindows = navigator.userAgent.includes('Windows')
+    const origin = isWindows ? 'https://tauri.localhost' : 'tauri://localhost'
+
+    debugLogger.info('API', 'Using Tauri HTTP plugin', { url, method: config.method, origin })
 
     const response = await fetch(url, {
       method: config.method?.toUpperCase(),
-      headers: config.headers as Record<string, string>,
+      headers: {
+        ...(config.headers as Record<string, string>),
+        'Origin': origin,
+      },
       body: config.data ? JSON.stringify(config.data) : undefined,
     })
 
