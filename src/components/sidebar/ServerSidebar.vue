@@ -137,10 +137,7 @@ async function confirmLeave() {
 <template>
   <TooltipProvider :delay-duration="200">
     <nav
-      :class="[
-        'flex h-full flex-col items-center gap-1.5 overflow-y-auto bg-gradient-to-b from-sidebar to-background py-2',
-        isSheet ? 'w-[60px]' : 'w-[60px] shrink-0',
-      ]"
+      class="flex h-full w-full flex-col items-center gap-1.5 overflow-y-auto bg-gradient-to-b from-sidebar to-background py-2"
     >
       <!-- Home button -->
       <Tooltip>
