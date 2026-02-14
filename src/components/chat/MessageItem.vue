@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, nextTick } from 'vue'
+import { computed, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { Message } from '@/types'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -50,14 +50,24 @@ const editContent = ref('')
 const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const showDeleteDialog = ref(false)
 const showReactionPicker = ref(false)
+const keepActionBarVisible = ref(false)
 
 function handleReactionSelect(emoji: string) {
   emit('reaction', props.message.id, emoji)
-  // Delay hiding to prevent flicker during popover close animation
-  setTimeout(() => {
-    showReactionPicker.value = false
-  }, 150)
+  showReactionPicker.value = false
 }
+
+// Watch for reaction picker opening/closing and manage action bar visibility
+watch(showReactionPicker, (isOpen) => {
+  if (isOpen) {
+    keepActionBarVisible.value = true
+  } else {
+    // Delay hiding to prevent flicker during popover close animation
+    setTimeout(() => {
+      keepActionBarVisible.value = false
+    }, 200)
+  }
+})
 
 const isOwnMessage = computed(() => props.currentUserId === props.message.author.id)
 
@@ -183,7 +193,7 @@ function copyMessageId() {
       v-if="!isEditing"
       :class="[
         'absolute -top-3 right-4 z-10 gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm',
-        showReactionPicker ? 'flex' : 'hidden group-hover:flex'
+        keepActionBarVisible ? 'flex' : 'hidden group-hover:flex'
       ]"
     >
       <Tooltip>
