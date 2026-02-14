@@ -54,7 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials: LoginCredentials, rememberMe = true): Promise<'success' | '2fa'> {
     debugLogger.info('AUTH', 'Login attempt started', { email: credentials.email, rememberMe })
     isLoading.value = true
-    error.value = null
+    // Don't clear error here - let it persist until successful login
     try {
       debugLogger.info('AUTH', 'Setting remember me preference', { rememberMe })
       setRememberMe(rememberMe)
@@ -65,6 +65,9 @@ export const useAuthStore = defineStore('auth', () => {
       })
       const { data } = await authApi.login(credentials)
       debugLogger.success('AUTH', 'Login API call successful', { requiresTwoFactor: data.requiresTwoFactor })
+
+      // Clear error only on successful login
+      error.value = null
 
       if (data.requiresTwoFactor) {
         debugLogger.info('AUTH', '2FA required, redirecting')
@@ -116,12 +119,14 @@ export const useAuthStore = defineStore('auth', () => {
   async function verifyTwoFactor(code: string): Promise<void> {
     if (!twoFactorTicket.value) throw new Error('No 2FA ticket')
     isLoading.value = true
-    error.value = null
+    // Don't clear error here - let it persist until successful verification
     try {
       const { data } = await api.post(API.AUTH.VERIFY_2FA, {
         ticket: twoFactorTicket.value,
         code,
       })
+      // Clear error only on success
+      error.value = null
       twoFactorTicket.value = null
       accessToken.value = data.accessToken
       user.value = data.user
@@ -140,10 +145,12 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(credentials: RegisterCredentials, rememberMe = true): Promise<void> {
     isLoading.value = true
-    error.value = null
+    // Don't clear error here - let it persist until successful registration
     try {
       setRememberMe(rememberMe)
       const { data } = await authApi.register(credentials)
+      // Clear error only on success
+      error.value = null
       accessToken.value = data.accessToken
       user.value = data.user
       storeTokens(data.accessToken, data.refreshToken)
