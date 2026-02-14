@@ -17,6 +17,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # TODO: Restore macOS and Linux builds when needed for full releases
+          # These are temporarily commented out for faster Windows-only testing builds
           # - os: macos-latest
           #   target: aarch64-apple-darwin
           #   label: macOS-arm64
