@@ -14,6 +14,9 @@
     "core:window:allow-set-focus",
     "core:window:allow-is-focused",
     "notification:default",
+    "updater:default",
+    "dialog:default",
+    "process:default",
     {
       "identifier": "http:default",
       "allow": [
