@@ -1,6 +1,12 @@
 import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
 import { API } from '@/constants/endpoints'
 import { getTokenStorage } from '@/services/tokenStorage'
+import { debugLogger } from '@/utils/debug'
+
+debugLogger.info('API', 'Initializing API client', {
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+  mode: import.meta.env.MODE
+})
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -12,11 +18,21 @@ const api: AxiosInstance = axios.create({
 
 // Request interceptor: attach access token
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  debugLogger.info('API', 'Outgoing request', {
+    method: config.method?.toUpperCase(),
+    url: config.url,
+    baseURL: config.baseURL,
+    fullURL: `${config.baseURL}${config.url}`
+  })
   const token = getTokenStorage().getItem('accessToken')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
+    debugLogger.info('API', 'Attached auth token to request')
   }
   return config
+}, (error) => {
+  debugLogger.error('API', 'Request interceptor error', error)
+  return Promise.reject(error)
 })
 
 // Response interceptor: handle 401 with token refresh
@@ -35,8 +51,22 @@ function processQueue(error: unknown, token: string | null = null) {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    debugLogger.success('API', 'Response received', {
+      status: response.status,
+      url: response.config.url
+    })
+    return response
+  },
   async (error) => {
+    debugLogger.error('API', 'Response error', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: error.config?.url,
+      message: error.message,
+      code: error.code,
+      responseData: error.response?.data
+    })
     const originalRequest = error.config
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {

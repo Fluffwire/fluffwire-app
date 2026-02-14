@@ -12,6 +12,7 @@ import { useReadStateStore } from './readState'
 import { useSettingsStore } from './settings'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { getTokenStorage, setRememberMe } from '@/services/tokenStorage'
+import { debugLogger } from '@/utils/debug'
 
 export const useAuthStore = defineStore('auth', () => {
   const storage = getTokenStorage()
@@ -51,28 +52,56 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(credentials: LoginCredentials, rememberMe = true): Promise<'success' | '2fa'> {
+    debugLogger.info('AUTH', 'Login attempt started', { email: credentials.email, rememberMe })
     isLoading.value = true
     error.value = null
     try {
+      debugLogger.info('AUTH', 'Setting remember me preference', { rememberMe })
       setRememberMe(rememberMe)
+
+      debugLogger.info('AUTH', 'Calling authApi.login()', {
+        endpoint: import.meta.env.VITE_API_BASE_URL,
+        email: credentials.email
+      })
       const { data } = await authApi.login(credentials)
+      debugLogger.success('AUTH', 'Login API call successful', { requiresTwoFactor: data.requiresTwoFactor })
+
       if (data.requiresTwoFactor) {
+        debugLogger.info('AUTH', '2FA required, redirecting')
         twoFactorTicket.value = data.ticket ?? null
         return '2fa'
       }
+
+      debugLogger.info('AUTH', 'Storing tokens and user data')
       accessToken.value = data.accessToken
       user.value = data.user
       storeTokens(data.accessToken, data.refreshToken)
+
+      debugLogger.info('AUTH', 'Setting up WebSocket handlers')
       setupWsHandlers()
+
+      debugLogger.info('AUTH', 'Connecting to WebSocket', { url: import.meta.env.VITE_WS_URL })
       wsService.connect(data.accessToken)
+
+      debugLogger.info('AUTH', 'Fetching user settings')
       useSettingsStore().fetchSettings()
+
+      debugLogger.success('AUTH', 'Login complete!')
       return 'success'
     } catch (e: unknown) {
-      const err = e as { response?: { data?: { message?: string } } }
+      const err = e as { response?: { data?: { message?: string }; status?: number }; message?: string; code?: string }
+      debugLogger.error('AUTH', 'Login failed', {
+        error: err.message,
+        code: err.code,
+        status: err.response?.status,
+        responseData: err.response?.data,
+        fullError: JSON.stringify(err, Object.getOwnPropertyNames(err))
+      })
       error.value = err.response?.data?.message || 'Login failed'
       throw e
     } finally {
       isLoading.value = false
+      debugLogger.info('AUTH', 'Login attempt finished', { isLoading: false })
     }
   }
 
