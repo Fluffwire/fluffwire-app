@@ -196,7 +196,7 @@ onBeforeUnmount(destroySortables)
           <Tooltip>
             <TooltipTrigger as-child>
               <button
-                @click="uiStore.openModal('invite', serversStore.currentServer)"
+                @click="uiStore.openModal('invite', serversStore.currentServer?.id)"
                 class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
               >
                 <UserPlus class="h-4 w-4" />

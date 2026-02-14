@@ -88,7 +88,7 @@ async function navigateToServer(serverId: string) {
 }
 
 function handleInvite(server: Server) {
-  uiStore.openModal('invite', server)
+  uiStore.openModal('invite', server.id)
 }
 
 function handleServerSettings(server: Server) {
