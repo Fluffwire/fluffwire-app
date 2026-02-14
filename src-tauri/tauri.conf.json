@@ -12,7 +12,11 @@
   "app": {
     "withGlobalTauri": false,
     "security": {
-      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.fluffwire.com; connect-src 'self' https://app.fluffwire.com wss://app.fluffwire.com ipc: http://ipc.localhost; img-src 'self' https://app.fluffwire.com data: blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com"
+      "csp": "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://app.fluffwire.com; connect-src 'self' https://app.fluffwire.com wss://app.fluffwire.com ipc: http://ipc.localhost; img-src 'self' asset: http://asset.localhost https://app.fluffwire.com data: blob:; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["**"]
+      }
     },
     "windows": [
       {
