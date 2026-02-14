@@ -100,10 +100,11 @@ class DebugLogger {
 
 export const debugLogger = new DebugLogger()
 
-// Detect if running in Tauri
+// Detect if running in Tauri 2 (uses window.isTauri instead of window.__TAURI__)
 export const isTauri = Boolean(
   typeof window !== 'undefined' &&
-  (window as any).__TAURI__ !== undefined
+  'isTauri' in window &&
+  (window as any).isTauri === true
 )
 
 // Auto-enable debug mode in Tauri
