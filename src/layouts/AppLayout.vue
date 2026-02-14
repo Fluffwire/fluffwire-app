@@ -15,8 +15,6 @@ import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
 import OfflineBanner from '@/components/common/OfflineBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import DebugPanel from '@/components/common/DebugPanel.vue'
-import { Button } from '@/components/ui/button'
-import { Bug } from 'lucide-vue-next'
 import { isTauri } from '@/utils/debug'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
@@ -196,18 +194,7 @@ const showChannelSidebar = computed(() => !isSettings.value)
     <CreateCategoryModal />
     <EditCategoryModal />
 
-    <!-- Debug panel toggle button (only in Tauri or when enabled) -->
-    <Button
-      v-if="isTauri || showDebugPanel"
-      variant="outline"
-      size="icon"
-      class="fixed bottom-4 left-4 z-[9998] h-12 w-12 rounded-full border-2 border-primary shadow-lg"
-      @click="showDebugPanel = !showDebugPanel"
-    >
-      <Bug class="h-6 w-6" />
-    </Button>
-
-    <!-- Debug panel -->
+    <!-- Debug panel (toggle with Ctrl+Shift+D) -->
     <DebugPanel v-if="showDebugPanel" @close="showDebugPanel = false" />
   </div>
 </template>
