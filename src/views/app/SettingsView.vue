@@ -192,7 +192,7 @@ async function exportData() {
     const { data } = await api.get('/users/@me/export')
     const jsonContent = JSON.stringify(data, null, 2)
 
-    if (isTauri) {
+    if (isTauri()) {
       // Use Tauri save dialog
       const { save } = await import('@tauri-apps/plugin-dialog')
       const { writeTextFile } = await import('@tauri-apps/plugin-fs')
@@ -451,7 +451,7 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
 
   // Fetch app version if running in Tauri
-  if (isTauri) {
+  if (isTauri()) {
     try {
       const { getVersion } = await import('@tauri-apps/api/app')
       appVersion.value = await getVersion()

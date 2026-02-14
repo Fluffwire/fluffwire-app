@@ -47,7 +47,7 @@ export function useImageUrl(sourceUrl: Ref<string | null>) {
         return
       }
 
-      if (isTauri && url.startsWith('https://')) {
+      if (isTauri() && url.startsWith('https://')) {
         // In Tauri, fetch external images via HTTP plugin and convert to blob URLs
         loadImageTauri(url)
       } else {

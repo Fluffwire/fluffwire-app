@@ -101,16 +101,10 @@ class DebugLogger {
 export const debugLogger = new DebugLogger()
 
 // Detect if running in Tauri 2
-declare global {
-  interface Window {
-    __TAURI__?: unknown
-  }
-}
-
-export const isTauri = !!window.__TAURI__
+import { isTauri } from './platform'
 
 // Auto-enable debug mode in Tauri
-if (isTauri) {
+if (isTauri()) {
   debugLogger.info('INIT', 'Running in Tauri environment')
   debugLogger.info('INIT', 'User Agent', navigator.userAgent)
   debugLogger.info('INIT', 'Window location', window.location.href)

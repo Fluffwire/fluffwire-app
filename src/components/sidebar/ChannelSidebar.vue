@@ -140,7 +140,7 @@ function initSortables() {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
-      forceFallback: isTauri,
+      forceFallback: isTauri(),
       onEnd: syncChannelPositions,
     })
   }
@@ -153,7 +153,7 @@ function initSortables() {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
-      forceFallback: isTauri,
+      forceFallback: isTauri(),
       onEnd: onCategoriesDragEnd,
     })
   }

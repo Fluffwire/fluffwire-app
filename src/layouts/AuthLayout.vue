@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import DebugPanel from '@/components/common/DebugPanel.vue'
-import { isTauri } from '@/utils/debug'
+import { isTauri } from '@/utils/platform'
 
 const showDebugPanel = ref(false)
 

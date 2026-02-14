@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/context-menu'
 import { toast } from 'vue-sonner'
 import Sortable from 'sortablejs'
+import { isTauri } from '@/utils/platform'
 
 interface Props {
   category: CategoryType
@@ -50,6 +51,10 @@ function initSortable() {
       group: 'channels',
       animation: 150,
       ghostClass: 'opacity-30',
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
+      forceFallback: isTauri(),
       onEnd: onChannelDragEnd,
     })
   }

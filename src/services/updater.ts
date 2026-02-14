@@ -1,7 +1,7 @@
 import { isTauri } from '@/utils/platform'
 
 export async function checkForUpdates() {
-  if (!isTauri) return
+  if (!isTauri()) return
 
   try {
     const { check } = await import('@tauri-apps/plugin-updater')

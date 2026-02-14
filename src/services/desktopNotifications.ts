@@ -10,7 +10,7 @@ class DesktopNotificationService {
   private permissionGranted = false
 
   async init() {
-    if (isTauri) {
+    if (isTauri()) {
       // Tauri notifications - check permission
       try {
         const { isPermissionGranted, requestPermission } = await import('@tauri-apps/plugin-notification')
@@ -40,7 +40,7 @@ class DesktopNotificationService {
     }
 
     try {
-      if (isTauri) {
+      if (isTauri()) {
         // Check if window is focused
         const { getCurrentWindow } = await import('@tauri-apps/api/window')
         const isFocused = await getCurrentWindow().isFocused()

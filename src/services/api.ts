@@ -7,7 +7,7 @@ import { isTauri } from '@/utils/platform'
 debugLogger.info('API', 'Initializing API client', {
   baseURL: import.meta.env.VITE_API_BASE_URL,
   mode: import.meta.env.MODE,
-  isTauri
+  isTauri: isTauri()
 })
 
 // Tauri HTTP adapter
@@ -120,7 +120,7 @@ const api: AxiosInstance = axios.create({
     'Content-Type': 'application/json',
   },
   // Use Tauri adapter when in Tauri environment
-  adapter: isTauri ? tauriAdapter : undefined,
+  adapter: isTauri() ? tauriAdapter : undefined,
 })
 
 // Request interceptor: attach access token
@@ -230,7 +230,7 @@ export async function uploadFile(file: File): Promise<{
   contentType: string
   size: number
 }> {
-  if (isTauri) {
+  if (isTauri()) {
     // Use Tauri upload plugin
     const { upload } = await import('@tauri-apps/plugin-upload')
     const { BaseDirectory, writeFile, remove } = await import('@tauri-apps/plugin-fs')
