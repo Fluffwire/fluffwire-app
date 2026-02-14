@@ -173,8 +173,8 @@ onBeforeUnmount(destroySortables)
   <aside
     ref="sidebarEl"
     :class="[
-      'flex h-full flex-col bg-card border-r border-border/50',
-      isSheet ? 'w-full max-h-full' : 'w-60 shrink-0',
+      'flex flex-col bg-card border-r border-border/50',
+      isSheet ? 'w-full h-full' : 'w-60 h-full shrink-0',
     ]"
   >
     <!-- Header -->
