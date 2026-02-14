@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ServerSidebar from '@/components/sidebar/ServerSidebar.vue'
 import ChannelSidebar from '@/components/sidebar/ChannelSidebar.vue'
@@ -14,6 +14,10 @@ import CreateCategoryModal from '@/components/channels/CreateCategoryModal.vue'
 import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
 import OfflineBanner from '@/components/common/OfflineBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
+import DebugPanel from '@/components/common/DebugPanel.vue'
+import { Button } from '@/components/ui/button'
+import { Bug } from 'lucide-vue-next'
+import { isTauri } from '@/utils/debug'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -108,6 +112,24 @@ const showOfflineBanner = computed(() => !wsConnected.value && !bannerDismissed.
 
 const isSettings = computed(() => route.path === '/settings')
 
+// Debug panel
+const showDebugPanel = ref(false)
+
+onMounted(() => {
+  // Auto-show debug panel in Tauri
+  if (isTauri) {
+    showDebugPanel.value = true
+  }
+
+  // Toggle debug panel with Ctrl+Shift+D
+  window.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+      e.preventDefault()
+      showDebugPanel.value = !showDebugPanel.value
+    }
+  })
+})
+
 const isServerView = computed(() => {
   return route.params.serverId && route.params.serverId !== '@me'
 })
@@ -178,5 +200,19 @@ const showChannelSidebar = computed(() => !isSettings.value)
     <EditChannelModal />
     <CreateCategoryModal />
     <EditCategoryModal />
+
+    <!-- Debug panel toggle button (only in Tauri or when enabled) -->
+    <Button
+      v-if="isTauri || showDebugPanel"
+      variant="outline"
+      size="icon"
+      class="fixed bottom-4 left-4 z-[9998] h-12 w-12 rounded-full border-2 border-primary shadow-lg"
+      @click="showDebugPanel = !showDebugPanel"
+    >
+      <Bug class="h-6 w-6" />
+    </Button>
+
+    <!-- Debug panel -->
+    <DebugPanel v-if="showDebugPanel" @close="showDebugPanel = false" />
   </div>
 </template>
