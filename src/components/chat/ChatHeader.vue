@@ -4,7 +4,7 @@ import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Hash, AtSign, Menu, Users, UserPlus, Pin, Search } from 'lucide-vue-next'
+import { Hash, AtSign, Menu, Users, Pin, Search } from 'lucide-vue-next'
 
 interface Props {
   channelName: string
@@ -16,14 +16,8 @@ const emit = defineEmits<{
   togglePins: []
   openSearch: []
 }>()
-const route = useRoute()
 const uiStore = useUiStore()
 const { isMobile, isTablet } = useResponsive()
-
-function openInviteModal() {
-  const serverId = route.params.serverId as string
-  if (serverId) uiStore.openModal('invite', serverId)
-}
 </script>
 
 <template>
@@ -49,19 +43,6 @@ function openInviteModal() {
 
     <div class="flex items-center gap-1">
       <TooltipProvider>
-        <Tooltip v-if="!isDm">
-          <TooltipTrigger as-child>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-8 w-8 text-muted-foreground hover:text-foreground"
-              @click="openInviteModal"
-            >
-              <UserPlus class="h-5 w-5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Invite People</TooltipContent>
-        </Tooltip>
         <Tooltip>
           <TooltipTrigger as-child>
             <Button
