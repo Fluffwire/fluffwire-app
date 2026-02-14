@@ -139,7 +139,7 @@ async function confirmLeave() {
     <nav
       :class="[
         'flex h-full flex-col items-center gap-1.5 overflow-y-auto bg-gradient-to-b from-sidebar to-background py-2',
-        isSheet ? 'w-full' : 'w-[60px] shrink-0',
+        isSheet ? 'w-[60px]' : 'w-[60px] shrink-0',
       ]"
     >
       <!-- Home button -->
