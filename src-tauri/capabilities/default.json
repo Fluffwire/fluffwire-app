@@ -11,6 +11,12 @@
     "core:window:allow-maximize",
     "core:window:allow-set-title",
     "core:window:allow-set-size",
-    "core:window:allow-set-focus"
+    "core:window:allow-set-focus",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://app.fluffwire.com/*" }
+      ]
+    }
   ]
 }

@@ -1,12 +1,43 @@
-import axios, { type AxiosInstance, type InternalAxiosRequestConfig } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosAdapter } from 'axios'
 import { API } from '@/constants/endpoints'
 import { getTokenStorage } from '@/services/tokenStorage'
-import { debugLogger } from '@/utils/debug'
+import { debugLogger, isTauri } from '@/utils/debug'
 
 debugLogger.info('API', 'Initializing API client', {
   baseURL: import.meta.env.VITE_API_BASE_URL,
-  mode: import.meta.env.MODE
+  mode: import.meta.env.MODE,
+  isTauri
 })
+
+// Tauri HTTP adapter
+const tauriAdapter: AxiosAdapter = async (config) => {
+  try {
+    const { fetch } = await import('@tauri-apps/plugin-http')
+    const url = config.baseURL ? `${config.baseURL}${config.url}` : config.url!
+
+    debugLogger.info('API', 'Using Tauri HTTP plugin', { url, method: config.method })
+
+    const response = await fetch(url, {
+      method: config.method?.toUpperCase(),
+      headers: config.headers as Record<string, string>,
+      body: config.data ? JSON.stringify(config.data) : undefined,
+    })
+
+    const data = await response.json()
+
+    return {
+      data,
+      status: response.status,
+      statusText: response.ok ? 'OK' : 'Error',
+      headers: Object.fromEntries(response.headers.entries()),
+      config,
+      request: {},
+    }
+  } catch (error) {
+    debugLogger.error('API', 'Tauri fetch error', error)
+    throw error
+  }
+}
 
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -14,6 +45,8 @@ const api: AxiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Use Tauri adapter when in Tauri environment
+  adapter: isTauri ? tauriAdapter : undefined,
 })
 
 // Request interceptor: attach access token
