@@ -8,7 +8,9 @@ const emit = defineEmits<{
 }>()
 
 function retry() {
+  console.log('[OfflineBanner] Retry button clicked')
   wsService.reconnect()
+  console.log('[OfflineBanner] Reconnect called')
 }
 </script>
 
