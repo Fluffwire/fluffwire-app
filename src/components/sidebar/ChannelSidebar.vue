@@ -134,6 +134,9 @@ function initSortables() {
       group: 'channels',
       animation: 150,
       ghostClass: 'opacity-30',
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       onEnd: syncChannelPositions,
     })
   }
@@ -143,6 +146,9 @@ function initSortables() {
       animation: 150,
       ghostClass: 'opacity-30',
       handle: '.category-drag-handle',
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       onEnd: onCategoriesDragEnd,
     })
   }
@@ -166,7 +172,7 @@ onBeforeUnmount(destroySortables)
     ref="sidebarEl"
     :class="[
       'flex h-full flex-col bg-card border-r border-border/50',
-      isSheet ? 'w-full' : 'w-60 shrink-0',
+      isSheet ? 'w-full h-screen' : 'w-60 shrink-0',
     ]"
   >
     <!-- Header -->

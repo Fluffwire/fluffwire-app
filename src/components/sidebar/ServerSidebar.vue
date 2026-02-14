@@ -12,6 +12,7 @@ import { useUiStore } from '@/stores/ui'
 import ServerIcon from './ServerIcon.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
@@ -48,6 +49,9 @@ onMounted(() => {
     Sortable.create(sortableContainer.value, {
       animation: 150,
       ghostClass: 'opacity-50',
+      delay: 200,
+      delayOnTouchOnly: true,
+      touchStartThreshold: 5,
       onEnd() {
         if (!sortableContainer.value) return
         const ids: string[] = []
@@ -161,69 +165,71 @@ async function confirmLeave() {
       <Separator class="mx-auto w-8" />
 
       <!-- Server icons (drag-to-reorder) -->
-      <div ref="sortableContainer" class="flex flex-col items-center gap-2">
-        <div v-for="server in serversStore.orderedServers" :key="server.id" :data-server-id="server.id">
-          <ContextMenu>
-            <Tooltip>
-              <ContextMenuTrigger as-child>
-                <TooltipTrigger as-child>
-                  <div class="relative">
-                    <ServerIcon
-                      :server="server"
-                      :active="isActive(server.id)"
-                      @click="navigateToServer(server.id)"
-                    />
-                    <span
-                      v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
-                      class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
-                    />
-                  </div>
-                </TooltipTrigger>
-              </ContextMenuTrigger>
-              <TooltipContent side="right">{{ server.name }}</TooltipContent>
-            </Tooltip>
+      <ScrollArea class="flex-1">
+        <div ref="sortableContainer" class="flex flex-col items-center gap-2 pb-2">
+          <div v-for="server in serversStore.orderedServers" :key="server.id" :data-server-id="server.id">
+            <ContextMenu>
+              <Tooltip>
+                <ContextMenuTrigger as-child>
+                  <TooltipTrigger as-child>
+                    <div class="relative">
+                      <ServerIcon
+                        :server="server"
+                        :active="isActive(server.id)"
+                        @click="navigateToServer(server.id)"
+                      />
+                      <span
+                        v-if="!isActive(server.id) && readStateStore.hasUnreadInServer(server.id)"
+                        class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-foreground"
+                      />
+                    </div>
+                  </TooltipTrigger>
+                </ContextMenuTrigger>
+                <TooltipContent side="right">{{ server.name }}</TooltipContent>
+              </Tooltip>
 
-            <ContextMenuContent class="w-52">
-              <ContextMenuItem @click="handleInvite(server)" class="gap-2">
-                <UserPlus class="h-4 w-4" />
-                {{ $t('server.inviteModal') }}
-              </ContextMenuItem>
-              <template v-if="isOwner(server)">
-                <ContextMenuItem @click="handleServerSettings(server)" class="gap-2">
-                  <Settings class="h-4 w-4" />
-                  {{ $t('server.serverSettings') }}
+              <ContextMenuContent class="w-52">
+                <ContextMenuItem @click="handleInvite(server)" class="gap-2">
+                  <UserPlus class="h-4 w-4" />
+                  {{ $t('server.inviteModal') }}
                 </ContextMenuItem>
-                <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
-                  <Hash class="h-4 w-4" />
-                  {{ $t('channel.createChannel') }}
-                </ContextMenuItem>
-                <ContextMenuItem @click="handleCreateCategory(server)" class="gap-2">
-                  <FolderPlus class="h-4 w-4" />
-                  {{ $t('channel.createCategory') }}
-                </ContextMenuItem>
-              </template>
-              <ContextMenuSeparator />
-              <ContextMenuItem @click="handleToggleMute(server.id)" class="gap-2">
-                <BellOff v-if="!notifSettings.isMuted(server.id)" class="h-4 w-4" />
-                <Bell v-else class="h-4 w-4" />
-                {{ notifSettings.isMuted(server.id) ? $t('server.unmuteServer') : $t('server.muteServer') }}
-              </ContextMenuItem>
-              <ContextMenuSeparator />
-              <ContextMenuItem @click="handleCopyId(server.id)" class="gap-2">
-                <Copy class="h-4 w-4" />
-                {{ $t('server.copyServerId') }}
-              </ContextMenuItem>
-              <template v-if="!isOwner(server)">
+                <template v-if="isOwner(server)">
+                  <ContextMenuItem @click="handleServerSettings(server)" class="gap-2">
+                    <Settings class="h-4 w-4" />
+                    {{ $t('server.serverSettings') }}
+                  </ContextMenuItem>
+                  <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
+                    <Hash class="h-4 w-4" />
+                    {{ $t('channel.createChannel') }}
+                  </ContextMenuItem>
+                  <ContextMenuItem @click="handleCreateCategory(server)" class="gap-2">
+                    <FolderPlus class="h-4 w-4" />
+                    {{ $t('channel.createCategory') }}
+                  </ContextMenuItem>
+                </template>
                 <ContextMenuSeparator />
-                <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
-                  <LogOut class="h-4 w-4" />
-                  {{ $t('server.leaveServer') }}
+                <ContextMenuItem @click="handleToggleMute(server.id)" class="gap-2">
+                  <BellOff v-if="!notifSettings.isMuted(server.id)" class="h-4 w-4" />
+                  <Bell v-else class="h-4 w-4" />
+                  {{ notifSettings.isMuted(server.id) ? $t('server.unmuteServer') : $t('server.muteServer') }}
                 </ContextMenuItem>
-              </template>
-            </ContextMenuContent>
-          </ContextMenu>
+                <ContextMenuSeparator />
+                <ContextMenuItem @click="handleCopyId(server.id)" class="gap-2">
+                  <Copy class="h-4 w-4" />
+                  {{ $t('server.copyServerId') }}
+                </ContextMenuItem>
+                <template v-if="!isOwner(server)">
+                  <ContextMenuSeparator />
+                  <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
+                    <LogOut class="h-4 w-4" />
+                    {{ $t('server.leaveServer') }}
+                  </ContextMenuItem>
+                </template>
+              </ContextMenuContent>
+            </ContextMenu>
+          </div>
         </div>
-      </div>
+      </ScrollArea>
 
       <!-- Add server button -->
       <Tooltip>

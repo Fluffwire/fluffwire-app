@@ -6,6 +6,7 @@ import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import FriendsList from '@/components/friends/FriendsList.vue'
 import AddFriendForm from '@/components/friends/AddFriendForm.vue'
+import DMList from '@/components/friends/DMList.vue'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -47,6 +48,7 @@ const pendingCount = computed(() => friendsStore.pendingRequests.length)
     <Tabs v-model="activeTab" class="flex flex-1 flex-col">
       <div class="border-b border-border/50 px-4 pt-2">
         <TabsList class="bg-transparent">
+          <TabsTrigger v-if="isMobile" value="messages">{{ $t('friends.messages') }}</TabsTrigger>
           <TabsTrigger value="online">{{ $t('friends.online') }}</TabsTrigger>
           <TabsTrigger value="all">{{ $t('friends.all') }}</TabsTrigger>
           <TabsTrigger value="pending" class="gap-1.5">
@@ -60,6 +62,10 @@ const pendingCount = computed(() => friendsStore.pendingRequests.length)
           </TabsTrigger>
         </TabsList>
       </div>
+
+      <TabsContent v-if="isMobile" value="messages" class="flex-1 overflow-y-auto p-4 mt-0">
+        <DMList />
+      </TabsContent>
 
       <TabsContent value="online" class="flex-1 overflow-y-auto p-4 mt-0">
         <FriendsList tab="online" />

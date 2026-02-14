@@ -15,8 +15,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Headphones, X, UserPlus, Users } from 'lucide-vue-next'
+import { Headphones, X, UserPlus, Users, Menu } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import { useResponsive } from '@/composables/useResponsive'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -26,6 +27,7 @@ const authStore = useAuthStore()
 const friendsStore = useFriendsStore()
 const membersStore = useMembersStore()
 const uiStore = useUiStore()
+const { isMobile, isTablet } = useResponsive()
 
 const channelId = computed(() => route.params.channelId as string)
 const serverId = computed(() => route.params.serverId as string)
@@ -94,6 +96,16 @@ function handleAddFriend(userId: string) {
   <div class="flex h-full flex-col">
     <div class="flex h-12 items-center justify-between border-b border-primary/20 px-4">
       <div class="flex items-center gap-2">
+        <!-- Hamburger for tablet/mobile -->
+        <Button
+          v-if="isTablet || isMobile"
+          variant="ghost"
+          size="icon"
+          class="h-8 w-8 mr-2"
+          @click="isMobile ? (uiStore.isMobileSidebarOpen = true) : (uiStore.isChannelSidebarOpen = true)"
+        >
+          <Menu class="h-5 w-5" />
+        </Button>
         <Headphones class="h-5 w-5 text-primary/70" />
         <h3 class="font-semibold text-foreground">{{ channel?.name ?? $t('voice.voiceChannel') }}</h3>
         <span class="text-xs text-muted-foreground">{{ voiceStore.peers.length }} connected</span>

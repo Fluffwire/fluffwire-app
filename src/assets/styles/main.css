@@ -215,3 +215,8 @@ html.theme-transitioning *::after {
 .mention:hover {
   background-color: oklch(from var(--primary) l c h / 0.25);
 }
+
+/* Prevent double-tap zoom on mobile */
+button, a, [role="button"] {
+  touch-action: manipulation;
+}

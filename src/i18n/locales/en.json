@@ -311,6 +311,7 @@
     "online": "Online",
     "pending": "Pending",
     "blocked": "Blocked",
+    "messages": "Messages",
     "addFriend": "Add Friend",
     "addFriendPlaceholder": "Enter a username",
     "sendRequest": "Send Request",
