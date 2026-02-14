@@ -32,14 +32,14 @@ const elapsedTime = computed(() => {
 
 <template>
   <div class="border-t border-border/50 bg-card/80 px-3 py-2">
-    <div class="flex items-center justify-between">
-      <div class="min-w-0">
+    <div class="flex items-start justify-between gap-2">
+      <div class="min-w-0 flex-1">
         <div class="flex items-center gap-2">
           <div class="h-2 w-2 animate-pulse rounded-full bg-online shadow-sm shadow-online/50" />
           <span class="text-xs font-medium text-online">{{ $t('voice.connected') }}</span>
-          <span v-if="elapsedTime" class="text-[10px] tabular-nums text-muted-foreground">{{ elapsedTime }}</span>
         </div>
         <div class="truncate text-xs text-muted-foreground">{{ channelName }}</div>
+        <div v-if="elapsedTime" class="mt-0.5 text-[10px] tabular-nums text-muted-foreground">{{ elapsedTime }}</div>
       </div>
       <VoiceControls />
     </div>
