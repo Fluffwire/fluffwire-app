@@ -41,6 +41,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Update version in tauri.conf.json
+        shell: bash
+        run: |
+          VERSION="${{ inputs.tag }}"
+          VERSION="${VERSION#v}"  # Remove 'v' prefix
+          sed -i.bak "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src-tauri/tauri.conf.json
+          echo "Updated version to $VERSION"
+          cat src-tauri/tauri.conf.json | grep version
+
       - name: Install Linux dependencies
         if: matrix.os == 'ubuntu-22.04'
         run: |
