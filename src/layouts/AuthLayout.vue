@@ -6,11 +6,6 @@ import { isTauri } from '@/utils/debug'
 const showDebugPanel = ref(false)
 
 onMounted(() => {
-  // Auto-show debug panel in Tauri or when Ctrl+Shift+D is pressed
-  if (isTauri) {
-    showDebugPanel.value = true
-  }
-
   // Toggle debug panel with Ctrl+Shift+D
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === 'D') {
@@ -27,7 +22,7 @@ onMounted(() => {
       <slot />
     </div>
 
-    <!-- Debug panel (auto-shown in Tauri) -->
+    <!-- Debug panel (toggle with Ctrl+Shift+D) -->
     <DebugPanel v-if="showDebugPanel" @close="showDebugPanel = false" />
   </div>
 </template>

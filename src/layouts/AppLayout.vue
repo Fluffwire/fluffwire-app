@@ -116,11 +116,6 @@ const isSettings = computed(() => route.path === '/settings')
 const showDebugPanel = ref(false)
 
 onMounted(() => {
-  // Auto-show debug panel in Tauri
-  if (isTauri) {
-    showDebugPanel.value = true
-  }
-
   // Toggle debug panel with Ctrl+Shift+D
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === 'D') {

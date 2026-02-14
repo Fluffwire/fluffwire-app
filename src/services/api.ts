@@ -20,15 +20,48 @@ const tauriAdapter: AxiosAdapter = async (config) => {
     const isWindows = navigator.userAgent.includes('Windows')
     const origin = isWindows ? 'https://tauri.localhost' : 'tauri://localhost'
 
-    debugLogger.info('API', 'Using Tauri HTTP plugin', { url, method: config.method, origin })
+    // Convert axios headers to plain object
+    const headers: Record<string, string> = {}
+    if (config.headers) {
+      // Handle both plain objects and AxiosHeaders
+      if (typeof (config.headers as any).entries === 'function') {
+        // AxiosHeaders with entries() method
+        for (const [key, value] of (config.headers as any).entries()) {
+          if (value !== undefined && value !== null) {
+            headers[key] = String(value)
+          }
+        }
+      } else {
+        // Plain object
+        for (const [key, value] of Object.entries(config.headers)) {
+          if (value !== undefined && value !== null) {
+            headers[key] = String(value)
+          }
+        }
+      }
+    }
+    headers['Origin'] = origin
+
+    // Prepare request body
+    let body: string | undefined
+    if (config.data) {
+      // If data is already a string, use it as-is. Otherwise stringify it.
+      body = typeof config.data === 'string' ? config.data : JSON.stringify(config.data)
+    }
+
+    debugLogger.info('API', 'Using Tauri HTTP plugin', {
+      url,
+      method: config.method,
+      origin,
+      headers,
+      bodyLength: body?.length,
+      bodyPreview: body?.substring(0, 100)
+    })
 
     const response = await fetch(url, {
       method: config.method?.toUpperCase(),
-      headers: {
-        ...(config.headers as Record<string, string>),
-        'Origin': origin,
-      },
-      body: config.data ? JSON.stringify(config.data) : undefined,
+      headers,
+      body,
     })
 
     debugLogger.info('API', 'Tauri response received', {
