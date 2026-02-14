@@ -147,19 +147,25 @@ async function confirmLeave() {
       <!-- Home button -->
       <Tooltip>
         <TooltipTrigger as-child>
-          <button
-            @click="navigateHome"
-            :class="[
-              'group flex h-12 w-12 items-center justify-center transition-all duration-200 ring-1 ring-primary/20',
-              route.path.startsWith('/channels/@me')
-                ? 'rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25'
-                : 'rounded-[28px] bg-secondary text-foreground hover:rounded-2xl hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/15',
-            ]"
-          >
-            <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M21.53 4.306v15.363c0 .988-.544 1.896-1.414 2.363l-7.7 4.139a2.74 2.74 0 01-2.632.039l-7.7-4.139A2.72 2.72 0 01.67 19.669V4.306C.67 3.32 1.214 2.41 2.084 1.944L9.784.166a2.74 2.74 0 012.632-.039l7.7 1.778a2.72 2.72 0 011.414 2.401z" />
-            </svg>
-          </button>
+          <div class="relative">
+            <button
+              @click="navigateHome"
+              :class="[
+                'group flex h-12 w-12 items-center justify-center transition-all duration-200 ring-1 ring-primary/20',
+                route.path.startsWith('/channels/@me')
+                  ? 'rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25'
+                  : 'rounded-[28px] bg-secondary text-foreground hover:rounded-2xl hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/15',
+              ]"
+            >
+              <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M21.53 4.306v15.363c0 .988-.544 1.896-1.414 2.363l-7.7 4.139a2.74 2.74 0 01-2.632.039l-7.7-4.139A2.72 2.72 0 01.67 19.669V4.306C.67 3.32 1.214 2.41 2.084 1.944L9.784.166a2.74 2.74 0 012.632-.039l7.7 1.778a2.72 2.72 0 011.414 2.401z" />
+              </svg>
+            </button>
+            <span
+              v-if="!route.path.startsWith('/channels/@me') && readStateStore.hasUnreadDMs()"
+              class="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary ring-2 ring-card"
+            />
+          </div>
         </TooltipTrigger>
         <TooltipContent side="right">Home</TooltipContent>
       </Tooltip>

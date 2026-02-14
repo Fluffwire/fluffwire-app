@@ -41,6 +41,14 @@ export const useReadStateStore = defineStore('readState', () => {
     return false
   }
 
+  function hasUnreadDMs(): boolean {
+    // Check if any unread channel is NOT in channelServerMap (i.e., it's a DM)
+    for (const channelId of unreadChannels.value) {
+      if (!channelServerMap.value.has(channelId)) return true
+    }
+    return false
+  }
+
   function registerChannelServer(channelId: string, serverId: string) {
     channelServerMap.value.set(channelId, serverId)
   }
@@ -88,6 +96,7 @@ export const useReadStateStore = defineStore('readState', () => {
     unreadChannels,
     isUnread,
     hasUnreadInServer,
+    hasUnreadDMs,
     registerChannelServer,
     setReadStates,
     markAsRead,
