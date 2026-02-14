@@ -112,7 +112,7 @@ src/
 See `/home/cryo/fluffwire-server/BACKEND_REQUIREMENTS.md` for the full API specification.
 
 ## Environment
-- Node.js via nvm: `export NVM_DIR="$HOME/.nvm" && [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"`
+- Node.js v22.22.0 via nvm (already in PATH)
 - Dev server: http://localhost:5173
 - API base: http://localhost:3000/api (dev), proxied via nginx in prod
 - Production: https://app.fluffwire.com, static build at /var/www/app/
