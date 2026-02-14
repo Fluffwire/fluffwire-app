@@ -99,11 +99,17 @@ export const useMessagesStore = defineStore('messages', () => {
       const cursor = loadMore ? cursors.value.get(channelId) ?? undefined : undefined
       const { data } = await messageApi.getMessages(channelId, cursor)
 
+      // Ensure all messages have reactions array initialized
+      const messagesWithReactions = data.messages.map(msg => ({
+        ...msg,
+        reactions: msg.reactions ?? []
+      }))
+
       if (loadMore) {
         const existing = messagesByChannel.value.get(channelId) ?? []
-        messagesByChannel.value.set(channelId, [...data.messages, ...existing])
+        messagesByChannel.value.set(channelId, [...messagesWithReactions, ...existing])
       } else {
-        messagesByChannel.value.set(channelId, data.messages)
+        messagesByChannel.value.set(channelId, messagesWithReactions)
       }
 
       cursors.value.set(channelId, data.cursor)

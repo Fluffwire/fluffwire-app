@@ -51,6 +51,10 @@ const editTextarea = ref<HTMLTextAreaElement | null>(null)
 const showDeleteDialog = ref(false)
 const showReactionPicker = ref(false)
 const keepActionBarVisible = ref(false)
+const showFullEmojiPicker = ref(false)
+
+// Quick reaction emojis
+const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉']
 
 function handleReactionSelect(emoji: string) {
   emit('reaction', props.message.id, emoji)
@@ -65,6 +69,7 @@ watch(showReactionPicker, (isOpen) => {
     // Delay hiding to prevent flicker during popover close animation
     setTimeout(() => {
       keepActionBarVisible.value = false
+      showFullEmojiPicker.value = false // Reset to quick reactions
     }, 200)
   }
 })
@@ -210,8 +215,23 @@ function copyMessageId() {
             <SmilePlus class="h-3.5 w-3.5" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent side="top" align="end" class="w-auto border-0 bg-transparent p-0 shadow-none">
-          <EmojiPicker @select="handleReactionSelect" />
+        <PopoverContent side="top" align="end" class="w-auto p-2">
+          <!-- Quick reactions -->
+          <div v-if="!showFullEmojiPicker" class="flex items-center gap-1">
+            <button
+              v-for="emoji in quickEmojis"
+              :key="emoji"
+              @click="handleReactionSelect(emoji)"
+              class="flex h-8 w-8 items-center justify-center rounded hover:bg-accent text-lg transition-colors"
+            >
+              {{ emoji }}
+            </button>
+            <Button variant="ghost" size="icon" class="h-8 w-8" @click="showFullEmojiPicker = true">
+              <SmilePlus class="h-4 w-4" />
+            </Button>
+          </div>
+          <!-- Full emoji picker -->
+          <EmojiPicker v-else @select="handleReactionSelect" />
         </PopoverContent>
       </Popover>
       <Tooltip v-if="isOwnMessage || canDelete">
