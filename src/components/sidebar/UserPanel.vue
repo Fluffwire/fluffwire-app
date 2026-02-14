@@ -2,6 +2,7 @@
 import { computed, ref, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
+import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import { wsService } from '@/services/websocket'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -12,6 +13,7 @@ import type { UserStatus } from '@/types'
 
 const authStore = useAuthStore()
 const presenceStore = usePresenceStore()
+const uiStore = useUiStore()
 const router = useRouter()
 
 const wsConnected = ref(wsService.isConnected)
@@ -43,6 +45,14 @@ const statusLabel = computed(() => {
 
 function setStatus(status: UserStatus) {
   presenceStore.setOwnStatus(status)
+}
+
+function openSettings() {
+  // Close mobile drawer before navigating to settings
+  if (uiStore.isMobileView) {
+    uiStore.isMobileSidebarOpen = false
+  }
+  router.push('/settings')
 }
 </script>
 
@@ -92,7 +102,7 @@ function setStatus(status: UserStatus) {
         <Tooltip>
           <TooltipTrigger as-child>
             <button
-              @click="router.push('/settings')"
+              @click="openSettings"
               class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <Settings class="h-4 w-4" />

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useRouter } from 'vue-router'
 import { useResponsive } from '@/composables/useResponsive'
+import { isTauri } from '@/utils/platform'
 import { useTheme, themeLabels, themeNames, type ThemeName } from '@/composables/useTheme'
 import { uploadFile } from '@/services/api'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -47,6 +48,7 @@ const {
 } = useNotificationSettings()
 
 const desktopPermissionDenied = ref(false)
+const appVersion = ref<string | null>(null)
 
 function handleSoundToggle(value: boolean) {
   setSoundEnabled(value)
@@ -188,14 +190,36 @@ watch([profileDisplayName, profileBio, profileAvatarFile], () => {
 async function exportData() {
   try {
     const { data } = await api.get('/users/@me/export')
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = 'user-data-export.json'
-    a.click()
-    URL.revokeObjectURL(url)
-    toast.success(t('settings.dataExported'))
+    const jsonContent = JSON.stringify(data, null, 2)
+
+    if (isTauri) {
+      // Use Tauri save dialog
+      const { save } = await import('@tauri-apps/plugin-dialog')
+      const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+
+      const filePath = await save({
+        defaultPath: 'user-data-export.json',
+        filters: [{
+          name: 'JSON',
+          extensions: ['json']
+        }]
+      })
+
+      if (filePath) {
+        await writeTextFile(filePath, jsonContent)
+        toast.success(t('settings.dataExported'))
+      }
+    } else {
+      // Browser: use blob download
+      const blob = new Blob([jsonContent], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'user-data-export.json'
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success(t('settings.dataExported'))
+    }
   } catch {
     toast.error(t('settings.failedExportData'))
   }
@@ -423,7 +447,19 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') close()
 }
 
-onMounted(() => window.addEventListener('keydown', onKeydown))
+onMounted(async () => {
+  window.addEventListener('keydown', onKeydown)
+
+  // Fetch app version if running in Tauri
+  if (isTauri) {
+    try {
+      const { getVersion } = await import('@tauri-apps/api/app')
+      appVersion.value = await getVersion()
+    } catch (error) {
+      console.error('Failed to get app version:', error)
+    }
+  }
+})
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 const tabs = computed(() => [
@@ -495,32 +531,43 @@ const themePreviewColors: Record<ThemeName, string> = {
 
     <!-- Settings content -->
     <div class="flex flex-1 flex-col overflow-hidden">
-      <!-- Mobile: horizontal tabs -->
-      <div v-if="isMobile" class="flex items-center gap-2 overflow-x-auto border-b border-border/50 px-4 py-2">
+      <!-- Mobile: horizontal tabs with close button -->
+      <div v-if="isMobile" class="flex items-center border-b border-border/50">
+        <!-- Close button (fixed on left) -->
         <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="activeTab = tab.key"
-          :class="[
-            'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors',
-            activeTab === tab.key
-              ? 'bg-accent font-medium text-foreground'
-              : 'text-muted-foreground',
-          ]"
+          @click="close"
+          class="flex shrink-0 items-center justify-center h-12 w-12 text-muted-foreground hover:text-foreground transition-colors"
         >
-          <component :is="tab.icon" class="h-4 w-4" />
-          {{ tab.label }}
+          <X class="h-5 w-5" />
         </button>
 
-        <Separator orientation="vertical" class="h-6" />
+        <!-- Scrollable tabs -->
+        <div class="flex items-center gap-2 overflow-x-auto flex-1 px-2 py-2">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            @click="activeTab = tab.key"
+            :class="[
+              'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors',
+              activeTab === tab.key
+                ? 'bg-accent font-medium text-foreground'
+                : 'text-muted-foreground',
+            ]"
+          >
+            <component :is="tab.icon" class="h-4 w-4" />
+            {{ tab.label }}
+          </button>
 
-        <button
-          @click="handleLogout"
-          class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive"
-        >
-          <LogOut class="h-4 w-4" />
-          {{ $t('nav.logOut') }}
-        </button>
+          <Separator orientation="vertical" class="h-6" />
+
+          <button
+            @click="handleLogout"
+            class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive"
+          >
+            <LogOut class="h-4 w-4" />
+            {{ $t('nav.logOut') }}
+          </button>
+        </div>
       </div>
 
       <ScrollArea class="flex-1 min-h-0">
@@ -1275,6 +1322,11 @@ const themePreviewColors: Record<ThemeName, string> = {
           </div>
         </div>
       </ScrollArea>
+
+      <!-- Version footer (Tauri only) -->
+      <div v-if="appVersion" class="border-t border-border/50 px-4 py-2 text-center text-xs text-muted-foreground">
+        Fluffwire Desktop v{{ appVersion }}
+      </div>
     </div>
   </div>
 </template>
