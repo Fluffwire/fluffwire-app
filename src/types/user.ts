@@ -13,6 +13,7 @@ export interface User {
 
 export interface CurrentUser extends User {
   email: string
+  emailVerified: boolean
   deleteScheduledAt?: string | null
   totpEnabled: boolean
 }

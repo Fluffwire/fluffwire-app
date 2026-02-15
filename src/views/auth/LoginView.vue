@@ -64,7 +64,12 @@ async function handleSubmit() {
         </div>
 
         <div class="space-y-2">
-          <Label for="login-password">{{ $t('auth.password') }}</Label>
+          <div class="flex items-center justify-between">
+            <Label for="login-password">{{ $t('auth.password') }}</Label>
+            <RouterLink to="/forgot-password" class="text-xs text-primary hover:underline">
+              Forgot password?
+            </RouterLink>
+          </div>
           <Input
             id="login-password"
             v-model="password"

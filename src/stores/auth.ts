@@ -23,6 +23,7 @@ export const useAuthStore = defineStore('auth', () => {
   const error = ref<string | null>(null)
 
   const isAuthenticated = computed(() => !!accessToken.value)
+  const isEmailVerified = computed(() => user.value?.emailVerified ?? false)
   const twoFactorTicket = ref<string | null>(null)
 
   function setupWsHandlers() {
@@ -208,6 +209,11 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = updated
   }
 
+  async function loadUser(): Promise<void> {
+    const { data } = await authApi.getMe()
+    user.value = data
+  }
+
   async function deleteAccount(password: string): Promise<void> {
     await api.delete(API.USERS.DELETE_ACCOUNT, { data: { password } })
   }
@@ -242,6 +248,7 @@ export const useAuthStore = defineStore('auth', () => {
     isLoading,
     error,
     isAuthenticated,
+    isEmailVerified,
     twoFactorTicket,
     login,
     register,
@@ -249,6 +256,7 @@ export const useAuthStore = defineStore('auth', () => {
     initialize,
     logout,
     updateProfile,
+    loadUser,
     deleteAccount,
     cancelDeletion,
     changePassword,

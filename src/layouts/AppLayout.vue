@@ -13,6 +13,7 @@ import EditChannelModal from '@/components/channels/EditChannelModal.vue'
 import CreateCategoryModal from '@/components/channels/CreateCategoryModal.vue'
 import EditCategoryModal from '@/components/channels/EditCategoryModal.vue'
 import OfflineBanner from '@/components/common/OfflineBanner.vue'
+import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import DebugPanel from '@/components/common/DebugPanel.vue'
 import { isTauri } from '@/utils/platform'
@@ -138,6 +139,9 @@ const showChannelSidebar = computed(() => !isSettings.value)
   <div class="flex h-full w-full overflow-hidden">
     <!-- Offline banner -->
     <OfflineBanner v-if="showOfflineBanner" @dismiss="bannerDismissed = true" />
+
+    <!-- Email verification banner -->
+    <EmailVerificationBanner />
 
     <!-- Voice invite toasts -->
     <div v-if="voiceStore.activeInvites.length" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">

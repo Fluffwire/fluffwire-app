@@ -21,6 +21,24 @@ const routes: RouteRecordRaw[] = [
     meta: { layout: 'auth', requiresAuth: false },
   },
   {
+    path: '/verify-email/:token',
+    name: 'VerifyEmail',
+    component: () => import('@/views/auth/VerifyEmailView.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/auth/ForgotPasswordView.vue'),
+    meta: { layout: 'auth', requiresAuth: false },
+  },
+  {
+    path: '/reset-password/:token',
+    name: 'ResetPassword',
+    component: () => import('@/views/auth/ResetPasswordView.vue'),
+    meta: { layout: 'auth', requiresAuth: false },
+  },
+  {
     path: '/channels/@me',
     name: 'Home',
     component: () => import('@/views/app/FriendsView.vue'),
