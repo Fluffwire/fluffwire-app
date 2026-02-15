@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import type { UserStatus } from '@/types'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { useImageUrl } from '@/composables/useImageUrl'
-import { toRef } from 'vue'
 
 interface Props {
   src: string | null
@@ -16,8 +14,6 @@ const props = withDefaults(defineProps<Props>(), {
   size: 'md',
   status: null,
 })
-
-const transformedSrc = useImageUrl(toRef(() => props.src))
 
 const sizeClasses = {
   xs: 'h-6 w-6',
@@ -51,7 +47,7 @@ const fallbackTextSize = {
 <template>
   <div class="relative inline-flex shrink-0">
     <Avatar :class="sizeClasses[size]">
-      <AvatarImage v-if="transformedSrc" :src="transformedSrc" :alt="alt" />
+      <AvatarImage v-if="src" :src="src" :alt="alt" />
       <AvatarFallback :class="['bg-primary text-primary-foreground font-semibold', fallbackTextSize[size]]">
         {{ alt?.charAt(0)?.toUpperCase() || '?' }}
       </AvatarFallback>
