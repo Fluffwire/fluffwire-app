@@ -137,6 +137,13 @@ async function handleDeleteCategory() {
       <div v-for="channel in channels" :key="channel.id" :data-id="channel.id">
         <ChannelItem :channel="channel" />
       </div>
+      <!-- Drop zone for easier channel dropping, especially when category is empty -->
+      <div
+        v-if="isOwner"
+        class="h-8 w-full"
+        :class="channels.length === 0 ? 'h-12' : ''"
+        data-drop-zone
+      />
     </div>
 
     <DeleteConfirmDialog
