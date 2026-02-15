@@ -270,6 +270,7 @@ async function deleteSelectedRole() {
 }
 
 // Server data export
+const exportIncludeMessages = ref(false)
 const exportLimit = ref('10000')
 const exportIsLoading = ref(false)
 
@@ -277,11 +278,13 @@ async function exportServerData() {
   if (!serversStore.currentServer) return
   exportIsLoading.value = true
   try {
-    // Build query params
+    // Build query params - only add limit if including messages
     const params = new URLSearchParams()
-    const limitNum = Number(exportLimit.value)
-    if (limitNum > 0) {
-      params.append('limit', String(limitNum))
+    if (exportIncludeMessages.value) {
+      const limitNum = Number(exportLimit.value)
+      if (limitNum > 0) {
+        params.append('limit', String(limitNum))
+      }
     }
 
     const url = `/servers/${serversStore.currentServer.id}/export${params.toString() ? `?${params.toString()}` : ''}`
@@ -779,12 +782,17 @@ async function handleSave() {
           />
         </div>
 
-        <!-- Export Messages (owner only) -->
+        <!-- Export Server Data (owner only) -->
         <div v-if="isOwner" class="rounded-lg border border-border/50 p-4 space-y-3">
-          <h3 class="text-sm font-medium text-foreground">{{ $t('server.exportMessages') }}</h3>
-          <p class="text-sm text-muted-foreground">{{ $t('server.exportMessagesDesc') }}</p>
+          <h3 class="text-sm font-medium text-foreground">Export Server</h3>
+          <p class="text-sm text-muted-foreground">Download server data including settings, channels, and members.</p>
 
-          <div class="space-y-2">
+          <div class="flex items-center space-x-2">
+            <Checkbox id="includeMessages" v-model:checked="exportIncludeMessages" />
+            <Label for="includeMessages" class="cursor-pointer">Include messages (slower, larger file)</Label>
+          </div>
+
+          <div v-if="exportIncludeMessages" class="space-y-2">
             <Label for="exportLimit">Message Limit</Label>
             <Select v-model="exportLimit" id="exportLimit">
               <SelectTrigger>
@@ -800,7 +808,7 @@ async function handleSave() {
 
           <Button variant="outline" type="button" @click="exportServerData" :disabled="exportIsLoading">
             <Loader2 v-if="exportIsLoading" class="mr-2 h-4 w-4 animate-spin" />
-            {{ $t('server.exportMessages') }}
+            Export Server
           </Button>
         </div>
 
