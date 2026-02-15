@@ -44,6 +44,9 @@ class WebRTCService {
   private iceCandidateBuffer: RTCIceCandidateInit[] = []
   private hasRemoteDescription = false
 
+  // Signal buffer — queued when PC is null (during rejoin)
+  private pendingSignals: VoiceSignal[] = []
+
   // Serialise all signal handling to prevent races
   private signalQueue: Promise<void> = Promise.resolve()
 
@@ -145,7 +148,15 @@ class WebRTCService {
         if (stream.id.startsWith('screen-stream-')) {
           const userId = stream.id.slice('screen-stream-'.length)
           this.remoteStreams.set(stream.id, stream)
-          this.onRemoteVideoStream?.(userId, stream)
+
+          // Wait for track to be ready before notifying (prevents black screen)
+          if (event.track.readyState === 'live') {
+            this.onRemoteVideoStream?.(userId, stream)
+          } else {
+            event.track.onunmute = () => {
+              this.onRemoteVideoStream?.(userId, stream)
+            }
+          }
 
           // Clean up when track ends
           event.track.onended = () => {
@@ -209,6 +220,16 @@ class WebRTCService {
 
       // Set up voice activity detection
       this.setupVoiceActivityDetection()
+
+      // Process any pending signals that arrived during reconnection
+      const pending = this.pendingSignals
+      this.pendingSignals = []
+      if (pending.length > 0) {
+        console.log(`[WebRTC] Processing ${pending.length} pending signals`)
+        for (const signal of pending) {
+          await this.handleSignal(signal)
+        }
+      }
     } catch (error) {
       console.error('[WebRTC] Failed to join voice channel:', error)
       await this.leaveVoiceChannel()
@@ -217,6 +238,13 @@ class WebRTCService {
   }
 
   async handleSignal(signal: VoiceSignal): Promise<void> {
+    // If PC is null (e.g., during rejoin), buffer the signal for retry
+    if (!this.peerConnection) {
+      console.log('[WebRTC] Buffering signal during reconnection:', signal.type)
+      this.pendingSignals.push(signal)
+      return
+    }
+
     // Serialise signal handling to prevent race conditions
     this.signalQueue = this.signalQueue.then(() => this.processSignal(signal)).catch((err) => {
       console.error('[WebRTC] Signal processing error:', err)
@@ -224,7 +252,11 @@ class WebRTCService {
   }
 
   private async processSignal(signal: VoiceSignal): Promise<void> {
-    if (!this.peerConnection) return
+    if (!this.peerConnection) {
+      // Should not happen due to check in handleSignal, but safety check
+      this.pendingSignals.push(signal)
+      return
+    }
 
     switch (signal.type) {
       case 'answer': {
@@ -269,9 +301,12 @@ class WebRTCService {
         )
         this.hasRemoteDescription = true
 
+        // CRITICAL: Drain ICE candidates BEFORE creating answer
+        // ICE candidates must be added to the remote description before negotiation
+        await this.drainIceCandidateBuffer()
+
         const answer = await this.peerConnection.createAnswer()
         await this.peerConnection.setLocalDescription(answer)
-        await this.drainIceCandidateBuffer()
 
         wsService.sendDispatch('VOICE_SIGNAL', {
           type: 'answer',
@@ -286,12 +321,20 @@ class WebRTCService {
   private async drainIceCandidateBuffer(): Promise<void> {
     const buffered = this.iceCandidateBuffer
     this.iceCandidateBuffer = []
+    const failed: RTCIceCandidateInit[] = []
+
     for (const candidate of buffered) {
       try {
         await this.peerConnection!.addIceCandidate(new RTCIceCandidate(candidate))
       } catch (err) {
-        console.warn('[WebRTC] Failed to add buffered ICE candidate:', err)
+        console.warn('[WebRTC] Failed to add buffered ICE candidate, will retry:', err)
+        failed.push(candidate)
       }
+    }
+
+    // Re-buffer failed candidates for next drain attempt
+    if (failed.length > 0) {
+      this.iceCandidateBuffer.push(...failed)
     }
   }
 
@@ -346,19 +389,21 @@ class WebRTCService {
       }
     }
 
-    // Add tracks to PeerConnection (creates unassociated transceivers).
-    // No SDP negotiation here — the server will send a renegotiation offer
-    // that the browser matches with these transceivers automatically.
+    // Add tracks to PeerConnection
     for (const track of this.screenStream.getTracks()) {
       this.peerConnection.addTrack(track, this.screenStream)
     }
 
     this._isScreenSharing = true
 
-    // Signal the server to start screen sharing (no SDP payload needed)
+    // Create offer with new screen tracks to ensure proper SDP negotiation
+    const offer = await this.peerConnection.createOffer()
+    await this.peerConnection.setLocalDescription(offer)
+
+    // Signal the server with the offer (ensures SDP negotiation before streaming)
     wsService.sendDispatch('VOICE_SIGNAL', {
       type: 'screen-share',
-      payload: {} as RTCSessionDescriptionInit,
+      payload: offer,
       channelId: this._currentChannelId,
     })
   }
@@ -430,7 +475,7 @@ class WebRTCService {
     this._currentServerId = null
     // Persist mute/deafen state across leave/join
     this.hasRemoteDescription = false
-    this.iceCandidateBuffer = []
+    // ICE buffer is already cleared in joinVoiceChannel, don't double-clear here
   }
 
   private setupRemoteVAD(stream: MediaStream, userId: string): void {

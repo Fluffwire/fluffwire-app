@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useVoiceStore } from '@/stores/voice'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff } from 'lucide-vue-next'
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff, Eye, EyeOff } from 'lucide-vue-next'
 
 const voiceStore = useVoiceStore()
 
@@ -60,6 +60,22 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
           </Button>
         </TooltipTrigger>
         <TooltipContent>{{ voiceStore.isScreenSharing ? $t('voice.stopSharing') : anyoneStreaming ? $t('voice.someoneSharing') : $t('voice.shareScreen') }}</TooltipContent>
+      </Tooltip>
+
+      <!-- Self-View Toggle (only show when streaming) -->
+      <Tooltip v-if="voiceStore.isScreenSharing">
+        <TooltipTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            :class="['h-8 w-8', voiceStore.showSelfStream ? 'bg-accent text-foreground' : 'text-muted-foreground']"
+            @click="voiceStore.toggleSelfView()"
+          >
+            <Eye v-if="voiceStore.showSelfStream" class="h-4 w-4" />
+            <EyeOff v-else class="h-4 w-4" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{{ voiceStore.showSelfStream ? $t('voice.hideSelfView') : $t('voice.showSelfView') }}</TooltipContent>
       </Tooltip>
 
       <!-- Disconnect -->

@@ -17,6 +17,7 @@ export const useVoiceStore = defineStore('voice', () => {
   const connectedSince = ref<Date | null>(null)
   const watchingUserId = ref<string | null>(null)
   const screenStreams = ref<Map<string, MediaStream>>(new Map())
+  const showSelfStream = ref(false) // Toggle for streamer to see their own screen share
   // All voice channel members across the server: channelId -> VoicePeer[]
   const voiceChannelMembers = ref<Map<string, VoicePeer[]>>(new Map())
 
@@ -173,6 +174,25 @@ export const useVoiceStore = defineStore('voice', () => {
       }, 30000)
     })
 
+    wsDispatcher.register(WS_EVENTS.VOICE_INVITE_ERROR, (data: unknown) => {
+      const error = data as { reason: string }
+      const errorMessages: Record<string, string> = {
+        invalid_payload: 'Failed to send invite',
+        cannot_invite_self: 'You cannot invite yourself',
+        not_in_channel: 'You must be in a voice channel to send invites',
+        already_in_channel: 'User is already in the voice channel',
+        sender_info_missing: 'Failed to send invite',
+        database_error: 'Failed to send invite',
+        target_not_member: 'User is not a member of this server',
+      }
+      const message = errorMessages[error.reason] || 'Failed to send voice invite'
+
+      // Import toast dynamically to avoid circular dependencies
+      import('vue-sonner').then(({ toast }) => {
+        toast.error(message)
+      })
+    })
+
     // Re-join voice channel after WebSocket reconnect
     wsDispatcher.register(WS_EVENTS.READY, async () => {
       if (currentChannelId.value && currentServerId.value) {
@@ -266,6 +286,10 @@ export const useVoiceStore = defineStore('voice', () => {
     watchingUserId.value = userId
   }
 
+  function toggleSelfView() {
+    showSelfStream.value = !showSelfStream.value
+  }
+
   function stopWatching() {
     watchingUserId.value = null
   }
@@ -331,6 +355,7 @@ export const useVoiceStore = defineStore('voice', () => {
     connectedSince,
     watchingUserId,
     screenStreams,
+    showSelfStream,
     voiceChannelMembers,
     activeInvites,
     getVoiceChannelMembers,
@@ -347,6 +372,7 @@ export const useVoiceStore = defineStore('voice', () => {
     watchStream,
     stopWatching,
     getScreenStream,
+    toggleSelfView,
     setVoiceMode,
     setVadThreshold,
     setPttKey,

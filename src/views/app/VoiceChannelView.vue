@@ -15,7 +15,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Headphones, X, UserPlus, Users, Menu } from 'lucide-vue-next'
+import { Headphones, X, PhoneCall, Users, Menu } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useResponsive } from '@/composables/useResponsive'
 
@@ -66,13 +66,30 @@ watch(watchingStream, async (stream) => {
   }
 }, { immediate: true })
 
+const recentInvites = ref<Map<string, number>>(new Map())
+
 function sendVoiceInvite(targetUserId: string) {
+  // Check if recently invited (prevent spam)
+  const lastInviteTime = recentInvites.value.get(targetUserId)
+  if (lastInviteTime && Date.now() - lastInviteTime < 5000) {
+    toast.error(t('voice.inviteRateLimited'))
+    return
+  }
+
   wsService.sendDispatch('VOICE_INVITE', {
     targetUserId,
     channelId: channelId.value,
     serverId: serverId.value,
   })
   showInvitePicker.value = false
+
+  // Track invite to prevent spam
+  recentInvites.value.set(targetUserId, Date.now())
+  setTimeout(() => {
+    recentInvites.value.delete(targetUserId)
+  }, 5000)
+
+  // Only show success after sending (backend will send error if it fails)
   toast.success(t('voice.inviteSent'))
 }
 
@@ -121,7 +138,7 @@ function handleAddFriend(userId: string) {
                     size="icon"
                     class="h-8 w-8 text-muted-foreground hover:text-foreground"
                   >
-                    <UserPlus class="h-5 w-5" />
+                    <PhoneCall class="h-5 w-5" />
                   </Button>
                 </PopoverTrigger>
               </TooltipTrigger>
@@ -204,6 +221,25 @@ function handleAddFriend(userId: string) {
 
     <!-- Normal peer tile grid -->
     <div v-else class="flex flex-1 flex-wrap items-center justify-center gap-4 p-8">
+      <!-- Self-view tile (when streaming and enabled) -->
+      <VoicePeerTile
+        v-if="voiceStore.isScreenSharing && voiceStore.showSelfStream && authStore.user"
+        :peer="{
+          userId: authStore.user.id,
+          username: authStore.user.username,
+          displayName: authStore.user.displayName,
+          avatar: authStore.user.avatar,
+          speaking: false,
+          selfMute: voiceStore.isMuted,
+          selfDeaf: voiceStore.isDeafened,
+          streaming: true,
+        }"
+        :is-local="true"
+        @watch-stream="handleWatchStream"
+        class="opacity-80 ring-2 ring-primary/50"
+      />
+
+      <!-- Other peers -->
       <VoicePeerTile
         v-for="peer in voiceStore.peers"
         :key="peer.userId"
