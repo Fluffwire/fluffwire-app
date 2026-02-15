@@ -73,7 +73,12 @@ function handleScroll() {
   if (!containerRef.value) return
   const el = containerRef.value
   const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-  showJumpButton.value = distanceFromBottom > 300
+
+  // Don't update button visibility while loading more messages to prevent flicker
+  if (!isLoadingMore.value) {
+    showJumpButton.value = distanceFromBottom > 300
+  }
+
   if (distanceFromBottom < 100) {
     dividerMessageId.value = null
   }
