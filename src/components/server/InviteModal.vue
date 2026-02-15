@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { serverApi } from '@/services/serverApi'
 import { useUiStore } from '@/stores/ui'
+import { isTauri } from '@/utils/platform'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
@@ -27,7 +28,9 @@ watch(() => uiStore.activeModal, async (modal) => {
     try {
       const serverId = uiStore.modalData as string
       const { data } = await serverApi.createInvite(serverId)
-      inviteLink.value = `${window.location.origin}/invite/${data.code}`
+      // In Tauri, use production URL instead of tauri://localhost
+      const origin = isTauri() ? 'https://app.fluffwire.com' : window.location.origin
+      inviteLink.value = `${origin}/invite/${data.code}`
     } catch {
       inviteLink.value = 'Failed to generate invite'
     } finally {
