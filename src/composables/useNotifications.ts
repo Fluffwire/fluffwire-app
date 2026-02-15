@@ -5,6 +5,7 @@ import { useChannelsStore } from '@/stores/channels'
 import { useNotificationSettingsStore } from '@/stores/notificationSettings'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { soundManager } from '@/composables/useSounds'
+import { isTauri } from '@/utils/platform'
 import type { Message } from '@/types'
 
 const STORAGE_KEYS = {
@@ -49,12 +50,30 @@ async function setDesktopEnabled(value: boolean) {
 }
 
 async function requestDesktopPermission(): Promise<boolean> {
+  // Tauri: Use native notification plugin (always granted)
+  if (isTauri()) {
+    try {
+      const { isPermissionGranted, requestPermission } = await import('@tauri-apps/plugin-notification')
+      let granted = await isPermissionGranted()
+      if (!granted) {
+        const permission = await requestPermission()
+        granted = permission === 'granted'
+      }
+      return granted
+    } catch (error) {
+      console.error('Failed to request Tauri notification permission:', error)
+      return false
+    }
+  }
+
+  // Web: Use browser Notification API
   if (!('Notification' in window)) return false
   if (Notification.permission === 'granted') return true
   if (Notification.permission === 'denied') return false
   const result = await Notification.requestPermission()
   return result === 'granted'
 }
+
 
 function playTestSound() {
   soundManager.play('notification')
@@ -72,6 +91,8 @@ export function useNotificationSettings() {
     requestDesktopPermission,
     playTestSound,
     get desktopPermission() {
+      // Tauri always returns 'granted' (handled by requestDesktopPermission)
+      if (isTauri()) return 'granted'
       return 'Notification' in window ? Notification.permission : 'denied'
     },
   }
@@ -88,15 +109,34 @@ export function useNotifications() {
   // Sync soundManager enabled state with persisted setting
   soundManager.setEnabled(soundEnabled.value)
 
-  function showDesktopNotification(message: Message) {
+  async function showDesktopNotification(message: Message) {
     if (!desktopEnabled.value) return
-    if (!('Notification' in window)) return
-    if (Notification.permission !== 'granted') return
 
     const title = message.author.displayName
     const body = message.content.length > 100
       ? message.content.slice(0, 100) + '...'
       : message.content
+
+    // Tauri: Use native notification plugin
+    if (isTauri()) {
+      try {
+        const { sendNotification, isPermissionGranted } = await import('@tauri-apps/plugin-notification')
+        const granted = await isPermissionGranted()
+        if (!granted) return
+
+        sendNotification({
+          title,
+          body,
+        })
+      } catch (error) {
+        console.error('Failed to send Tauri notification:', error)
+      }
+      return
+    }
+
+    // Web: Use browser Notification API
+    if (!('Notification' in window)) return
+    if (Notification.permission !== 'granted') return
 
     const notification = new Notification(title, {
       body,

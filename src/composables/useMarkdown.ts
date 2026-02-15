@@ -21,16 +21,17 @@ const emoticonMap: [RegExp, string][] = [
   [/:angry:|:mad:|:rage:|:furious:|:upset:/gi, '😠'],
   // Text emoticons - ORDER MATTERS! More specific patterns FIRST
   // Note: >:( is handled with replaceAll in the function, not here
-  [/:D/g, '😃'],       // Must be before :)
-  [/:P/gi, '😛'],      // Must be before :)
-  [/;\)/g, '😉'],      // Must be before :)
-  [/B\)/g, '😎'],      // Must be before :)
-  [/:\)/g, '😊'],      // After all other :-variations
-  [/:\(/g, '😞'],
-  [/:\//g, '😕'],
-  [/<3/g, '❤️'],
-  [/:o/gi, '😮'],
-  [/XD/gi, '😆'],
+  // IMPORTANT: Use word boundaries to avoid matching inside URLs
+  [/(?<=^|\s):D(?=\s|$)/g, '😃'],       // Must be before :)
+  [/(?<=^|\s):P(?=\s|$)/gi, '😛'],      // Must be before :)
+  [/(?<=^|\s);\)(?=\s|$)/g, '😉'],      // Must be before :)
+  [/(?<=^|\s)B\)(?=\s|$)/g, '😎'],      // Must be before :)
+  [/(?<=^|\s):\)(?=\s|$)/g, '😊'],      // After all other :-variations
+  [/(?<=^|\s):\((?=\s|$)/g, '😞'],
+  [/(?<=^|\s):\/(?=\s|$)/g, '😕'],      // CRITICAL: Must not match in URLs!
+  [/(?<=^|\s)<3(?=\s|$)/g, '❤️'],
+  [/(?<=^|\s):o(?=\s|$)/gi, '😮'],
+  [/(?<=^|\s)XD(?=\s|$)/gi, '😆'],
 ]
 
 function replaceEmoticons(text: string): string {
