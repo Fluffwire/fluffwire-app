@@ -287,11 +287,13 @@ export const useVoiceStore = defineStore('voice', () => {
   async function startScreenShare() {
     await webrtcService.startScreenShare()
     isScreenSharing.value = true
+    showSelfStream.value = true // Auto-show self-view when starting stream
   }
 
   async function stopScreenShare() {
     await webrtcService.stopScreenShare()
     isScreenSharing.value = false
+    showSelfStream.value = false // Hide self-view when stopping stream
   }
 
   function watchStream(userId: string) {

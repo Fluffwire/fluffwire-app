@@ -137,10 +137,15 @@ function initSortables() {
       group: 'channels',
       animation: 150,
       ghostClass: 'opacity-30',
+      chosenClass: 'opacity-50',
+      dragClass: 'opacity-0',
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
       forceFallback: isTauri(),
+      fallbackOnBody: true,
+      swapThreshold: 0.65,
+      invertSwap: true,
       onEnd: syncChannelPositions,
     })
   }

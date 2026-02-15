@@ -169,15 +169,10 @@ async function fetchInvites() {
   }
 }
 
-async function handleCreateInvite() {
+function handleCreateInvite() {
   if (!serversStore.currentServer) return
-  try {
-    const { data } = await serverApi.createInvite(serversStore.currentServer.id)
-    invites.value.unshift(data)
-    toast.success(t('server.inviteCreated'))
-  } catch {
-    toast.error(t('server.failedCreateInvite'))
-  }
+  // Open the invite modal for consistent UX
+  uiStore.openModal('invite', serversStore.currentServer.id)
 }
 
 async function handleDeleteInvite(code: string) {
@@ -362,6 +357,13 @@ watch(activeTab, (tab) => {
     fetchRoles()
   }
   if (tab === 'audit') fetchAuditLog()
+})
+
+// Refresh invites when invite modal closes (in case user created/deleted invites)
+watch(() => uiStore.activeModal, (current, prev) => {
+  if (prev === 'invite' && current !== 'invite' && activeTab.value === 'invites') {
+    fetchInvites()
+  }
 })
 
 function handleFileSelect(event: Event) {

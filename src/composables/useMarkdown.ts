@@ -2,6 +2,24 @@ import { marked, type RendererObject } from 'marked'
 import DOMPurify from 'dompurify'
 
 const emoticonMap: [RegExp, string][] = [
+  // Discord-style shortcodes
+  [/:thumbsup:|:thumbs_up:|:\+1:/gi, '👍'],
+  [/:thumbsdown:|:thumbs_down:|:-1:/gi, '👎'],
+  [/:fire:/gi, '🔥'],
+  [/:100:/gi, '💯'],
+  [/:tada:|:party:/gi, '🎉'],
+  [/:shrug:/gi, '🤷'],
+  [/:salute:/gi, '🫡'],
+  [/:thinking:/gi, '🤔'],
+  [/:joy:/gi, '😂'],
+  [/:rofl:|:lmao:/gi, '🤣'],
+  [/:sob:|:cry:/gi, '😭'],
+  [/:eyes:|:eye_roll:/gi, '🙄'],
+  [/:muscle:|:flex:/gi, '💪'],
+  [/:pray:/gi, '🙏'],
+  [/:raised_hands:|:yay:/gi, '🙌'],
+  // Text emoticons
+  [/(?<=^|[\s])>:\((?=$|[\s])/g, '😠'],
   [/(?<=^|[\s]):\)(?=$|[\s])/g, '😊'],
   [/(?<=^|[\s]):\((?=$|[\s])/g, '😞'],
   [/(?<=^|[\s]);\)(?=$|[\s])/g, '😉'],
