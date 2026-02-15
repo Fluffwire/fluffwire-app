@@ -246,7 +246,10 @@ export async function uploadFile(file: File): Promise<{
 
     try {
       // Get auth token
-      const token = getTokenStorage().getAccessToken()
+      const token = getTokenStorage().getItem('accessToken')
+      if (!token) {
+        throw new Error('No access token available for upload')
+      }
 
       // Upload using Tauri plugin
       const url = `${import.meta.env.VITE_API_BASE_URL}/upload`
@@ -268,13 +271,20 @@ export async function uploadFile(file: File): Promise<{
         headers
       )
 
-      debugLogger.info('API', 'Upload complete', response)
+      debugLogger.success('API', 'Upload complete', response)
 
       // Parse response - the upload plugin returns raw response
       // We need to parse it as JSON
       const data = typeof response === 'string' ? JSON.parse(response) : response
 
       return data
+    } catch (error) {
+      debugLogger.error('API', 'Upload failed', {
+        error: error instanceof Error ? error.message : String(error),
+        fileName: file.name,
+        size: file.size
+      })
+      throw error
     } finally {
       // Clean up temp file
       try {
