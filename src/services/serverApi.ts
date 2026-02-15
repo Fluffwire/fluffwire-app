@@ -31,8 +31,8 @@ export const serverApi = {
     return api.get(API.SERVERS.MEMBERS(serverId))
   },
 
-  createInvite(serverId: string): Promise<{ data: ServerInvite }> {
-    return api.post(API.SERVERS.INVITES(serverId))
+  createInvite(serverId: string, options?: { expiresIn?: number; maxUses?: number }): Promise<{ data: ServerInvite }> {
+    return api.post(API.SERVERS.INVITES(serverId), options || {})
   },
 
   getInvites(serverId: string): Promise<{ data: ServerInvite[] }> {

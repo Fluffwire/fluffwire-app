@@ -127,6 +127,89 @@ const SOUND_DEFS: Record<string, SoundDef> = {
       osc.stop(0.15)
     },
   },
+  voiceDisconnect: {
+    sampleRate: 22050,
+    duration: 0.3,
+    build(ctx) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(400, 0)
+      osc.frequency.linearRampToValueAtTime(200, 0.3)
+      gain.gain.setValueAtTime(0.3, 0)
+      gain.gain.exponentialRampToValueAtTime(0.01, 0.25)
+      osc.start(0)
+      osc.stop(0.3)
+    },
+  },
+  voiceMute: {
+    sampleRate: 22050,
+    duration: 0.08,
+    build(ctx) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(300, 0)
+      gain.gain.setValueAtTime(0.2, 0)
+      gain.gain.exponentialRampToValueAtTime(0.01, 0.08)
+      osc.start(0)
+      osc.stop(0.08)
+    },
+  },
+  voiceUnmute: {
+    sampleRate: 22050,
+    duration: 0.08,
+    build(ctx) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(500, 0)
+      gain.gain.setValueAtTime(0.2, 0)
+      gain.gain.exponentialRampToValueAtTime(0.01, 0.08)
+      osc.start(0)
+      osc.stop(0.08)
+    },
+  },
+  streamStart: {
+    sampleRate: 22050,
+    duration: 0.2,
+    build(ctx) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(600, 0)
+      osc.frequency.linearRampToValueAtTime(800, 0.2)
+      gain.gain.setValueAtTime(0.25, 0)
+      gain.gain.exponentialRampToValueAtTime(0.01, 0.2)
+      osc.start(0)
+      osc.stop(0.2)
+    },
+  },
+  streamStop: {
+    sampleRate: 22050,
+    duration: 0.2,
+    build(ctx) {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(800, 0)
+      osc.frequency.linearRampToValueAtTime(600, 0.2)
+      gain.gain.setValueAtTime(0.25, 0)
+      gain.gain.exponentialRampToValueAtTime(0.01, 0.2)
+      osc.start(0)
+      osc.stop(0.2)
+    },
+  },
 }
 
 type SoundName = keyof typeof SOUND_DEFS

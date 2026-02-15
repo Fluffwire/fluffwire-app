@@ -16,6 +16,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useRolesStore } from '@/stores/roles'
 import { Permissions, PermissionLabels } from '@/constants/permissions'
 import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link, ScrollText } from 'lucide-vue-next'
@@ -268,20 +275,34 @@ async function deleteSelectedRole() {
 }
 
 // Server data export
+const exportLimit = ref('10000')
+const exportIsLoading = ref(false)
+
 async function exportServerData() {
   if (!serversStore.currentServer) return
+  exportIsLoading.value = true
   try {
-    const { data } = await api.get(`/servers/${serversStore.currentServer.id}/export`)
+    // Build query params
+    const params = new URLSearchParams()
+    const limitNum = Number(exportLimit.value)
+    if (limitNum > 0) {
+      params.append('limit', String(limitNum))
+    }
+
+    const url = `/servers/${serversStore.currentServer.id}/export${params.toString() ? `?${params.toString()}` : ''}`
+    const { data } = await api.get(url)
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
+    const downloadUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')
-    a.href = url
-    a.download = 'server-export.json'
+    a.href = downloadUrl
+    a.download = `${serversStore.currentServer.name}-export.json`
     a.click()
-    URL.revokeObjectURL(url)
+    URL.revokeObjectURL(downloadUrl)
     toast.success(t('server.dataExported'))
   } catch {
     toast.error(t('server.failedExportData'))
+  } finally {
+    exportIsLoading.value = false
   }
 }
 
@@ -757,10 +778,26 @@ async function handleSave() {
         </div>
 
         <!-- Export Messages (owner only) -->
-        <div v-if="isOwner" class="rounded-lg border border-border/50 p-4 space-y-2">
+        <div v-if="isOwner" class="rounded-lg border border-border/50 p-4 space-y-3">
           <h3 class="text-sm font-medium text-foreground">{{ $t('server.exportMessages') }}</h3>
           <p class="text-sm text-muted-foreground">{{ $t('server.exportMessagesDesc') }}</p>
-          <Button variant="outline" type="button" @click="exportServerData">
+
+          <div class="space-y-2">
+            <Label for="exportLimit">Message Limit</Label>
+            <Select v-model="exportLimit" id="exportLimit">
+              <SelectTrigger>
+                <SelectValue placeholder="Select limit" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10000">Last 10,000 per channel (recommended)</SelectItem>
+                <SelectItem value="25000">Last 25,000 per channel</SelectItem>
+                <SelectItem value="50000">Last 50,000 per channel (maximum)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button variant="outline" type="button" @click="exportServerData" :disabled="exportIsLoading">
+            <Loader2 v-if="exportIsLoading" class="mr-2 h-4 w-4 animate-spin" />
             {{ $t('server.exportMessages') }}
           </Button>
         </div>

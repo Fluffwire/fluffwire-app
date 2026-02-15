@@ -7,6 +7,7 @@ import { soundManager } from '@/composables/useSounds'
 import { useAuthStore } from '@/stores/auth'
 
 export const useVoiceStore = defineStore('voice', () => {
+  const authStore = useAuthStore()
   const currentChannelId = ref<string | null>(null)
   const currentServerId = ref<string | null>(null)
   const peers = ref<VoicePeer[]>([])
@@ -149,6 +150,17 @@ export const useVoiceStore = defineStore('voice', () => {
       if (state.channelId === currentChannelId.value) {
         const existing = peers.value.find((p) => p.userId === state.userId)
         if (existing) {
+          // Detect state changes and play sounds (only for other users, not self)
+          if (state.userId !== authStore.user?.id) {
+            // Mute/unmute
+            if (existing.selfMute !== state.selfMute) {
+              soundManager.play(state.selfMute ? 'voiceMute' : 'voiceUnmute')
+            }
+            // Streaming start/stop
+            if (existing.streaming !== (state.streaming ?? false)) {
+              soundManager.play((state.streaming ?? false) ? 'streamStart' : 'streamStop')
+            }
+          }
           existing.selfMute = state.selfMute
           existing.selfDeaf = state.selfDeaf
           existing.streaming = state.streaming ?? false
