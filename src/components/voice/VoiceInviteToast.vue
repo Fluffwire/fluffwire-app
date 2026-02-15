@@ -6,6 +6,9 @@ import type { VoiceInvite } from '@/types'
 import { Button } from '@/components/ui/button'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Phone, X } from 'lucide-vue-next'
+import { isTauri } from '@/utils/platform'
+import { toast } from 'vue-sonner'
+import { useI18n } from 'vue-i18n'
 
 const props = defineProps<{
   invite: VoiceInvite
@@ -14,13 +17,29 @@ const props = defineProps<{
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
 const router = useRouter()
+const { t } = useI18n()
 
 async function accept() {
   voiceStore.dismissInvite(props.invite.inviterId, props.invite.channelId)
   // Fetch channels for the server before navigating
   await channelsStore.fetchChannels(props.invite.serverId)
-  await voiceStore.joinChannel(props.invite.serverId, props.invite.channelId)
-  router.push(`/channels/${props.invite.serverId}/${props.invite.channelId}`)
+
+  try {
+    await voiceStore.joinChannel(props.invite.serverId, props.invite.channelId)
+    router.push(`/channels/${props.invite.serverId}/${props.invite.channelId}`)
+  } catch (error) {
+    console.error('[VoiceInviteToast] Failed to join voice channel:', error)
+
+    // Desktop-specific error message (known Tauri webkit bug)
+    if (isTauri()) {
+      toast.error(t('voice.desktopPermissionError'), {
+        description: t('voice.desktopPermissionErrorDesc'),
+        duration: 8000,
+      })
+    } else {
+      toast.error(t('voice.joinError'))
+    }
+  }
 }
 
 function dismiss() {

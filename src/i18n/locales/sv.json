@@ -309,7 +309,10 @@
     "noMembers": "Inga medlemmar att bjuda in",
     "noOneInChannel": "Ingen är i den här röstkanalen ännu",
     "inviteToVoice": "Bjud in till röst",
-    "toggleMemberList": "Visa/dölj medlemslista"
+    "toggleMemberList": "Visa/dölj medlemslista",
+    "joinError": "Kunde inte ansluta till röstkanal",
+    "desktopPermissionError": "Mikrofonåtkomst blockerad",
+    "desktopPermissionErrorDesc": "Röstkanaler fungerar inte i desktop-appen på grund av en känd Tauri-bugg. Använd webbappen på app.fluffwire.com för att gå med i röstkanaler."
   },
   "friends": {
     "friends": "Vänner",

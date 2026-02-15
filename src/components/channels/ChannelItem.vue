@@ -11,6 +11,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useReadStateStore } from '@/stores/readState'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Hash, Headphones, Pencil, Trash2, Mic, MicOff, Monitor } from 'lucide-vue-next'
+import { isTauri } from '@/utils/platform'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
@@ -56,10 +57,24 @@ function handleClick() {
   navigateToChannel()
 }
 
-function navigateToChannel() {
+async function navigateToChannel() {
   router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
   if (props.channel.type === 'voice' && voiceStore.currentChannelId !== props.channel.id) {
-    voiceStore.joinChannel(props.channel.serverId, props.channel.id)
+    try {
+      await voiceStore.joinChannel(props.channel.serverId, props.channel.id)
+    } catch (error) {
+      console.error('[ChannelItem] Failed to join voice channel:', error)
+
+      // Desktop-specific error message (known Tauri webkit bug)
+      if (isTauri()) {
+        toast.error(t('voice.desktopPermissionError'), {
+          description: t('voice.desktopPermissionErrorDesc'),
+          duration: 8000,
+        })
+      } else {
+        toast.error(t('voice.joinError'))
+      }
+    }
   }
   if (uiStore.isMobileView || uiStore.isTabletView) {
     uiStore.isChannelSidebarOpen = false

@@ -309,7 +309,10 @@
     "noMembers": "No members to invite",
     "noOneInChannel": "No one is in this voice channel yet",
     "inviteToVoice": "Invite to Voice",
-    "toggleMemberList": "Toggle Member List"
+    "toggleMemberList": "Toggle Member List",
+    "joinError": "Failed to join voice channel",
+    "desktopPermissionError": "Microphone access blocked",
+    "desktopPermissionErrorDesc": "Voice channels are not working in the desktop app due to a known Tauri bug. Please use the web app at app.fluffwire.com to join voice channels."
   },
   "friends": {
     "friends": "Friends",
