@@ -1,4 +1,5 @@
 use tauri::Manager;
+use tauri_plugin_autostart::ManagerExt;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,10 +17,24 @@ pub fn run() {
                     .plugin(tauri_plugin_updater::Builder::new().build())?;
 
                 // Setup autostart plugin
-                app.handle().plugin(tauri_plugin_autostart::init(
+                let autostart_manager = tauri_plugin_autostart::init(
                     tauri_plugin_autostart::MacosLauncher::LaunchAgent,
                     Some(vec!["--hidden"]), // Start minimized to tray
-                ))?;
+                );
+                app.handle().plugin(autostart_manager)?;
+
+                // Enable auto-start by default on first run
+                let manager = app.autolaunch();
+                // Check if auto-start is already configured
+                match manager.is_enabled() {
+                    Ok(false) | Err(_) => {
+                        // Not enabled or error checking - enable it by default
+                        let _ = manager.enable();
+                    }
+                    Ok(true) => {
+                        // Already enabled, do nothing
+                    }
+                }
 
                 // Setup tray icon
                 use tauri::{

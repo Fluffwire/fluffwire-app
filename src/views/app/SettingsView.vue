@@ -8,6 +8,7 @@ import { isTauri } from '@/utils/platform'
 import { useTheme, themeLabels, themeNames, type ThemeName } from '@/composables/useTheme'
 import { uploadFile } from '@/services/api'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import BugReportDialog from '@/components/common/BugReportDialog.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,7 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe, HelpCircle, Bug } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { loadLocale, setLocale } from '@/i18n'
@@ -48,6 +49,7 @@ const {
 } = useNotificationSettings()
 
 const desktopPermissionDenied = ref(false)
+const showBugReportDialog = ref(false)
 const appVersion = ref<string | null>(null)
 
 // Auto-start state (desktop only)
@@ -482,6 +484,7 @@ const tabs = computed(() => {
     { key: 'privacy', label: t('settings.privacy'), icon: EyeOff },
     { key: 'appearance', label: t('settings.appearance'), icon: Palette },
     { key: 'language', label: t('settings.language'), icon: Globe },
+    { key: 'help', label: t('settings.help'), icon: HelpCircle },
   ]
 
   // Add Application tab only on desktop
@@ -1371,6 +1374,26 @@ const themePreviewColors: Record<ThemeName, string> = {
                 </CardContent>
               </Card>
             </template>
+
+            <!-- Help -->
+            <template v-if="activeTab === 'help'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.help') }}</h2>
+              <Card>
+                <CardHeader>
+                  <CardTitle class="flex items-center gap-2 text-base">
+                    <Bug class="h-5 w-5" />
+                    {{ $t('bugs.reportBug') }}
+                  </CardTitle>
+                  <CardDescription>{{ $t('bugs.reportBugDesc') }}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button @click="showBugReportDialog = true" variant="outline" class="w-full">
+                    <Bug class="mr-2 h-4 w-4" />
+                    {{ $t('bugs.reportBug') }}
+                  </Button>
+                </CardContent>
+              </Card>
+            </template>
           </div>
 
           <!-- Close button (not on mobile) -->
@@ -1393,5 +1416,8 @@ const themePreviewColors: Record<ThemeName, string> = {
         Fluffwire Desktop v{{ appVersion }}
       </div>
     </div>
+
+    <!-- Bug Report Dialog -->
+    <BugReportDialog v-model:open="showBugReportDialog" />
   </div>
 </template>
