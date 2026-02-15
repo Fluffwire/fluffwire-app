@@ -51,6 +51,7 @@ export interface UserSettings {
   showOnlineStatus: boolean
   allowFriendRequests: boolean
   allowDMsFromServerMembers: boolean
+  autoStartEnabled?: boolean // Desktop only - start app on system startup
 }
 
 export interface AuthTokens {

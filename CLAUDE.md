@@ -177,6 +177,7 @@ All plugins must be added to both Rust (`Cargo.toml` + `lib.rs`) and npm:
 - `tauri-plugin-dialog` — Native dialogs (file picker, alerts)
 - `tauri-plugin-process` — Process control (relaunch for updates)
 - `tauri-plugin-updater` — Auto-updates from GitHub releases (desktop only)
+- `tauri-plugin-autostart` — Launch app on system startup (desktop only)
 
 ### CSP & Asset Protocol
 The CSP in `tauri.conf.json` must include:
@@ -188,6 +189,11 @@ The CSP in `tauri.conf.json` must include:
 - **HTTP Adapter**: `src/services/api.ts` detects Tauri and uses HTTP plugin for external requests
 - **Desktop Notifications**: Requests permission on login, shows notifications when app unfocused
 - **Auto-Updates**: Checks for updates on login, prompts user to download/install from GitHub releases
+- **Tray Icon**: System tray icon with Show/Quit menu, left-click to show window, minimize to tray on close
+- **Auto-Start**: Optional launch on system startup (default: enabled), starts minimized to tray with `--hidden` flag
+  - Configured via Settings > Application tab (desktop only)
+  - Uses `tauri-plugin-autostart` with `MacosLauncher::LaunchAgent`
+  - Setting synced to backend via `UserSettings.autoStartEnabled`
 - **Debug Panel**: Ctrl+Shift+D opens devtools (no visible debug button in UI)
 
 ### Release Process

@@ -78,6 +78,11 @@ export const useSettingsStore = defineStore('settings', () => {
     if (typeof s.notificationDesktop === 'boolean') {
       localStorage.setItem('fluffwire-desktop-notifications', String(s.notificationDesktop))
     }
+
+    // Auto-start (desktop only, handled by Tauri plugin)
+    if (typeof s.autoStartEnabled === 'boolean') {
+      localStorage.setItem('fluffwire-auto-start', String(s.autoStartEnabled))
+    }
   }
 
   return {

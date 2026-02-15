@@ -50,6 +50,10 @@ const {
 const desktopPermissionDenied = ref(false)
 const appVersion = ref<string | null>(null)
 
+// Auto-start state (desktop only)
+const autoStartEnabled = ref(false)
+const autoStartLoading = ref(false)
+
 function handleSoundToggle(value: boolean) {
   setSoundEnabled(value)
   toast.success(value ? t('settings.soundEnabled') : t('settings.soundDisabled'))
@@ -450,7 +454,7 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
 
-  // Fetch app version if running in Tauri
+  // Fetch app version and auto-start status if running in Tauri
   if (isTauri()) {
     try {
       const { getVersion } = await import('@tauri-apps/api/app')
@@ -458,23 +462,65 @@ onMounted(async () => {
     } catch (error) {
       console.error('Failed to get app version:', error)
     }
+
+    try {
+      const { isEnabled } = await import('@tauri-apps/plugin-autostart')
+      autoStartEnabled.value = await isEnabled()
+    } catch (error) {
+      console.error('Failed to check auto-start status:', error)
+    }
   }
 })
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
-const tabs = computed(() => [
-  { key: 'account', label: t('settings.myAccount'), icon: User },
-  { key: 'voice', label: t('settings.voiceAudio'), icon: Volume2 },
-  { key: 'notifications', label: t('settings.notifications'), icon: Bell },
-  { key: 'security', label: t('settings.security'), icon: Shield },
-  { key: 'privacy', label: t('settings.privacy'), icon: EyeOff },
-  { key: 'appearance', label: t('settings.appearance'), icon: Palette },
-  { key: 'language', label: t('settings.language'), icon: Globe },
-])
+const tabs = computed(() => {
+  const baseTabs = [
+    { key: 'account', label: t('settings.myAccount'), icon: User },
+    { key: 'voice', label: t('settings.voiceAudio'), icon: Volume2 },
+    { key: 'notifications', label: t('settings.notifications'), icon: Bell },
+    { key: 'security', label: t('settings.security'), icon: Shield },
+    { key: 'privacy', label: t('settings.privacy'), icon: EyeOff },
+    { key: 'appearance', label: t('settings.appearance'), icon: Palette },
+    { key: 'language', label: t('settings.language'), icon: Globe },
+  ]
+
+  // Add Application tab only on desktop
+  if (isTauri()) {
+    baseTabs.splice(3, 0, { key: 'application', label: t('settings.application'), icon: Monitor })
+  }
+
+  return baseTabs
+})
 
 async function handleLocaleChange(code: string) {
   await loadLocale(code)
   setLocale(code)
+}
+
+// Auto-start handling (desktop only)
+async function handleAutoStartToggle(value: boolean) {
+  if (!isTauri()) return
+
+  autoStartLoading.value = true
+  try {
+    const { enable, disable } = await import('@tauri-apps/plugin-autostart')
+
+    if (value) {
+      await enable()
+      toast.success(t('settings.autoStartEnabled'))
+    } else {
+      await disable()
+      toast.success(t('settings.autoStartDisabled'))
+    }
+
+    autoStartEnabled.value = value
+    settingsStore.updateSetting({ autoStartEnabled: value })
+  } catch (error) {
+    console.error('Failed to update auto-start:', error)
+    toast.error(t('settings.failedAutoStart'))
+  } finally {
+    autoStartLoading.value = false
+  }
 }
 
 const themePreviewColors: Record<ThemeName, string> = {
@@ -937,6 +983,25 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <p v-if="desktopPermissionDenied" class="mt-2 text-sm text-destructive">
                     {{ $t('settings.desktopPermDenied') }}
                   </p>
+                </CardContent>
+              </Card>
+            </template>
+
+            <!-- Application (Desktop only) -->
+            <template v-if="activeTab === 'application'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.application') }}</h2>
+
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.autoStartOnBoot') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.autoStartOnBootDesc') }}</p>
+                  </div>
+                  <Switch
+                    :model-value="autoStartEnabled"
+                    :disabled="autoStartLoading"
+                    @update:model-value="handleAutoStartToggle"
+                  />
                 </CardContent>
               </Card>
             </template>

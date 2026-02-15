@@ -177,7 +177,13 @@
     "exportData": "Export My Data",
     "exportDataDesc": "Download a copy of your account data as JSON",
     "dataExported": "Data exported successfully",
-    "failedExportData": "Failed to export data"
+    "failedExportData": "Failed to export data",
+    "application": "Application",
+    "autoStartOnBoot": "Start on System Startup",
+    "autoStartOnBootDesc": "Launch Fluffwire automatically when your computer starts (minimized to tray)",
+    "autoStartEnabled": "Auto-start enabled",
+    "autoStartDisabled": "Auto-start disabled",
+    "failedAutoStart": "Failed to update auto-start setting"
   },
   "server": {
     "createServer": "Create a Server",

@@ -15,6 +15,12 @@ pub fn run() {
                 app.handle()
                     .plugin(tauri_plugin_updater::Builder::new().build())?;
 
+                // Setup autostart plugin
+                app.handle().plugin(tauri_plugin_autostart::init(
+                    tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                    Some(vec!["--hidden"]), // Start minimized to tray
+                ))?;
+
                 // Setup tray icon
                 use tauri::{
                     menu::{Menu, MenuItem},
@@ -55,8 +61,17 @@ pub fn run() {
                     })
                     .build(app)?;
 
+                // Handle --hidden flag for auto-start
+                let args: Vec<String> = std::env::args().collect();
+                let should_show = !args.contains(&"--hidden".to_string());
+
                 // Intercept window close button (X) to minimize to tray instead
                 if let Some(window) = app.get_webview_window("main") {
+                    // Show window if not started with --hidden flag
+                    if should_show {
+                        let _ = window.show();
+                    }
+
                     let window_clone = window.clone();
                     window.on_window_event(move |event| {
                         if let tauri::WindowEvent::CloseRequested { api, .. } = event {

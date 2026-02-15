@@ -177,7 +177,13 @@
     "exportData": "Exportera mina data",
     "exportDataDesc": "Ladda ner en kopia av dina kontodata som JSON",
     "dataExported": "Data exporterades",
-    "failedExportData": "Kunde inte exportera data"
+    "failedExportData": "Kunde inte exportera data",
+    "application": "Program",
+    "autoStartOnBoot": "Starta vid systemstart",
+    "autoStartOnBootDesc": "Starta Fluffwire automatiskt när datorn startar (minimerad till systemfältet)",
+    "autoStartEnabled": "Autostart aktiverad",
+    "autoStartDisabled": "Autostart inaktiverad",
+    "failedAutoStart": "Kunde inte uppdatera autostart-inställning"
   },
   "server": {
     "createServer": "Skapa en server",
