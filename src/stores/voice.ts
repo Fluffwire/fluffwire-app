@@ -96,8 +96,13 @@ export const useVoiceStore = defineStore('voice', () => {
 
       // Remove user from all voice channels first
       if (state.channelId === null) {
-        // Play leave sound if the departing user was in our voice channel
-        if (currentChannelId.value && peers.value.some((p) => p.userId === state.userId)) {
+        // Play leave sound only if: we're in voice, someone else left, and they were in our channel
+        // Don't play if it's us leaving or during WebSocket disconnect/reconnect
+        const wasInOurChannel = currentChannelId.value && peers.value.some((p) => p.userId === state.userId)
+        const isOtherUser = state.userId !== authStore.user?.id
+        const notMassDisconnect = peers.value.length > 1 // Still have others (not a server disconnect)
+
+        if (wasInOurChannel && isOtherUser && notMassDisconnect) {
           soundManager.play('voiceLeave')
         }
         peers.value = peers.value.filter((p) => p.userId !== state.userId)
@@ -267,7 +272,7 @@ export const useVoiceStore = defineStore('voice', () => {
       currentChannelId.value = channelId
       currentServerId.value = serverId
       connectedSince.value = new Date()
-      soundManager.play('voiceJoin')
+      // Don't play sound when YOU join - only when others join (line 169)
     } finally {
       isConnecting.value = false
     }

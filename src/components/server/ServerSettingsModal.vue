@@ -270,25 +270,25 @@ async function deleteSelectedRole() {
 }
 
 // Server data export
-const exportIncludeMessages = ref(false)
-const exportLimit = ref('10000')
+const exportMessageOption = ref('10000') // '0' = no messages, '10000' = 10k, etc
 const exportIsLoading = ref(false)
 
 async function exportServerData() {
   if (!serversStore.currentServer) return
   exportIsLoading.value = true
   try {
-    // Build query params - only add limit if including messages
     const params = new URLSearchParams()
-    if (exportIncludeMessages.value) {
-      const limitNum = Number(exportLimit.value)
-      if (limitNum > 0) {
-        params.append('limit', String(limitNum))
-      }
+    const limitNum = Number(exportMessageOption.value)
+    if (limitNum > 0) {
+      params.append('limit', String(limitNum))
     }
 
     const url = `/servers/${serversStore.currentServer.id}/export${params.toString() ? `?${params.toString()}` : ''}`
+    console.log('[EXPORT DEBUG] option:', exportMessageOption.value)
+    console.log('[EXPORT DEBUG] URL:', url)
     const { data } = await api.get(url)
+    console.log('[EXPORT DEBUG] Response keys:', Object.keys(data))
+    console.log('[EXPORT DEBUG] Messages count:', data.messages?.length || 0)
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
     const downloadUrl = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -787,21 +787,17 @@ async function handleSave() {
           <h3 class="text-sm font-medium text-foreground">Export Server</h3>
           <p class="text-sm text-muted-foreground">Download server data including settings, channels, and members.</p>
 
-          <div class="flex items-center space-x-2">
-            <Checkbox id="includeMessages" v-model:checked="exportIncludeMessages" />
-            <Label for="includeMessages" class="cursor-pointer">Include messages (slower, larger file)</Label>
-          </div>
-
-          <div v-if="exportIncludeMessages" class="space-y-2">
-            <Label for="exportLimit">Message Limit</Label>
-            <Select v-model="exportLimit" id="exportLimit">
+          <div class="space-y-2">
+            <Label for="exportMessages">Messages</Label>
+            <Select v-model="exportMessageOption" id="exportMessages">
               <SelectTrigger>
-                <SelectValue placeholder="Select limit" />
+                <SelectValue placeholder="Select option" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="10000">Last 10,000 per channel (recommended)</SelectItem>
-                <SelectItem value="25000">Last 25,000 per channel</SelectItem>
-                <SelectItem value="50000">Last 50,000 per channel (maximum)</SelectItem>
+                <SelectItem value="0">Don't include messages</SelectItem>
+                <SelectItem value="10000">Include last 10,000 messages (recommended)</SelectItem>
+                <SelectItem value="25000">Include last 25,000 messages</SelectItem>
+                <SelectItem value="50000">Include last 50,000 messages (maximum)</SelectItem>
               </SelectContent>
             </Select>
           </div>

@@ -2,34 +2,35 @@ import { marked, type RendererObject } from 'marked'
 import DOMPurify from 'dompurify'
 
 const emoticonMap: [RegExp, string][] = [
-  // Discord-style shortcodes
-  [/:thumbsup:|:thumbs_up:|:\+1:/gi, '👍'],
-  [/:thumbsdown:|:thumbs_down:|:-1:/gi, '👎'],
-  [/:fire:/gi, '🔥'],
-  [/:100:/gi, '💯'],
-  [/:tada:|:party:/gi, '🎉'],
-  [/:shrug:/gi, '🤷'],
-  [/:salute:/gi, '🫡'],
-  [/:thinking:/gi, '🤔'],
-  [/:joy:/gi, '😂'],
-  [/:rofl:|:lmao:/gi, '🤣'],
-  [/:sob:|:cry:/gi, '😭'],
-  [/:eyes:|:eye_roll:/gi, '🙄'],
-  [/:muscle:|:flex:/gi, '💪'],
-  [/:pray:/gi, '🙏'],
-  [/:raised_hands:|:yay:/gi, '🙌'],
-  // Text emoticons
-  [/(?<=^|[\s])>:\((?=$|[\s])/g, '😠'],
-  [/(?<=^|[\s]):\)(?=$|[\s])/g, '😊'],
-  [/(?<=^|[\s]):\((?=$|[\s])/g, '😞'],
-  [/(?<=^|[\s]);\)(?=$|[\s])/g, '😉'],
-  [/(?<=^|[\s])<3(?=$|[\s])/g, '❤️'],
-  [/(?<=^|[\s]):D(?=$|[\s])/g, '😃'],
-  [/(?<=^|[\s]):P(?=$|[\s])/g, '😛'],
-  [/(?<=^|[\s]):\/(?=$|[\s])/g, '😕'],
-  [/(?<=^|[\s]):o(?=$|[\s])/gi, '😮'],
-  [/(?<=^|[\s])XD(?=$|[\s])/gi, '😆'],
-  [/(?<=^|[\s])B\)(?=$|[\s])/g, '😎'],
+  // Discord-style shortcodes with related aliases
+  [/:thumbsup:|:thumbs_up:|:thumb_up:|:\+1:|:like:|:approve:|:yes:|:agree:/gi, '👍'],
+  [/:thumbsdown:|:thumbs_down:|:thumb_down:|:-1:|:dislike:|:disapprove:|:no:|:disagree:/gi, '👎'],
+  [/:fire:|:hot:|:lit:|:flame:|:burn:|:awesome:/gi, '🔥'],
+  [/:100:|:hundred:|:perfect:|:full:|:score:/gi, '💯'],
+  [/:tada:|:party:|:celebrate:|:congrats:|:celebration:|:confetti:/gi, '🎉'],
+  [/:shrug:|:idk:|:dunno:|:whatever:|:meh:/gi, '🤷'],
+  [/:salute:|:respect:|:sir:|:captain:/gi, '🫡'],
+  [/:thinking:|:think:|:hmm:|:wonder:|:ponder:|:question:/gi, '🤔'],
+  [/:joy:|:laugh:|:happy:|:lol:/gi, '😂'],
+  [/:rofl:|:lmao:|:rolling:|:laughing:|:dead:/gi, '🤣'],
+  [/:sob:|:cry:|:crying:|:tears:|:sad:|:weep:/gi, '😭'],
+  [/:eyes:|:eye_roll:|:roll:|:annoyed:|:ugh:/gi, '🙄'],
+  [/:muscle:|:flex:|:strong:|:power:|:strength:|:bicep:/gi, '💪'],
+  [/:pray:|:please:|:thanks:|:grateful:|:namaste:|:bless:/gi, '🙏'],
+  [/:raised_hands:|:yay:|:hooray:|:praise:|:celebrate:|:hands:/gi, '🙌'],
+  [/:angry:|:mad:|:rage:|:furious:|:upset:/gi, '😠'],
+  // Text emoticons - ORDER MATTERS! More specific patterns FIRST
+  // Note: >:( is handled with replaceAll in the function, not here
+  [/:D/g, '😃'],       // Must be before :)
+  [/:P/gi, '😛'],      // Must be before :)
+  [/;\)/g, '😉'],      // Must be before :)
+  [/B\)/g, '😎'],      // Must be before :)
+  [/:\)/g, '😊'],      // After all other :-variations
+  [/:\(/g, '😞'],
+  [/:\//g, '😕'],
+  [/<3/g, '❤️'],
+  [/:o/gi, '😮'],
+  [/XD/gi, '😆'],
 ]
 
 function replaceEmoticons(text: string): string {
@@ -37,6 +38,14 @@ function replaceEmoticons(text: string): string {
   const parts = text.split(/(```[\s\S]*?```|`[^`]+`)/g)
   return parts.map((part, i) => {
     if (i % 2 === 1) return part // code block, skip
+
+    // Replace >:( FIRST with string replacement to avoid regex issues
+    if (part.includes('>:(')) {
+      console.log('[EMOJI DEBUG] Found >:( in text, replacing with 😠')
+      part = part.split('>:(').join('😠')
+      console.log('[EMOJI DEBUG] After replacement:', part)
+    }
+
     for (const [pattern, emoji] of emoticonMap) {
       part = part.replace(pattern, emoji)
     }

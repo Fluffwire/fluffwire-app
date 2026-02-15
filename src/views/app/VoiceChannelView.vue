@@ -239,9 +239,11 @@ function handleAddFriend(userId: string) {
         class="opacity-80 ring-2 ring-primary/50"
       />
 
-      <!-- Other peers -->
+      <!-- Other peers (exclude self if showing self-view) -->
       <VoicePeerTile
-        v-for="peer in voiceStore.peers"
+        v-for="peer in voiceStore.peers.filter(p =>
+          !(voiceStore.isScreenSharing && voiceStore.showSelfStream && p.userId === authStore.user?.id)
+        )"
         :key="peer.userId"
         :peer="peer"
         :is-local="peer.userId === authStore.user?.id"
