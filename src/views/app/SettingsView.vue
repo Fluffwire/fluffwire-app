@@ -1477,17 +1477,16 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <p class="mb-4 text-sm text-muted-foreground">{{ $t('settings.languageDesc') }}</p>
                   <div class="grid grid-cols-2 gap-3">
                     <button
-                      v-for="lang in [{ code: 'en', name: 'English', flag: '\uD83C\uDDEC\uD83C\uDDE7' }, { code: 'sv', name: 'Svenska', flag: '\uD83C\uDDF8\uD83C\uDDEA' }]"
+                      v-for="lang in [{ code: 'en', name: 'English' }, { code: 'sv', name: 'Svenska' }]"
                       :key="lang.code"
                       @click="handleLocaleChange(lang.code)"
                       :class="[
-                        'flex items-center gap-3 rounded-xl border-2 p-4 transition-all',
+                        'flex items-center justify-center rounded-xl border-2 p-4 transition-all',
                         locale === lang.code
                           ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
                           : 'border-border hover:border-primary/40',
                       ]"
                     >
-                      <span class="text-2xl">{{ lang.flag }}</span>
                       <span class="text-sm font-medium text-foreground">{{ lang.name }}</span>
                     </button>
                   </div>
