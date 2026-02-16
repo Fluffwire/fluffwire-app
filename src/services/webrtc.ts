@@ -134,6 +134,32 @@ class WebRTCService {
 
       this.peerConnection = new RTCPeerConnection(ICE_SERVERS)
 
+      // Monitor connection state for disconnections
+      this.peerConnection.onconnectionstatechange = () => {
+        const state = this.peerConnection?.connectionState
+        console.log('[WebRTC] Connection state:', state)
+
+        if (state === 'failed' || state === 'disconnected') {
+          console.warn('[WebRTC] Connection lost, cleaning up...')
+          // Notify voice store to clear UI state
+          import('@/stores/voice').then(({ useVoiceStore }) => {
+            const voiceStore = useVoiceStore()
+            if (state === 'failed') {
+              // Connection permanently failed
+              voiceStore.leaveChannel()
+              import('vue-sonner').then(({ toast }) => {
+                toast.error('Voice connection lost')
+              })
+            }
+            // 'disconnected' might be temporary, wait before cleaning up
+          }).catch(console.error)
+        }
+      }
+
+      this.peerConnection.oniceconnectionstatechange = () => {
+        console.log('[WebRTC] ICE connection state:', this.peerConnection?.iceConnectionState)
+      }
+
       // Apply persisted mute state to new tracks
       this.localStream.getAudioTracks().forEach((track) => {
         track.enabled = !this._isMuted

@@ -215,19 +215,40 @@ export const useVoiceStore = defineStore('voice', () => {
       if (currentChannelId.value && currentServerId.value) {
         const channelId = currentChannelId.value
         const serverId = currentServerId.value
+        console.log('[Voice] WebSocket reconnected, rejoining voice channel...')
+
         // Clean up old connection and peers
         await webrtcService.leaveVoiceChannel()
         peers.value = []
         screenStreams.value.clear()
         isScreenSharing.value = false
         watchingUserId.value = null
+
         // Re-join
         try {
           await webrtcService.joinVoiceChannel(serverId, channelId)
+          console.log('[Voice] Successfully rejoined voice channel')
+
+          // Give backend 3 seconds to send VOICE_STATE_UPDATE events
+          setTimeout(() => {
+            // If still no peers after rejoin (excluding self), show warning
+            const firstPeer = peers.value[0]
+            if (peers.value.length === 0 || (peers.value.length === 1 && firstPeer && firstPeer.userId === authStore.user?.id)) {
+              console.warn('[Voice] No peers received after rejoin, voice state may be stale')
+              // Note: Don't auto-disconnect here as other users might still be present
+              // User can manually leave/rejoin if needed
+            }
+          }, 3000)
         } catch (e) {
           console.error('[Voice] Failed to rejoin after reconnect:', e)
           currentChannelId.value = null
           currentServerId.value = null
+          // Show toast notification to user
+          import('vue-sonner').then(({ toast }) => {
+            toast.error('Voice connection lost. Please rejoin the channel.')
+          }).catch(() => {
+            console.error('[Voice] Failed to show reconnection error toast')
+          })
         }
       }
     })
