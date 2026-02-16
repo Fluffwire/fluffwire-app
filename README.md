@@ -90,8 +90,8 @@ Fluffwire is a real-time communication platform with an **open-source frontend**
 - **End-to-End Encryption** - Voice channels encrypted with WebRTC
 - **JWT Authentication** - Secure token-based authentication
 - **Bcrypt Passwords** - Industry-standard password hashing
-- **Self-Hostable** - Run your own instance
 - **Privacy Controls** - Control who can DM you and see your status
+- **Open Source Frontend** - Auditable client-side code
 
 ---
 
@@ -665,10 +665,9 @@ Special thanks to all our [contributors](https://github.com/Fluffwire/fluffwire-
 
 ---
 
-## 📧 Contact
+## 📧 Support
 
-- **Email** - support@fluffwire.com
-- **Twitter** - [@fluffwire](https://twitter.com/fluffwire)
+- **GitHub Issues** - [Report Bugs & Request Features](https://github.com/Fluffwire/fluffwire-app/issues)
 - **GitHub Discussions** - [Community Forum](https://github.com/Fluffwire/fluffwire-app/discussions)
 
 ---
@@ -677,6 +676,6 @@ Special thanks to all our [contributors](https://github.com/Fluffwire/fluffwire-
 
 **Made with ❤️ by the Fluffwire community**
 
-[⭐ Star us on GitHub](https://github.com/Fluffwire/fluffwire-app) • [🐦 Follow on Twitter](https://twitter.com/fluffwire) • [💬 Join the Community](https://app.fluffwire.com)
+[⭐ Star us on GitHub](https://github.com/Fluffwire/fluffwire-app) • [💬 Try Fluffwire](https://app.fluffwire.com) • [🌐 Visit Website](https://fluffwire.com)
 
 </div>
