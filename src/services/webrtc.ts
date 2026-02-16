@@ -157,7 +157,13 @@ class WebRTCService {
       }
 
       this.peerConnection.oniceconnectionstatechange = () => {
-        console.log('[WebRTC] ICE connection state:', this.peerConnection?.iceConnectionState)
+        const state = this.peerConnection?.iceConnectionState
+        console.log('[WebRTC] ICE connection state:', state)
+
+        // ICE disconnected or failed - might affect screen sharing
+        if (state === 'disconnected' || state === 'failed') {
+          console.warn('[WebRTC] ICE connection issues - screen share may be affected')
+        }
       }
 
       // Apply persisted mute state to new tracks
@@ -420,14 +426,45 @@ class WebRTCService {
         width: settings.width,
         height: settings.height,
         enabled: videoTrack.enabled,
+        readyState: videoTrack.readyState,
+        muted: videoTrack.muted,
       })
 
       // Ensure track is enabled
       videoTrack.enabled = true
 
+      // Monitor track state changes
       videoTrack.onended = () => {
+        console.warn('[WebRTC] Screen share video track ENDED')
         this.stopScreenShare()
       }
+
+      videoTrack.onmute = () => {
+        console.warn('[WebRTC] Screen share video track MUTED')
+      }
+
+      videoTrack.onunmute = () => {
+        console.log('[WebRTC] Screen share video track UNMUTED')
+      }
+
+      // Poll track state every 2 seconds to detect if it stops
+      const pollInterval = setInterval(() => {
+        if (!this._isScreenSharing || !this.screenStream) {
+          clearInterval(pollInterval)
+          return
+        }
+        const track = this.screenStream.getVideoTracks()[0]
+        if (track) {
+          console.log('[WebRTC] Screen share track state:', {
+            readyState: track.readyState,
+            enabled: track.enabled,
+            muted: track.muted,
+          })
+        } else {
+          console.warn('[WebRTC] Screen share video track disappeared!')
+          clearInterval(pollInterval)
+        }
+      }, 2000)
     }
 
     // Add tracks to PeerConnection
@@ -449,6 +486,34 @@ class WebRTCService {
       payload: offer,
       channelId: this._currentChannelId,
     })
+
+    // Monitor video bytes sent to detect if transmission stops
+    const statsInterval = setInterval(async () => {
+      if (!this._isScreenSharing || !this.peerConnection) {
+        clearInterval(statsInterval)
+        return
+      }
+
+      try {
+        const stats = await this.peerConnection.getStats()
+        let videoBytesSent = 0
+        let videoFramesSent = 0
+
+        stats.forEach((report) => {
+          if (report.type === 'outbound-rtp' && report.mediaType === 'video') {
+            videoBytesSent = report.bytesSent || 0
+            videoFramesSent = report.framesSent || 0
+          }
+        })
+
+        console.log('[WebRTC] Screen share stats:', {
+          bytesSent: videoBytesSent,
+          framesSent: videoFramesSent,
+        })
+      } catch (err) {
+        console.error('[WebRTC] Failed to get stats:', err)
+      }
+    }, 3000)
   }
 
   async stopScreenShare(): Promise<void> {
