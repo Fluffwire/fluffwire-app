@@ -56,12 +56,5 @@
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDM5ODM0MjYyRDRCQkI3N0MKUldSOHQ3dlVZa0tET2NGZEh5Y3NTRXI5bnVxTkhUc3RtdXlzYy94YnQxQ0Y1cFgvOWRPTlRmK0oK"
     }
-  },
-  "permissions": [
-    "core:default",
-    "dialog:default",
-    "fs:default",
-    "fs:allow-write-text-file",
-    "shell:allow-open"
-  ]
+  }
 }
