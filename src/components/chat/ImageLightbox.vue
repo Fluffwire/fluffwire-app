@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-vue-next'
+import { isTauri } from '@/utils/platform'
 
 interface Props {
   images: { url: string; filename: string }[]
@@ -45,6 +46,19 @@ onUnmounted(() => {
 watch(() => props.initialIndex, (val) => {
   currentIndex.value = val
 })
+
+async function openInBrowser() {
+  if (!currentImage.value) return
+
+  if (isTauri()) {
+    // Use shell plugin to open in system browser
+    const { open } = await import('@tauri-apps/plugin-shell')
+    await open(currentImage.value.url)
+  } else {
+    // Web: open in new tab
+    window.open(currentImage.value.url, '_blank', 'noopener,noreferrer')
+  }
+}
 </script>
 
 <template>
@@ -93,15 +107,13 @@ watch(() => props.initialIndex, (val) => {
 
       <!-- Bottom toolbar -->
       <div v-if="currentImage" class="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2 rounded-full bg-black/50 px-4 py-2">
-        <a
-          :href="currentImage.url"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          @click="openInBrowser"
           class="flex items-center gap-2 text-sm text-white hover:text-white/80 transition-colors"
         >
           <ExternalLink class="h-4 w-4" />
-          Open in new tab
-        </a>
+          Open in browser
+        </button>
       </div>
     </DialogContent>
   </Dialog>
