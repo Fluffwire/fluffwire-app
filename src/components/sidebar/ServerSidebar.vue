@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Sortable from 'sortablejs'
 import { isTauri } from '@/utils/platform'
@@ -48,27 +48,52 @@ const uiStore = useUiStore()
 const showLeaveDialog = ref(false)
 const leaveTarget = ref<Server | null>(null)
 const sortableContainer = ref<HTMLElement | null>(null)
+const sortableInstance = ref<Sortable | null>(null)
+
+function initSortable() {
+  // Destroy existing instance if any
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+    sortableInstance.value = null
+  }
+
+  if (!sortableContainer.value) return
+
+  sortableInstance.value = Sortable.create(sortableContainer.value, {
+    animation: 150,
+    ghostClass: 'opacity-50',
+    delay: 200,
+    delayOnTouchOnly: true,
+    touchStartThreshold: 5,
+    forceFallback: isTauri(),
+    onEnd() {
+      if (!sortableContainer.value) return
+      const ids: string[] = []
+      sortableContainer.value.querySelectorAll('[data-server-id]').forEach((el) => {
+        const id = (el as HTMLElement).dataset.serverId
+        if (id) ids.push(id)
+      })
+      serversStore.saveServerOrderAndSync(ids)
+      // Reinitialize sortable after reordering to sync internal state
+      setTimeout(() => initSortable(), 100)
+    },
+  })
+}
 
 onMounted(() => {
-  if (sortableContainer.value) {
-    Sortable.create(sortableContainer.value, {
-      animation: 150,
-      ghostClass: 'opacity-50',
-      delay: 200,
-      delayOnTouchOnly: true,
-      touchStartThreshold: 5,
-      forceFallback: isTauri(),
-      onEnd() {
-        if (!sortableContainer.value) return
-        const ids: string[] = []
-        sortableContainer.value.querySelectorAll('[data-server-id]').forEach((el) => {
-          const id = (el as HTMLElement).dataset.serverId
-          if (id) ids.push(id)
-        })
-        serversStore.saveServerOrderAndSync(ids)
-      },
-    })
+  initSortable()
+})
+
+onUnmounted(() => {
+  if (sortableInstance.value) {
+    sortableInstance.value.destroy()
+    sortableInstance.value = null
   }
+})
+
+// Reinitialize sortable when servers change (e.g., new server added)
+watch(() => serversStore.orderedServers.length, () => {
+  setTimeout(() => initSortable(), 100)
 })
 
 function isActive(serverId: string) {
