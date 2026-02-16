@@ -49,7 +49,7 @@ watch(() => props.initialIndex, (val) => {
 
 <template>
   <Dialog v-model:open="open">
-    <DialogContent class="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 border-none bg-black/95 shadow-none">
+    <DialogContent :show-close-button="false" class="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 border-none bg-black/95 shadow-none">
       <!-- Close button -->
       <button
         @click="open = false"

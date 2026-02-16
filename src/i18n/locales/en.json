@@ -62,7 +62,9 @@
     "copiedId": "Copied message ID to clipboard",
     "messageUnpinned": "Message unpinned",
     "failedUnpin": "Failed to unpin message",
-    "addReaction": "Add Reaction"
+    "addReaction": "Add Reaction",
+    "channelNotFound": "Channel not found",
+    "userMentionClicked": "User: {username}"
   },
   "settings": {
     "myAccount": "My Account",

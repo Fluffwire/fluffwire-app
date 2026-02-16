@@ -62,7 +62,9 @@
     "copiedId": "Kopierade meddelande-ID till urklipp",
     "messageUnpinned": "Meddelande lossat",
     "failedUnpin": "Kunde inte lossa meddelande",
-    "addReaction": "Lägg till reaktion"
+    "addReaction": "Lägg till reaktion",
+    "channelNotFound": "Kanal hittades inte",
+    "userMentionClicked": "Användare: {username}"
   },
   "settings": {
     "myAccount": "Mitt konto",

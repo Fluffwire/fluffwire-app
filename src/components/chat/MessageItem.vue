@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import type { Message } from '@/types'
 import type { Tier } from '@/constants/tiers'
 import { canBypassChannelRestrictions } from '@/constants/tiers'
@@ -30,6 +30,7 @@ import { toast } from 'vue-sonner'
 import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight, Copy, Link, Hash, Eye } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
 const channelsStore = useChannelsStore()
 const membersStore = useMembersStore()
 const labelsStore = useLabelsStore()
@@ -282,6 +283,48 @@ function copyMessageId() {
   navigator.clipboard.writeText(props.message.id)
   toast.success(t('chat.copiedId'))
 }
+
+// Handle clicks on mentions and channels in message content
+function handleMessageClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+
+  // Handle channel mention clicks (#channelname)
+  if (target.classList.contains('channel-mention')) {
+    event.preventDefault()
+    const channelName = target.textContent?.replace('#', '').toLowerCase()
+    if (!channelName) return
+
+    // Find the channel by name
+    const channel = channelsStore.textChannels.find(c => c.name.toLowerCase() === channelName)
+    if (channel) {
+      const serverId = route.params.serverId as string
+      router.push({ name: 'channel', params: { serverId, channelId: channel.id } })
+    } else {
+      toast.error(t('chat.channelNotFound'))
+    }
+  }
+
+  // Handle user mention clicks (@username)
+  if (target.classList.contains('mention')) {
+    event.preventDefault()
+    const mentionText = target.textContent?.replace('@', '').toLowerCase()
+    if (!mentionText) return
+
+    const serverId = route.params.serverId as string
+    if (!serverId || serverId === '@me') return
+
+    // Try to find the user by username
+    const members = membersStore.getMembers(serverId)
+    const member = members.find(m => m.user.username.toLowerCase() === mentionText)
+
+    if (member) {
+      // Open user profile (we'll trigger the same popover behavior)
+      // For now, show a toast - we'd need to implement a proper dialog
+      // TODO: Implement user profile dialog/modal
+      toast.info(t('chat.userMentionClicked', { username: member.user.displayName }))
+    }
+  }
+}
 </script>
 
 <template>
@@ -422,7 +465,7 @@ function copyMessageId() {
 
           <!-- Normal content -->
           <template v-else>
-            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
             <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
               <iframe
                 v-if="youtubePlaying"
@@ -533,7 +576,7 @@ function copyMessageId() {
 
           <!-- Normal content -->
           <template v-else>
-            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" />
+            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
             <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
               <iframe
                 v-if="youtubePlaying"
