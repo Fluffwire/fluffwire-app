@@ -134,6 +134,8 @@ function syncChannelPositions() {
 
   if (allPositions.length > 0) {
     channelsStore.reorderChannels(serverId.value, allPositions)
+    // Reinitialize sortables after reordering to sync internal state
+    setTimeout(() => initSortables(), 100)
   }
 }
 
@@ -145,6 +147,8 @@ function onCategoriesDragEnd() {
   const ids = Array.from(categoryDragEl.value.children).map((el) => (el as HTMLElement).dataset.id!).filter(Boolean)
   const positions = ids.map((id, i) => ({ id, position: i }))
   channelsStore.reorderCategories(serverId.value, positions)
+  // Reinitialize sortables after reordering to sync internal state
+  setTimeout(() => initSortables(), 100)
 }
 
 function initSortables() {

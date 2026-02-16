@@ -66,6 +66,10 @@ function initSortable() {
 }
 
 watch([channelListEl, isOwner], initSortable, { flush: 'post' })
+// Reinitialize when channels list changes (after reordering)
+watch(() => props.channels.length, () => {
+  setTimeout(() => initSortable(), 100)
+})
 onBeforeUnmount(() => { sortableInstance?.destroy() })
 
 function handleCreateChannel() {
