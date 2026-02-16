@@ -49,10 +49,16 @@ export const useSettingsStore = defineStore('settings', () => {
       }
     }
 
-    // Server order
+    // Server order (always apply, even if empty, to sync across devices)
+    const serversStore = useServersStore()
     if (s.serverOrder?.length) {
-      const serversStore = useServersStore()
       serversStore.saveServerOrder(s.serverOrder)
+    } else {
+      // If backend has no server order yet, sync current local order to backend
+      const currentOrder = serversStore.serverOrder
+      if (currentOrder?.length) {
+        updateSetting({ serverOrder: currentOrder })
+      }
     }
 
     // Presence / user status

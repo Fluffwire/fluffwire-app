@@ -127,6 +127,7 @@ export const useServersStore = defineStore('servers', () => {
     currentServer,
     isLoading,
     orderedServers,
+    serverOrder, // Expose for settings sync
     setServers,
     fetchServers,
     createServer,

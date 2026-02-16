@@ -454,11 +454,25 @@ function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') close()
 }
 
+// Watch for settings changes from backend and sync to local state
+watch(() => settingsStore.settings, (newSettings) => {
+  if (!newSettings) return
+
+  // Update startMinimized from backend
+  if (typeof newSettings.startMinimized === 'boolean') {
+    startMinimized.value = newSettings.startMinimized
+  }
+
+  // Update autoStartEnabled from backend (desktop only)
+  if (isTauri() && typeof newSettings.autoStartEnabled === 'boolean') {
+    autoStartEnabled.value = newSettings.autoStartEnabled
+  }
+}, { immediate: true })
+
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
 
   // Load startMinimized from settings
-  const settingsStore = useSettingsStore()
   startMinimized.value = settingsStore.settings?.startMinimized ?? true
 
   // Fetch app version and auto-start status if running in Tauri
@@ -474,7 +488,15 @@ onMounted(async () => {
       // Add a small delay to let Rust initialization complete
       await new Promise(resolve => setTimeout(resolve, 500))
       const { isEnabled } = await import('@tauri-apps/plugin-autostart')
-      autoStartEnabled.value = await isEnabled()
+
+      // Read from backend settings first (source of truth)
+      if (typeof settingsStore.settings?.autoStartEnabled === 'boolean') {
+        autoStartEnabled.value = settingsStore.settings.autoStartEnabled
+      } else {
+        // If backend doesn't have it yet, read from Tauri plugin and sync to backend
+        autoStartEnabled.value = await isEnabled()
+        settingsStore.updateSetting({ autoStartEnabled: autoStartEnabled.value })
+      }
     } catch (error) {
       console.error('Failed to check auto-start status:', error)
     }
@@ -524,6 +546,9 @@ async function handleAutoStartToggle(value: boolean) {
     }
 
     autoStartEnabled.value = value
+
+    // Sync to backend settings so it persists across sessions
+    settingsStore.updateSetting({ autoStartEnabled: value })
   } catch (error) {
     console.error('Failed to update auto-start:', error)
     toast.error(t('settings.failedAutoStart'))
