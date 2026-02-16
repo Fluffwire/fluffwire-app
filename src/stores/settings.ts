@@ -6,12 +6,23 @@ import { API } from '@/constants/endpoints'
 import { useTheme, type ThemeName } from '@/composables/useTheme'
 import { useServersStore } from '@/stores/servers'
 import { useVoiceStore } from '@/stores/voice'
+import { wsDispatcher } from '@/services/wsDispatcher'
 
 export const useSettingsStore = defineStore('settings', () => {
   const settings = ref<UserSettings | null>(null)
   const isFetched = ref(false)
 
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+  // Setup WebSocket handler for real-time settings sync across devices
+  function setupWsHandlers() {
+    wsDispatcher.register('SETTINGS_UPDATE', (data: unknown) => {
+      const updated = data as UserSettings
+      settings.value = updated
+      applyToLocalState(updated)
+    })
+  }
+  setupWsHandlers()
 
   async function fetchSettings() {
     try {
