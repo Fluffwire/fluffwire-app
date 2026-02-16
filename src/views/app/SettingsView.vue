@@ -459,7 +459,7 @@ onMounted(async () => {
 
   // Load startMinimized from settings
   const settingsStore = useSettingsStore()
-  startMinimized.value = settingsStore.settings.startMinimized ?? true
+  startMinimized.value = settingsStore.settings?.startMinimized ?? true
 
   // Fetch app version and auto-start status if running in Tauri
   if (isTauri()) {
