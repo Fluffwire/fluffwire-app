@@ -221,6 +221,7 @@ async function exportData() {
         await writeTextFile(filePath, jsonContent)
         toast.success(t('settings.dataExported'))
       }
+      // If user cancelled the dialog, do nothing (no error)
     } else {
       // Browser: use blob download
       const blob = new Blob([jsonContent], { type: 'application/json' })
@@ -232,7 +233,8 @@ async function exportData() {
       URL.revokeObjectURL(url)
       toast.success(t('settings.dataExported'))
     }
-  } catch {
+  } catch (error) {
+    console.error('Export data failed:', error)
     toast.error(t('settings.failedExportData'))
   }
 }
