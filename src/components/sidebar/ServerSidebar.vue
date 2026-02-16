@@ -65,7 +65,6 @@ function initSortable() {
     delay: 200,
     delayOnTouchOnly: true,
     touchStartThreshold: 5,
-    forceFallback: isTauri(),
     onEnd() {
       if (!sortableContainer.value) return
       const ids: string[] = []

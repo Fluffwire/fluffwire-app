@@ -50,7 +50,15 @@ export const useChannelsStore = defineStore('channels', () => {
       draftsStore.clearDraftsForChannel(id)
     })
     wsDispatcher.register(WS_EVENTS.CHANNELS_REORDER, (data: unknown) => {
-      channels.value = data as Channel[]
+      const reorderedChannels = data as Channel[]
+      if (reorderedChannels.length === 0) return
+
+      // Only update channels for the specific server
+      const serverId = reorderedChannels[0].serverId
+      channels.value = [
+        ...channels.value.filter((c) => c.serverId !== serverId),
+        ...reorderedChannels,
+      ]
     })
     wsDispatcher.register(WS_EVENTS.CATEGORY_CREATE, (data: unknown) => {
       const cat = data as ChannelCategory
@@ -68,7 +76,15 @@ export const useChannelsStore = defineStore('channels', () => {
       categories.value = categories.value.filter((c) => c.id !== id)
     })
     wsDispatcher.register(WS_EVENTS.CATEGORIES_REORDER, (data: unknown) => {
-      categories.value = data as ChannelCategory[]
+      const reorderedCategories = data as ChannelCategory[]
+      if (reorderedCategories.length === 0) return
+
+      // Only update categories for the specific server
+      const serverId = reorderedCategories[0].serverId
+      categories.value = [
+        ...categories.value.filter((c) => c.serverId !== serverId),
+        ...reorderedCategories,
+      ]
     })
   }
   setupWsHandlers()

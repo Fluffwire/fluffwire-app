@@ -19,7 +19,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Users, Plus, FolderPlus, Settings, UserPlus } from 'lucide-vue-next'
 import Sortable from 'sortablejs'
-import { isTauri } from '@/utils/platform'
 import type { Channel, ChannelCategory as CategoryType } from '@/types'
 
 interface Props {
@@ -164,8 +163,6 @@ function initSortables() {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
-      forceFallback: isTauri(),
-      fallbackOnBody: true,
       swapThreshold: 0.65,
       invertSwap: true,
       onEnd: syncChannelPositions,
@@ -180,7 +177,6 @@ function initSortables() {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
-      forceFallback: isTauri(),
       onEnd: onCategoriesDragEnd,
     })
   }
