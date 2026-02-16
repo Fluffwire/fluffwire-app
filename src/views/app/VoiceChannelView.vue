@@ -63,6 +63,15 @@ watch(watchingStream, async (stream) => {
   await nextTick()
   if (fullScreenVideo.value) {
     fullScreenVideo.value.srcObject = stream ?? null
+    if (stream) {
+      // Explicitly play - some browsers need this even with autoplay
+      try {
+        await fullScreenVideo.value.play()
+        console.log('[VoiceChannel] Video playback started for stream:', stream.id)
+      } catch (err) {
+        console.warn('[VoiceChannel] Video play() failed:', err)
+      }
+    }
   }
 }, { immediate: true })
 

@@ -403,13 +403,28 @@ class WebRTCService {
     if (!this.peerConnection || !this._currentChannelId) return
 
     this.screenStream = await navigator.mediaDevices.getDisplayMedia({
-      video: { cursor: 'always' } as MediaTrackConstraints,
+      video: {
+        cursor: 'always',
+        frameRate: { ideal: 30, max: 60 },
+      },
       audio: true,
     })
 
     // Auto-stop when user clicks browser's "Stop sharing" button
     const videoTrack = this.screenStream.getVideoTracks()[0]
     if (videoTrack) {
+      // Log actual track settings for debugging
+      const settings = videoTrack.getSettings()
+      console.log('[WebRTC] Screen share video track settings:', {
+        frameRate: settings.frameRate,
+        width: settings.width,
+        height: settings.height,
+        enabled: videoTrack.enabled,
+      })
+
+      // Ensure track is enabled
+      videoTrack.enabled = true
+
       videoTrack.onended = () => {
         this.stopScreenShare()
       }
@@ -417,6 +432,8 @@ class WebRTCService {
 
     // Add tracks to PeerConnection
     for (const track of this.screenStream.getTracks()) {
+      // Ensure all tracks are enabled
+      track.enabled = true
       this.peerConnection.addTrack(track, this.screenStream)
     }
 
