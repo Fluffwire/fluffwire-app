@@ -2,6 +2,8 @@
 
 <div align="center">
 
+<img src="public/logo-512.png" alt="Fluffwire Logo" width="128" height="128" />
+
 **Modern, open-source real-time communication platform**
 
 How the world communicates.
