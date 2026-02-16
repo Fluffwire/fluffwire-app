@@ -47,7 +47,7 @@ const fallbackTextSize = {
 <template>
   <div class="relative inline-flex shrink-0">
     <Avatar :class="sizeClasses[size]">
-      <AvatarImage v-if="src" :src="src" :alt="alt" />
+      <AvatarImage v-if="src" :key="src" :src="src" :alt="alt" />
       <AvatarFallback :class="['bg-primary text-primary-foreground font-semibold', fallbackTextSize[size]]">
         {{ alt?.charAt(0)?.toUpperCase() || '?' }}
       </AvatarFallback>
