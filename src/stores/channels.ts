@@ -51,10 +51,11 @@ export const useChannelsStore = defineStore('channels', () => {
     })
     wsDispatcher.register(WS_EVENTS.CHANNELS_REORDER, (data: unknown) => {
       const reorderedChannels = data as Channel[]
-      if (reorderedChannels.length === 0) return
+      const firstChannel = reorderedChannels[0]
+      if (!firstChannel) return
 
       // Only update channels for the specific server
-      const serverId = reorderedChannels[0].serverId
+      const serverId = firstChannel.serverId
       channels.value = [
         ...channels.value.filter((c) => c.serverId !== serverId),
         ...reorderedChannels,
@@ -77,10 +78,11 @@ export const useChannelsStore = defineStore('channels', () => {
     })
     wsDispatcher.register(WS_EVENTS.CATEGORIES_REORDER, (data: unknown) => {
       const reorderedCategories = data as ChannelCategory[]
-      if (reorderedCategories.length === 0) return
+      const firstCategory = reorderedCategories[0]
+      if (!firstCategory) return
 
       // Only update categories for the specific server
-      const serverId = reorderedCategories[0].serverId
+      const serverId = firstCategory.serverId
       categories.value = [
         ...categories.value.filter((c) => c.serverId !== serverId),
         ...reorderedCategories,
