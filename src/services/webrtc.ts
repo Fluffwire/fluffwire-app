@@ -406,7 +406,7 @@ class WebRTCService {
       video: {
         cursor: 'always',
         frameRate: { ideal: 30, max: 60 },
-      },
+      } as MediaTrackConstraints,
       audio: true,
     })
 
