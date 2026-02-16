@@ -2,8 +2,6 @@
 
 <div align="center">
 
-<img src="public/logo-512.png" alt="Fluffwire Logo" width="128" height="128" />
-
 **Modern, open-source real-time communication platform**
 
 How the world communicates.
@@ -22,14 +20,16 @@ How the world communicates.
 
 ## 📖 About
 
-Fluffwire is a **free and open-source** real-time communication platform. Connect with friends, communities, and teams through text, voice, and video. Built with modern web technologies and available as both a web app and native desktop application.
+Fluffwire is a real-time communication platform with an **open-source frontend**. Connect with friends, communities, and teams through text, voice, and video. Built with modern web technologies and available as both a web app and native desktop application.
+
+> **Note:** This repository contains the open-source frontend application (AGPL-3.0). The backend server is proprietary and maintained separately.
 
 ### Why Fluffwire?
 
-- 🔓 **Open Source** - Fully transparent, auditable code under AGPL-3.0
+- 🔓 **Open Source Frontend** - Fully transparent, auditable code under AGPL-3.0
 - 🚀 **Modern Stack** - Built with Vue 3, TypeScript, and Tauri for performance
 - 🎨 **Beautiful UI** - Clean, intuitive interface with dark theme
-- 🔒 **Privacy-Focused** - Self-hostable, you control your data
+- 🔒 **Privacy-Focused** - Control your data with privacy settings
 - 🌍 **Cross-Platform** - Web, Windows, macOS, and Linux support
 - ⚡ **Real-Time** - WebSocket-powered instant messaging and presence
 - 🎙️ **Voice Channels** - WebRTC-based voice chat with low latency
@@ -561,7 +561,7 @@ This will:
 - Voice channels recording
 - Advanced moderation tools
 - Plugin system
-- Self-hosting documentation
+- Custom themes and appearance
 
 See [GitHub Milestones](https://github.com/Fluffwire/fluffwire-app/milestones) for detailed planning.
 
