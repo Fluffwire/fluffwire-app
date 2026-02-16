@@ -74,6 +74,13 @@ const showImageLightbox = ref(false)
 const lightboxImages = ref<{ url: string; filename: string }[]>([])
 const lightboxInitialIndex = ref(0)
 
+// User profile popover state
+const showUserPopover = ref(false)
+const userPopoverUser = ref<any>(null)
+const userPopoverPosition = ref({ x: 0, y: 0 })
+const userPopoverTrigger = ref<HTMLElement | null>(null)
+
+
 // Quick reaction emojis
 const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉']
 
@@ -298,7 +305,7 @@ function handleMessageClick(event: MouseEvent) {
     const channel = channelsStore.textChannels.find(c => c.name.toLowerCase() === channelName)
     if (channel) {
       const serverId = route.params.serverId as string
-      router.push({ name: 'channel', params: { serverId, channelId: channel.id } })
+      router.push({ name: 'Channel', params: { serverId, channelId: channel.id } })
     } else {
       toast.error(t('chat.channelNotFound'))
     }
@@ -318,10 +325,17 @@ function handleMessageClick(event: MouseEvent) {
     const member = members.find(m => m.user.username.toLowerCase() === mentionText)
 
     if (member) {
-      // Open user profile (we'll trigger the same popover behavior)
-      // For now, show a toast - we'd need to implement a proper dialog
-      // TODO: Implement user profile dialog/modal
-      toast.info(t('chat.userMentionClicked', { username: member.user.displayName }))
+      // Show user profile popover at click position
+      userPopoverUser.value = member.user
+      userPopoverPosition.value = { x: event.clientX, y: event.clientY }
+      showUserPopover.value = true
+
+      // Programmatically trigger popover on next tick
+      nextTick(() => {
+        if (userPopoverTrigger.value) {
+          userPopoverTrigger.value.click()
+        }
+      })
     }
   }
 }
@@ -709,4 +723,19 @@ function handleMessageClick(event: MouseEvent) {
     :images="lightboxImages"
     :initial-index="lightboxInitialIndex"
   />
+
+  <!-- User Profile Popover (positioned at click location) -->
+  <Teleport to="body">
+    <div
+      v-if="userPopoverUser"
+      :style="{ position: 'fixed', left: `${userPopoverPosition.x}px`, top: `${userPopoverPosition.y}px`, width: '1px', height: '1px', zIndex: 9999 }"
+    >
+      <UserProfilePopover :user="userPopoverUser" side="right">
+        <div
+          ref="userPopoverTrigger"
+          style="position: absolute; width: 1px; height: 1px; cursor: pointer;"
+        />
+      </UserProfilePopover>
+    </div>
+  </Teleport>
 </template>
