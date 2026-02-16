@@ -1,6 +1,12 @@
 use tauri::Manager;
 use tauri_plugin_autostart::ManagerExt;
 
+#[tauri::command]
+fn was_started_hidden() -> bool {
+    let args: Vec<String> = std::env::args().collect();
+    args.contains(&"--hidden".to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -10,6 +16,7 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_upload::init())
         .plugin(tauri_plugin_fs::init())
+        .invoke_handler(tauri::generate_handler![was_started_hidden])
         .setup(|app| {
             #[cfg(desktop)]
             {
@@ -78,12 +85,13 @@ pub fn run() {
 
                 // Handle --hidden flag for auto-start
                 let args: Vec<String> = std::env::args().collect();
-                let should_show = !args.contains(&"--hidden".to_string());
+                let is_hidden_start = args.contains(&"--hidden".to_string());
 
                 // Intercept window close button (X) to minimize to tray instead
                 if let Some(window) = app.get_webview_window("main") {
-                    // Show window if not started with --hidden flag
-                    if should_show {
+                    // If NOT started with --hidden flag (manual start), show immediately
+                    // If started with --hidden (auto-start), frontend will decide based on user settings
+                    if !is_hidden_start {
                         let _ = window.show();
                     }
 

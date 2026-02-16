@@ -55,6 +55,7 @@ const appVersion = ref<string | null>(null)
 // Auto-start state (desktop only)
 const autoStartEnabled = ref(false)
 const autoStartLoading = ref(false)
+const startMinimized = ref(true) // Default to true
 
 function handleSoundToggle(value: boolean) {
   setSoundEnabled(value)
@@ -456,6 +457,10 @@ function onKeydown(e: KeyboardEvent) {
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
 
+  // Load startMinimized from settings
+  const settingsStore = useSettingsStore()
+  startMinimized.value = settingsStore.settings.startMinimized ?? true
+
   // Fetch app version and auto-start status if running in Tauri
   if (isTauri()) {
     try {
@@ -466,6 +471,8 @@ onMounted(async () => {
     }
 
     try {
+      // Add a small delay to let Rust initialization complete
+      await new Promise(resolve => setTimeout(resolve, 500))
       const { isEnabled } = await import('@tauri-apps/plugin-autostart')
       autoStartEnabled.value = await isEnabled()
     } catch (error) {
@@ -517,13 +524,19 @@ async function handleAutoStartToggle(value: boolean) {
     }
 
     autoStartEnabled.value = value
-    settingsStore.updateSetting({ autoStartEnabled: value })
   } catch (error) {
     console.error('Failed to update auto-start:', error)
     toast.error(t('settings.failedAutoStart'))
   } finally {
     autoStartLoading.value = false
   }
+}
+
+async function handleStartMinimizedToggle(value: boolean) {
+  startMinimized.value = value
+  const settingsStore = useSettingsStore()
+  settingsStore.updateSetting({ startMinimized: value })
+  toast.success(value ? t('settings.startMinimizedEnabled') : t('settings.startMinimizedDisabled'))
 }
 
 const themePreviewColors: Record<ThemeName, string> = {
@@ -994,7 +1007,7 @@ const themePreviewColors: Record<ThemeName, string> = {
             <template v-if="activeTab === 'application'">
               <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.application') }}</h2>
 
-              <Card>
+              <Card class="mb-4">
                 <CardContent class="flex items-center justify-between p-6">
                   <div>
                     <h3 class="text-sm font-medium text-foreground">{{ $t('settings.autoStartOnBoot') }}</h3>
@@ -1004,6 +1017,19 @@ const themePreviewColors: Record<ThemeName, string> = {
                     :model-value="autoStartEnabled"
                     :disabled="autoStartLoading"
                     @update:model-value="handleAutoStartToggle"
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent class="flex items-center justify-between p-6">
+                  <div>
+                    <h3 class="text-sm font-medium text-foreground">{{ $t('settings.startMinimized') }}</h3>
+                    <p class="text-sm text-muted-foreground">{{ $t('settings.startMinimizedDesc') }}</p>
+                  </div>
+                  <Switch
+                    :model-value="startMinimized"
+                    @update:model-value="handleStartMinimizedToggle"
                   />
                 </CardContent>
               </Card>

@@ -181,10 +181,14 @@
     "failedExportData": "Kunde inte exportera data",
     "application": "Program",
     "autoStartOnBoot": "Starta vid systemstart",
-    "autoStartOnBootDesc": "Starta Fluffwire automatiskt när datorn startar (minimerad till systemfältet)",
+    "autoStartOnBootDesc": "Starta Fluffwire automatiskt när datorn startar",
     "autoStartEnabled": "Autostart aktiverad",
     "autoStartDisabled": "Autostart inaktiverad",
-    "failedAutoStart": "Kunde inte uppdatera autostart-inställning"
+    "failedAutoStart": "Kunde inte uppdatera autostart-inställning",
+    "startMinimized": "Starta minimerad till systemfältet",
+    "startMinimizedDesc": "När appen autostartar, öppna minimerad till systemfältet istället för att visa fönstret",
+    "startMinimizedEnabled": "Appen kommer starta minimerad till systemfältet",
+    "startMinimizedDisabled": "Appen kommer starta med synligt fönster"
   },
   "server": {
     "createServer": "Skapa en server",

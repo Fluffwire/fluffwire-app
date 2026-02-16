@@ -52,6 +52,7 @@ export interface UserSettings {
   allowFriendRequests: boolean
   allowDMsFromServerMembers: boolean
   autoStartEnabled?: boolean // Desktop only - start app on system startup
+  startMinimized?: boolean // Desktop only - start app minimized to tray
 }
 
 export interface AuthTokens {

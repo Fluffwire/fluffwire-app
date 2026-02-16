@@ -114,7 +114,7 @@ const isSettings = computed(() => route.path === '/settings')
 // Debug panel
 const showDebugPanel = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   // Toggle debug panel with Ctrl+Shift+D
   window.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.shiftKey && e.key === 'D') {
@@ -122,6 +122,32 @@ onMounted(() => {
       showDebugPanel.value = !showDebugPanel.value
     }
   })
+
+  // Handle window visibility on auto-start (desktop only)
+  const { isTauri } = await import('@/utils/platform')
+  if (isTauri()) {
+    try {
+      const { invoke } = await import('@tauri-apps/api/core')
+      const wasStartedHidden = await invoke<boolean>('was_started_hidden')
+
+      if (wasStartedHidden) {
+        // App was auto-started with --hidden flag
+        // Check user's startMinimized preference
+        const startMinimized = localStorage.getItem('fluffwire-start-minimized')
+
+        if (startMinimized === 'false') {
+          // User wants window visible on auto-start
+          const { getCurrentWindow } = await import('@tauri-apps/api/window')
+          const window = getCurrentWindow()
+          await window.show()
+          await window.setFocus()
+        }
+        // If startMinimized is true or not set, keep window hidden (default behavior)
+      }
+    } catch (error) {
+      console.error('Failed to check auto-start window visibility:', error)
+    }
+  }
 })
 
 const isServerView = computed(() => {

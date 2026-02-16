@@ -181,10 +181,14 @@
     "failedExportData": "Failed to export data",
     "application": "Application",
     "autoStartOnBoot": "Start on System Startup",
-    "autoStartOnBootDesc": "Launch Fluffwire automatically when your computer starts (minimized to tray)",
+    "autoStartOnBootDesc": "Launch Fluffwire automatically when your computer starts",
     "autoStartEnabled": "Auto-start enabled",
     "autoStartDisabled": "Auto-start disabled",
-    "failedAutoStart": "Failed to update auto-start setting"
+    "failedAutoStart": "Failed to update auto-start setting",
+    "startMinimized": "Start Minimized to Tray",
+    "startMinimizedDesc": "When auto-starting, open the app minimized to system tray instead of showing the window",
+    "startMinimizedEnabled": "App will start minimized to tray",
+    "startMinimizedDisabled": "App will start with window visible"
   },
   "server": {
     "createServer": "Create a Server",
