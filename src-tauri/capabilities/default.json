@@ -1,30 +1,31 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default permissions for Fluffwire",
-  "platforms": ["linux", "macOS", "windows"],
+  "description": "Capability for the main window",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "core:window:allow-create",
-    "core:window:allow-show",
-    "core:window:allow-hide",
+    "core:window:default",
     "core:window:allow-close",
     "core:window:allow-minimize",
     "core:window:allow-maximize",
-    "http:default",
-    "http:allow-fetch",
-    "dialog:default",
-    "dialog:allow-save",
-    "dialog:allow-open",
-    "fs:default",
-    "fs:allow-write-text-file",
-    "fs:allow-read-text-file",
-    "shell:default",
-    "shell:allow-open",
+    "core:window:allow-set-title",
+    "core:window:allow-set-size",
+    "core:window:allow-set-focus",
+    "core:window:allow-is-focused",
     "notification:default",
-    "autostart:default",
+    "updater:default",
+    "dialog:default",
     "process:default",
-    "updater:default"
+    "upload:default",
+    "fs:default",
+    "shell:default",
+    "autostart:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        { "url": "https://app.fluffwire.com/*" }
+      ]
+    }
   ]
 }
