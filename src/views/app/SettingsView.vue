@@ -463,27 +463,19 @@ function onKeydown(e: KeyboardEvent) {
 watch(() => settingsStore.settings, (newSettings) => {
   if (!newSettings) return
 
-  // Update startMinimized from backend
-  if (typeof newSettings.startMinimized === 'boolean') {
-    startMinimized.value = newSettings.startMinimized
-  }
-
-  // Update autoStartEnabled from backend (desktop only)
-  if (isTauri() && typeof newSettings.autoStartEnabled === 'boolean') {
-    autoStartEnabled.value = newSettings.autoStartEnabled
-  }
-
-  // Update autoUpdateEnabled from backend (desktop only)
-  if (isTauri() && typeof newSettings.autoUpdateEnabled === 'boolean') {
-    autoUpdateEnabled.value = newSettings.autoUpdateEnabled
-  }
+  // Note: Desktop settings (autoStart, startMinimized, autoUpdate) are local-only
+  // (machine-specific), not synced from backend
 }, { immediate: true })
 
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
 
-  // Load startMinimized from settings
-  startMinimized.value = settingsStore.settings?.startMinimized ?? true
+  // Load desktop-specific settings from localStorage (local-only, not from backend)
+  const storedStartMinimized = localStorage.getItem('fluffwire-start-minimized')
+  startMinimized.value = storedStartMinimized !== null ? storedStartMinimized === 'true' : true
+
+  const storedAutoUpdate = localStorage.getItem('fluffwire-auto-update')
+  autoUpdateEnabled.value = storedAutoUpdate !== null ? storedAutoUpdate === 'true' : true
 
   // Fetch app version and auto-start status if running in Tauri
   if (isTauri()) {
@@ -499,14 +491,8 @@ onMounted(async () => {
       await new Promise(resolve => setTimeout(resolve, 500))
       const { isEnabled } = await import('@tauri-apps/plugin-autostart')
 
-      // Read from backend settings first (source of truth)
-      if (typeof settingsStore.settings?.autoStartEnabled === 'boolean') {
-        autoStartEnabled.value = settingsStore.settings.autoStartEnabled
-      } else {
-        // If backend doesn't have it yet, read from Tauri plugin and sync to backend
-        autoStartEnabled.value = await isEnabled()
-        settingsStore.updateSetting({ autoStartEnabled: autoStartEnabled.value })
-      }
+      // Auto-start is local-only: Tauri plugin is the single source of truth
+      autoStartEnabled.value = await isEnabled()
     } catch (error) {
       console.error('Failed to check auto-start status:', error)
     }
@@ -557,8 +543,7 @@ async function handleAutoStartToggle(value: boolean) {
 
     autoStartEnabled.value = value
 
-    // Sync to backend settings so it persists across sessions
-    settingsStore.updateSetting({ autoStartEnabled: value })
+    // Note: Auto-start is local-only (machine-specific), not synced to backend
   } catch (error) {
     console.error('Failed to update auto-start:', error)
     toast.error(t('settings.failedAutoStart'))
@@ -588,7 +573,8 @@ async function handleAutoUpdateToggle(value: boolean) {
   if (!isTauri()) return
 
   autoUpdateEnabled.value = value
-  settingsStore.updateSetting({ autoUpdateEnabled: value })
+  // Local-only setting: store in localStorage, don't sync to backend
+  localStorage.setItem('fluffwire-auto-update', String(value))
 
   if (value) {
     toast.success(t('settings.autoUpdateEnabled'))
@@ -599,8 +585,8 @@ async function handleAutoUpdateToggle(value: boolean) {
 
 async function handleStartMinimizedToggle(value: boolean) {
   startMinimized.value = value
-  const settingsStore = useSettingsStore()
-  settingsStore.updateSetting({ startMinimized: value })
+  // Local-only setting: store in localStorage, don't sync to backend
+  localStorage.setItem('fluffwire-start-minimized', String(value))
   toast.success(value ? t('settings.startMinimizedEnabled') : t('settings.startMinimizedDisabled'))
 }
 

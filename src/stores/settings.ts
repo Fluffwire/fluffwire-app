@@ -96,20 +96,8 @@ export const useSettingsStore = defineStore('settings', () => {
       localStorage.setItem('fluffwire-desktop-notifications', String(s.notificationDesktop))
     }
 
-    // Auto-start (desktop only, handled by Tauri plugin)
-    if (typeof s.autoStartEnabled === 'boolean') {
-      localStorage.setItem('fluffwire-auto-start', String(s.autoStartEnabled))
-    }
-
-    // Start minimized (desktop only)
-    if (typeof s.startMinimized === 'boolean') {
-      localStorage.setItem('fluffwire-start-minimized', String(s.startMinimized))
-    }
-
-    // Auto-update (desktop only)
-    if (typeof s.autoUpdateEnabled === 'boolean') {
-      localStorage.setItem('fluffwire-auto-update', String(s.autoUpdateEnabled))
-    }
+    // Note: Desktop settings (autoStart, startMinimized, autoUpdate) are local-only,
+    // managed directly in SettingsView with localStorage (not synced to backend)
   }
 
   return {
