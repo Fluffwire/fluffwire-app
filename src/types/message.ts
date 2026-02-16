@@ -1,5 +1,7 @@
 export type ChannelType = 'text' | 'voice'
 
+export type ChannelAccessMode = 'open' | 'read_only' | 'private' | 'restricted_write'
+
 export interface Channel {
   id: string
   serverId: string
@@ -8,6 +10,11 @@ export interface Channel {
   categoryId: string | null
   position: number
   topic?: string
+  accessMode: ChannelAccessMode
+  allowedUserIds?: string[]
+  allowedLabelIds?: string[]
+  maxParticipants?: number
+  uploadsEnabled: boolean
 }
 
 export interface ChannelCategory {
@@ -84,4 +91,5 @@ export interface CreateChannelPayload {
   name: string
   type: ChannelType
   categoryId?: string
+  accessMode?: ChannelAccessMode
 }

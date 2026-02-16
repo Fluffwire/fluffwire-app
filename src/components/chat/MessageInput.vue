@@ -4,6 +4,11 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useMessagesStore } from '@/stores/messages'
 import { useMembersStore } from '@/stores/members'
+import { useChannelsStore } from '@/stores/channels'
+import { useLabelsStore } from '@/stores/labels'
+import { useAuthStore } from '@/stores/auth'
+import { canBypassChannelRestrictions } from '@/constants/tiers'
+import type { Tier } from '@/constants/tiers'
 import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
 import { wsService } from '@/services/websocket'
@@ -23,8 +28,52 @@ const { t } = useI18n()
 const route = useRoute()
 const messagesStore = useMessagesStore()
 const membersStore = useMembersStore()
+const channelsStore = useChannelsStore()
+const labelsStore = useLabelsStore()
+const authStore = useAuthStore()
 
 const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
+
+const currentChannel = computed(() => channelsStore.channels.find(c => c.id === props.channelId))
+const serverId = computed(() => route.params.serverId as string)
+
+// Check if user can write to this channel
+const canWrite = computed(() => {
+  const channel = currentChannel.value
+  if (!channel) return true // Allow for DMs or unknown channels
+  if (!serverId.value || serverId.value === '@me') return true // DMs always allowed
+
+  // Get user's tier and labels
+  const member = membersStore.getMembers(serverId.value).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+
+  const tier = member.tier as Tier
+
+  // Owner/Admin/Moderator bypass all restrictions
+  if (canBypassChannelRestrictions(tier)) return true
+
+  const accessMode = channel.accessMode || 'open'
+  const userLabelIds = member.labels || []
+
+  switch (accessMode) {
+    case 'open':
+      return true
+    case 'read_only':
+      return false
+    case 'private':
+      // Must be in allowed users or have allowed label
+      const allowedUserIds = channel.allowedUserIds || []
+      const allowedLabelIds = channel.allowedLabelIds || []
+      return allowedUserIds.includes(member.userId) || userLabelIds.some(id => allowedLabelIds.includes(id))
+    case 'restricted_write':
+      // Can read but only write if whitelisted
+      const allowedWriteUsers = channel.allowedUserIds || []
+      const allowedWriteLabels = channel.allowedLabelIds || []
+      return allowedWriteUsers.includes(member.userId) || userLabelIds.some(id => allowedWriteLabels.includes(id))
+    default:
+      return true
+  }
+})
 
 const content = ref('')
 const pendingFiles = ref<File[]>([])
@@ -37,17 +86,54 @@ const showMentionPopup = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
 
-const mentionResults = computed(() => {
-  const serverId = route.params.serverId as string
-  if (!serverId) return []
-  const members = membersStore.getMembers(serverId)
+interface MentionResult {
+  type: 'user' | 'label'
+  id: string
+  name: string
+  displayName: string
+  avatar?: string | null
+  color?: string
+}
+
+const mentionResults = computed((): MentionResult[] => {
+  const serverIdValue = route.params.serverId as string
+  if (!serverIdValue || serverIdValue === '@me') return []
+
   const query = mentionQuery.value.toLowerCase()
-  return members
+  const results: MentionResult[] = []
+
+  // Add matching members
+  const members = membersStore.getMembers(serverIdValue)
+  members
     .filter(m =>
       m.user.username.toLowerCase().includes(query) ||
       m.user.displayName.toLowerCase().includes(query)
     )
-    .slice(0, 8)
+    .forEach(m => {
+      results.push({
+        type: 'user',
+        id: m.user.id,
+        name: m.user.username,
+        displayName: m.user.displayName,
+        avatar: m.user.avatar ?? undefined,
+      })
+    })
+
+  // Add matching labels
+  const labels = labelsStore.getLabels(serverIdValue)
+  labels
+    .filter(l => l.name.toLowerCase().includes(query))
+    .forEach(l => {
+      results.push({
+        type: 'label',
+        id: l.id,
+        name: l.name,
+        displayName: l.name,
+        color: l.color,
+      })
+    })
+
+  return results.slice(0, 8)
 })
 
 const wsConnected = ref(wsService.isConnected)
@@ -124,7 +210,7 @@ function checkForMention() {
   }
 }
 
-function selectMention(username: string) {
+function selectMention(name: string) {
   const ta = textareaRef.value
   if (!ta) return
   const pos = ta.selectionStart
@@ -133,9 +219,9 @@ function selectMention(username: string) {
   if (atIndex === -1) return
   const before = content.value.substring(0, atIndex)
   const after = content.value.substring(pos)
-  content.value = before + '@' + username + ' ' + after
+  content.value = before + '@' + name + ' ' + after
   showMentionPopup.value = false
-  const newPos = atIndex + username.length + 2
+  const newPos = atIndex + name.length + 2
   nextTick(() => {
     ta.selectionStart = newPos
     ta.selectionEnd = newPos
@@ -192,8 +278,8 @@ function handleKeydown(e: KeyboardEvent) {
     }
     if (e.key === 'Tab' || e.key === 'Enter') {
       e.preventDefault()
-      const member = mentionResults.value[mentionIndex.value]
-      if (member) selectMention(member.user.username)
+      const result = mentionResults.value[mentionIndex.value]
+      if (result) selectMention(result.name)
       return
     }
     if (e.key === 'Escape') {
@@ -264,25 +350,41 @@ defineExpose({ insertAtCursor })
       class="absolute bottom-full left-0 z-50 mb-1 w-64 rounded-lg border border-border bg-popover p-1 shadow-lg"
     >
       <button
-        v-for="(member, i) in mentionResults"
-        :key="member.user.id"
-        @mousedown.prevent="selectMention(member.user.username)"
+        v-for="(result, i) in mentionResults"
+        :key="result.id"
+        @mousedown.prevent="selectMention(result.name)"
         :class="[
           'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
           i === mentionIndex ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50',
         ]"
       >
-        <img
-          v-if="member.user.avatar"
-          :src="member.user.avatar"
-          class="h-6 w-6 rounded-full object-cover"
-        />
-        <div v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
-          {{ member.user.displayName.charAt(0) }}
+        <!-- User avatar -->
+        <template v-if="result.type === 'user'">
+          <img
+            v-if="result.avatar"
+            :src="result.avatar"
+            class="h-6 w-6 rounded-full object-cover"
+          />
+          <div v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
+            {{ result.displayName.charAt(0) }}
+          </div>
+        </template>
+
+        <!-- Label icon -->
+        <div
+          v-else
+          class="flex h-6 w-6 items-center justify-center rounded-full"
+          :style="{ backgroundColor: result.color || '#99aab5' }"
+        >
+          <span class="text-xs font-medium text-white">#</span>
         </div>
+
         <div class="min-w-0 flex-1">
-          <div class="truncate text-sm font-medium">{{ member.user.displayName }}</div>
-          <div class="truncate text-xs text-muted-foreground">@{{ member.user.username }}</div>
+          <div class="truncate text-sm font-medium">{{ result.displayName }}</div>
+          <div class="truncate text-xs text-muted-foreground">
+            @{{ result.name }}
+            <span v-if="result.type === 'label'" class="ml-1 opacity-60">(label)</span>
+          </div>
         </div>
       </button>
     </div>
@@ -327,7 +429,7 @@ defineExpose({ insertAtCursor })
         variant="ghost"
         size="icon"
         class="mb-1 ml-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-        :disabled="!wsConnected"
+        :disabled="!wsConnected || !canWrite"
         @click="openFilePicker"
       >
         <Paperclip class="h-4 w-4" />
@@ -339,8 +441,8 @@ defineExpose({ insertAtCursor })
         @keydown="handleKeydown"
         @input="emitTyping(); checkForMention()"
         @paste="handlePaste"
-        :placeholder="wsConnected ? t('chat.messagePlaceholder', { channel: channelName }) : t('chat.reconnecting')"
-        :disabled="!wsConnected"
+        :placeholder="!canWrite ? t('chat.noWritePermission') : (wsConnected ? t('chat.messagePlaceholder', { channel: channelName }) : t('chat.reconnecting'))"
+        :disabled="!wsConnected || !canWrite"
         rows="1"
         class="max-h-[50vh] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
       />
@@ -352,7 +454,7 @@ defineExpose({ insertAtCursor })
             variant="ghost"
             size="icon"
             class="mb-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground"
-            :disabled="!wsConnected"
+            :disabled="!wsConnected || !canWrite"
           >
             <Smile class="h-4 w-4" />
           </Button>
@@ -367,7 +469,7 @@ defineExpose({ insertAtCursor })
         variant="ghost"
         size="icon"
         class="mb-1 mr-1 h-8 w-8 text-primary hover:text-primary"
-        :disabled="isSending || !wsConnected"
+        :disabled="isSending || !wsConnected || !canWrite"
         @click="handleSubmit"
       >
         <Loader2 v-if="isSending" class="h-4 w-4 animate-spin" />

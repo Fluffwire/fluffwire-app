@@ -1,6 +1,6 @@
 import api from './api'
 import { API } from '@/constants/endpoints'
-import type { Server, ServerMember, CreateServerPayload, JoinServerPayload, ServerInvite, Webhook, Role } from '@/types'
+import type { Server, ServerMember, CreateServerPayload, JoinServerPayload, ServerInvite, Webhook, Label } from '@/types'
 
 export const serverApi = {
   getServers(): Promise<{ data: Server[] }> {
@@ -87,31 +87,41 @@ export const serverApi = {
     return data
   },
 
-  async getRoles(serverId: string): Promise<Role[]> {
-    const { data } = await api.get(`${API.SERVERS.BASE}/${serverId}/roles`)
+  async getLabels(serverId: string): Promise<Label[]> {
+    const { data } = await api.get(`${API.SERVERS.BASE}/${serverId}/labels`)
     return data
   },
 
-  async createRole(serverId: string, name: string, color?: string, permissions?: number): Promise<Role> {
-    const { data } = await api.post(`${API.SERVERS.BASE}/${serverId}/roles`, { name, color, permissions })
-    return data as Role
+  async createLabel(serverId: string, name: string, color?: string): Promise<Label> {
+    const { data } = await api.post(`${API.SERVERS.BASE}/${serverId}/labels`, { name, color })
+    return data as Label
   },
 
-  async updateRole(serverId: string, roleId: string, updates: { name?: string; color?: string; permissions?: number }): Promise<Role> {
-    const { data } = await api.patch(`${API.SERVERS.BASE}/${serverId}/roles/${roleId}`, updates)
-    return data as Role
+  async updateLabel(serverId: string, labelId: string, updates: { name?: string; color?: string }): Promise<Label> {
+    const { data } = await api.patch(`${API.SERVERS.BASE}/${serverId}/labels/${labelId}`, updates)
+    return data as Label
   },
 
-  async deleteRole(serverId: string, roleId: string): Promise<void> {
-    await api.delete(`${API.SERVERS.BASE}/${serverId}/roles/${roleId}`)
+  async deleteLabel(serverId: string, labelId: string): Promise<void> {
+    await api.delete(`${API.SERVERS.BASE}/${serverId}/labels/${labelId}`)
   },
 
-  async reorderRoles(serverId: string, roleIds: string[]): Promise<void> {
-    await api.put(`${API.SERVERS.BASE}/${serverId}/roles/reorder`, { roleIds })
+  async reorderLabels(serverId: string, labelIds: string[]): Promise<void> {
+    await api.put(`${API.SERVERS.BASE}/${serverId}/labels/reorder`, { labelIds })
   },
 
-  async assignMemberRoles(serverId: string, memberId: string, roleIds: string[]) {
-    const { data } = await api.put(`${API.SERVERS.BASE}/${serverId}/members/${memberId}/roles`, { roleIds })
+  async assignMemberLabels(serverId: string, memberId: string, labelIds: string[]) {
+    const { data} = await api.put(`${API.SERVERS.BASE}/${serverId}/members/${memberId}/labels`, { labelIds })
+    return data
+  },
+
+  async setMemberTier(serverId: string, memberId: string, tier: string) {
+    const { data } = await api.put(`${API.SERVERS.BASE}/${serverId}/members/${memberId}/tier`, { tier })
+    return data
+  },
+
+  async transferOwnership(serverId: string, newOwnerId: string) {
+    const { data } = await api.post(`${API.SERVERS.BASE}/${serverId}/transfer-ownership`, { newOwnerId })
     return data
   },
 }

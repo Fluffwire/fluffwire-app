@@ -2,6 +2,7 @@
 import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMembersStore } from '@/stores/members'
+import { useLabelsStore } from '@/stores/labels'
 import { usePresenceStore } from '@/stores/presence'
 import MemberItem from './MemberItem.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -15,6 +16,7 @@ withDefaults(defineProps<Props>(), { isSheet: false })
 
 const route = useRoute()
 const membersStore = useMembersStore()
+const labelsStore = useLabelsStore()
 const presenceStore = usePresenceStore()
 
 const serverId = computed(() => route.params.serverId as string)
@@ -22,6 +24,7 @@ const serverId = computed(() => route.params.serverId as string)
 watch(serverId, (id) => {
   if (id && id !== '@me') {
     membersStore.fetchMembers(id)
+    labelsStore.fetchLabels(id)
   }
 }, { immediate: true })
 

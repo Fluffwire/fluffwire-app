@@ -4,7 +4,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useChannelsStore } from '@/stores/channels'
 import { useUiStore } from '@/stores/ui'
-import type { ChannelType } from '@/types'
+import { AccessModeLabels, AccessModeDescriptions } from '@/constants/channelAccess'
+import type { ChannelType, ChannelAccessMode } from '@/types'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -26,6 +27,7 @@ const uiStore = useUiStore()
 const channelName = ref('')
 const channelType = ref<ChannelType>('text')
 const selectedCategoryId = ref<string>('none')
+const accessMode = ref<ChannelAccessMode>('open')
 const isLoading = ref(false)
 
 const isOpen = computed({
@@ -42,6 +44,7 @@ watch(isOpen, (open) => {
     channelName.value = ''
     channelType.value = 'text'
     selectedCategoryId.value = 'none'
+    accessMode.value = 'open'
   }
 })
 
@@ -53,6 +56,7 @@ async function handleCreate() {
       name: channelName.value.trim().toLowerCase().replace(/\s+/g, '-'),
       type: channelType.value,
       categoryId: selectedCategoryId.value !== 'none' ? selectedCategoryId.value : undefined,
+      accessMode: accessMode.value !== 'open' ? accessMode.value : undefined,
     })
     toast.success(t('channel.channelCreated'))
     uiStore.closeModal()
@@ -139,6 +143,26 @@ async function handleCreate() {
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="create-access-mode">{{ $t('channel.accessMode') }}</Label>
+          <select
+            id="create-access-mode"
+            v-model="accessMode"
+            class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+          >
+            <option
+              v-for="(label, mode) in AccessModeLabels"
+              :key="mode"
+              :value="mode"
+            >
+              {{ label }}
+            </option>
+          </select>
+          <p class="text-xs text-muted-foreground">
+            {{ AccessModeDescriptions[accessMode] }}
+          </p>
         </div>
 
         <DialogFooter class="gap-2">

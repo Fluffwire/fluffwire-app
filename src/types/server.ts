@@ -10,8 +10,9 @@ export interface Server {
 export interface ServerMember {
   userId: string
   serverId: string
+  tier: 'owner' | 'admin' | 'moderator' | 'member'
   nickname: string | null
-  roles: string[]
+  labels: string[]
   joinedAt: string
 }
 
@@ -35,16 +36,19 @@ export interface ServerInvite {
   creatorName?: string
 }
 
-export interface Role {
+export interface Label {
   id: string
   serverId: string
   name: string
   color?: string
-  permissions: number
   position: number
-  isDefault: boolean
+  isEveryone: boolean
+  createdBy?: string
   createdAt: string
 }
+
+// Keep Role as an alias for backward compatibility during transition
+export type Role = Label
 
 export interface Webhook {
   id: string

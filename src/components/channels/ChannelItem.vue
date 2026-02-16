@@ -8,7 +8,10 @@ import { useUiStore } from '@/stores/ui'
 import { useChannelsStore } from '@/stores/channels'
 import { useServersStore } from '@/stores/servers'
 import { useAuthStore } from '@/stores/auth'
+import { useMembersStore } from '@/stores/members'
 import { useReadStateStore } from '@/stores/readState'
+import { canManageChannels } from '@/constants/tiers'
+import type { Tier } from '@/constants/tiers'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Hash, Headphones, Pencil, Trash2, Mic, MicOff, Monitor } from 'lucide-vue-next'
 import { isTauri } from '@/utils/platform'
@@ -35,6 +38,7 @@ const uiStore = useUiStore()
 const channelsStore = useChannelsStore()
 const serversStore = useServersStore()
 const authStore = useAuthStore()
+const membersStore = useMembersStore()
 const readStateStore = useReadStateStore()
 
 const showDeleteDialog = ref(false)
@@ -46,6 +50,14 @@ const hasUnread = computed(() => !isActive.value && props.channel.type === 'text
 const isOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
 )
+
+const canManage = computed(() => {
+  const serverId = route.params.serverId as string
+  if (!serverId) return false
+  const member = membersStore.getMembers(serverId).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+  return canManageChannels(member.tier as Tier)
+})
 
 const voiceMembers = computed(() => voiceStore.getVoiceChannelMembers(props.channel.id))
 
@@ -124,12 +136,12 @@ async function handleDelete() {
         </button>
       </ContextMenuTrigger>
 
-      <ContextMenuContent v-if="isOwner" class="w-48">
+      <ContextMenuContent v-if="canManage" class="w-48">
         <ContextMenuItem @click="handleEdit" class="gap-2">
           <Pencil class="h-4 w-4" />
           {{ $t('channel.editChannel') }}
         </ContextMenuItem>
-        <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+        <ContextMenuItem v-if="isOwner" @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
           <Trash2 class="h-4 w-4" />
           {{ $t('channel.deleteChannel') }}
         </ContextMenuItem>

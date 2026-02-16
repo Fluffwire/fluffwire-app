@@ -3,6 +3,8 @@ import { ref } from 'vue'
 import type { ServerMember, User } from '@/types'
 import { serverApi } from '@/services/serverApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
+import { useAuthStore } from './auth'
+import { useChannelsStore } from './channels'
 
 export interface MemberWithUser extends ServerMember {
   user: User
@@ -33,6 +35,42 @@ export const useMembersStore = defineStore('members', () => {
           serverId,
           members.filter((m) => m.userId !== userId)
         )
+      }
+    })
+
+    wsDispatcher.register('MEMBER_TIER_UPDATE', (data: unknown) => {
+      const { serverId, userId, tier } = data as { serverId: string; userId: string; tier: string }
+      const members = membersByServer.value.get(serverId)
+      if (members) {
+        const member = members.find((m) => m.userId === userId)
+        if (member) {
+          member.tier = tier as 'owner' | 'admin' | 'moderator' | 'member'
+        }
+      }
+
+      // If current user's tier changed, refetch channels (might have access to new private channels)
+      const authStore = useAuthStore()
+      if (authStore.user?.id === userId) {
+        const channelsStore = useChannelsStore()
+        channelsStore.fetchChannels(serverId)
+      }
+    })
+
+    wsDispatcher.register('MEMBER_LABEL_UPDATE', (data: unknown) => {
+      const { serverId, userId, labelIds } = data as { serverId: string; userId: string; labelIds: string[] }
+      const members = membersByServer.value.get(serverId)
+      if (members) {
+        const member = members.find((m) => m.userId === userId)
+        if (member) {
+          member.labels = labelIds
+        }
+      }
+
+      // If current user's labels changed, refetch channels (might have access to new private channels)
+      const authStore = useAuthStore()
+      if (authStore.user?.id === userId) {
+        const channelsStore = useChannelsStore()
+        channelsStore.fetchChannels(serverId)
       }
     })
   }

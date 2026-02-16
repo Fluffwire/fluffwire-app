@@ -7,6 +7,9 @@ import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useVoiceStore } from '@/stores/voice'
+import { useMembersStore } from '@/stores/members'
+import { canManageServer, canManageChannels } from '@/constants/tiers'
+import type { Tier } from '@/constants/tiers'
 import ChannelItem from '@/components/channels/ChannelItem.vue'
 import ChannelCategory from '@/components/channels/ChannelCategory.vue'
 import UserPanel from './UserPanel.vue'
@@ -33,6 +36,7 @@ const dmStore = useDirectMessagesStore()
 const uiStore = useUiStore()
 const authStore = useAuthStore()
 const voiceStore = useVoiceStore()
+const membersStore = useMembersStore()
 
 const isHome = computed(() => route.path.startsWith('/channels/@me'))
 const serverId = computed(() => route.params.serverId as string)
@@ -40,6 +44,20 @@ const serverId = computed(() => route.params.serverId as string)
 const isOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
 )
+
+const canManageServerSettings = computed(() => {
+  if (!serverId.value || serverId.value === '@me') return false
+  const member = membersStore.getMembers(serverId.value).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+  return canManageServer(member.tier as Tier)
+})
+
+const canCreateChannels = computed(() => {
+  if (!serverId.value || serverId.value === '@me') return false
+  const member = membersStore.getMembers(serverId.value).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+  return canManageChannels(member.tier as Tier)
+})
 
 const showVoicePanel = computed(() =>
   voiceStore.isInVoice && voiceStore.currentServerId === serverId.value
@@ -132,7 +150,7 @@ function onCategoriesDragEnd() {
 function initSortables() {
   destroySortables()
 
-  if (channelDragEl.value && isOwner.value) {
+  if (channelDragEl.value && canCreateChannels.value) {
     channelSortable = Sortable.create(channelDragEl.value, {
       group: 'channels',
       animation: 150,
@@ -150,7 +168,7 @@ function initSortables() {
     })
   }
 
-  if (categoryDragEl.value && isOwner.value) {
+  if (categoryDragEl.value && canCreateChannels.value) {
     categorySortable = Sortable.create(categoryDragEl.value, {
       animation: 150,
       ghostClass: 'opacity-30',
@@ -171,8 +189,8 @@ function destroySortables() {
   categorySortable = null
 }
 
-// Re-init when element refs appear or owner status changes
-watch([channelDragEl, categoryDragEl, isOwner], initSortables, { flush: 'post' })
+// Re-init when element refs appear or permission status changes
+watch([channelDragEl, categoryDragEl, canCreateChannels], initSortables, { flush: 'post' })
 
 onBeforeUnmount(destroySortables)
 </script>
@@ -211,7 +229,7 @@ onBeforeUnmount(destroySortables)
           </Tooltip>
         </TooltipProvider>
         <button
-          v-if="isOwner"
+          v-if="canManageServerSettings"
           @click="uiStore.openModal('serverSettings')"
           class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
         >
@@ -253,7 +271,7 @@ onBeforeUnmount(destroySortables)
           <!-- Create channel button -->
           <div class="mb-1 flex items-center justify-between px-1">
             <span class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Channels</span>
-            <TooltipProvider v-if="isOwner" :delay-duration="200">
+            <TooltipProvider v-if="canCreateChannels" :delay-duration="200">
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
@@ -288,7 +306,7 @@ onBeforeUnmount(destroySortables)
 
           <!-- Create category button -->
           <button
-            v-if="isOwner"
+            v-if="canCreateChannels"
             @click="uiStore.openModal('createCategory')"
             class="mt-3 flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >

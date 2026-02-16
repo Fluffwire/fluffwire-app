@@ -8,7 +8,7 @@ import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import api, { uploadFile } from '@/services/api'
 import { serverApi } from '@/services/serverApi'
-import type { Webhook, ServerInvite, Role } from '@/types'
+import type { Webhook, ServerInvite, Label as LabelType } from '@/types'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
@@ -23,8 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useRolesStore } from '@/stores/roles'
-import { Permissions, PermissionLabels } from '@/constants/permissions'
+import { useLabelsStore } from '@/stores/labels'
 import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link, ScrollText } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
@@ -35,9 +34,9 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const { isMobile } = useResponsive()
 
-const rolesStore = useRolesStore()
+const labelsStore = useLabelsStore()
 
-const activeTab = ref<'general' | 'bans' | 'webhooks' | 'invites' | 'roles' | 'audit'>('general')
+const activeTab = ref<'general' | 'bans' | 'webhooks' | 'invites' | 'labels' | 'audit'>('general')
 const serverName = ref('')
 const iconUrl = ref<string | null>(null)
 const iconFile = ref<File | null>(null)
@@ -197,75 +196,62 @@ function copyWebhookUrl(webhook: Webhook) {
   toast.success(t('server.webhookUrlCopied'))
 }
 
-// Roles
-const roles = computed(() => {
+// Labels (cosmetic roles)
+const labels = computed(() => {
   if (!serversStore.currentServer) return []
-  return rolesStore.getRoles(serversStore.currentServer.id).slice().sort((a, b) => a.position - b.position)
+  return labelsStore.getLabels(serversStore.currentServer.id).slice().sort((a, b) => a.position - b.position)
 })
-const selectedRole = ref<Role | null>(null)
-const editRoleName = ref('')
-const editRoleColor = ref('')
-const editRolePermissions = ref(0)
-const roleColors = ['#e74c3c', '#e91e63', '#9b59b6', '#3498db', '#1abc9c', '#2ecc71', '#f39c12', '#e67e22', '#95a5a6']
-const permissionLabels = PermissionLabels
-const permissionValues = Permissions
+const selectedLabel = ref<LabelType | null>(null)
+const editLabelName = ref('')
+const editLabelColor = ref('')
+const labelColors = ['#e74c3c', '#e91e63', '#9b59b6', '#3498db', '#1abc9c', '#2ecc71', '#f39c12', '#e67e22', '#95a5a6']
 
-async function fetchRoles() {
+async function fetchLabels() {
   if (!serversStore.currentServer) return
   try {
-    await rolesStore.fetchRoles(serversStore.currentServer.id)
+    await labelsStore.fetchLabels(serversStore.currentServer.id)
   } catch { /* ignore */ }
 }
 
-async function createNewRole() {
+async function createNewLabel() {
   if (!serversStore.currentServer) return
   try {
-    const role = await rolesStore.createRole(serversStore.currentServer.id, 'New Role')
-    selectRole(role)
-    toast.success(t('server.roleCreated'))
+    const label = await labelsStore.createLabel(serversStore.currentServer.id, 'New Label')
+    selectLabel(label)
+    toast.success(t('server.labelCreated'))
   } catch {
-    toast.error(t('server.failedCreateRole'))
+    toast.error(t('server.failedCreateLabel'))
   }
 }
 
-function selectRole(role: Role) {
-  selectedRole.value = role
-  editRoleName.value = role.name
-  editRoleColor.value = role.color || '#99aab5'
-  editRolePermissions.value = role.permissions
+function selectLabel(label: LabelType) {
+  selectedLabel.value = label
+  editLabelName.value = label.name
+  editLabelColor.value = label.color || '#99aab5'
 }
 
-function hasEditPermission(perm: number): boolean {
-  return (editRolePermissions.value & perm) !== 0
-}
-
-function togglePermission(perm: number) {
-  editRolePermissions.value ^= perm
-}
-
-async function saveRole() {
-  if (!serversStore.currentServer || !selectedRole.value) return
+async function saveLabel() {
+  if (!serversStore.currentServer || !selectedLabel.value) return
   try {
-    const updated = await rolesStore.updateRole(serversStore.currentServer.id, selectedRole.value.id, {
-      name: editRoleName.value.trim() || undefined,
-      color: editRoleColor.value || undefined,
-      permissions: editRolePermissions.value,
+    await labelsStore.updateLabel(serversStore.currentServer.id, selectedLabel.value.id, {
+      name: editLabelName.value.trim() || undefined,
+      color: editLabelColor.value || undefined,
     })
-    selectedRole.value = updated
-    toast.success(t('server.roleUpdated'))
+    toast.success(t('server.labelUpdated'))
+    selectedLabel.value = null // Close editor after save
   } catch {
-    toast.error(t('server.failedUpdateRole'))
+    toast.error(t('server.failedUpdateLabel'))
   }
 }
 
-async function deleteSelectedRole() {
-  if (!serversStore.currentServer || !selectedRole.value || selectedRole.value.isDefault) return
+async function deleteSelectedLabel() {
+  if (!serversStore.currentServer || !selectedLabel.value || selectedLabel.value.isEveryone) return
   try {
-    await rolesStore.deleteRole(serversStore.currentServer.id, selectedRole.value.id)
-    selectedRole.value = null
-    toast.success(t('server.roleDeleted'))
+    await labelsStore.deleteLabel(serversStore.currentServer.id, selectedLabel.value.id)
+    selectedLabel.value = null
+    toast.success(t('server.labelDeleted'))
   } catch {
-    toast.error(t('server.failedDeleteRole'))
+    toast.error(t('server.failedDeleteLabel'))
   }
 }
 
@@ -355,9 +341,9 @@ watch(activeTab, (tab) => {
   if (tab === 'bans') fetchBans()
   if (tab === 'webhooks') fetchWebhooks()
   if (tab === 'invites') fetchInvites()
-  if (tab === 'roles') {
-    selectedRole.value = null
-    fetchRoles()
+  if (tab === 'labels') {
+    selectedLabel.value = null
+    fetchLabels()
   }
   if (tab === 'audit') fetchAuditLog()
 })
@@ -463,9 +449,9 @@ async function handleSave() {
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'invites' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.invites') }}</button>
         <button
-          @click="activeTab = 'roles'"
-          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'roles' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.roles') }}</button>
+          @click="activeTab = 'labels'"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'labels' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+        >{{ $t('server.labels') }}</button>
         <button
           @click="activeTab = 'audit'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'audit' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
@@ -625,72 +611,59 @@ async function handleSave() {
         </div>
       </div>
 
-      <!-- Roles tab -->
-      <div v-if="activeTab === 'roles'" class="space-y-4">
+      <!-- Labels tab (cosmetic roles, no permissions) -->
+      <div v-if="activeTab === 'labels'" class="space-y-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-lg font-semibold text-foreground">{{ $t('server.roles') }}</h3>
-          <Button size="sm" @click="createNewRole">
-            {{ $t('server.createRole') }}
+          <div>
+            <h3 class="text-lg font-semibold text-foreground">{{ $t('server.labels') }}</h3>
+            <p class="text-xs text-muted-foreground">{{ $t('server.labelsDesc') }}</p>
+          </div>
+          <Button size="sm" @click="createNewLabel">
+            {{ $t('server.createLabel') }}
           </Button>
         </div>
 
-        <!-- Role list -->
+        <!-- Label list -->
         <div class="space-y-1">
           <button
-            v-for="role in roles"
-            :key="role.id"
-            @click="selectRole(role)"
+            v-for="label in labels"
+            :key="label.id"
+            @click="selectLabel(label)"
             :class="[
               'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
-              selectedRole?.id === role.id ? 'bg-accent' : 'hover:bg-accent/50'
+              selectedLabel?.id === label.id ? 'bg-accent' : 'hover:bg-accent/50'
             ]"
           >
             <div
               class="h-3 w-3 rounded-full"
-              :style="{ backgroundColor: role.color || '#99aab5' }"
+              :style="{ backgroundColor: label.color || '#99aab5' }"
             />
-            <span class="text-foreground">{{ role.name }}</span>
-            <span v-if="role.isDefault" class="ml-auto text-xs text-muted-foreground">default</span>
+            <span class="text-foreground">{{ label.name }}</span>
+            <span v-if="label.isEveryone" class="ml-auto text-xs text-muted-foreground">@everyone</span>
           </button>
         </div>
 
-        <!-- Role editor -->
-        <div v-if="selectedRole" class="space-y-4 rounded-lg border border-border p-4">
+        <!-- Label editor (name and color only) -->
+        <div v-if="selectedLabel" class="space-y-4 rounded-lg border border-border p-4">
           <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ $t('server.roleName') }}</label>
-            <Input v-model="editRoleName" :disabled="selectedRole.isDefault" />
+            <label class="text-sm font-medium text-foreground">{{ $t('server.labelName') }}</label>
+            <Input v-model="editLabelName" :disabled="selectedLabel.isEveryone" />
           </div>
           <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ $t('server.roleColor') }}</label>
+            <label class="text-sm font-medium text-foreground">{{ $t('server.labelColor') }}</label>
             <div class="flex gap-2">
               <button
-                v-for="c in roleColors"
+                v-for="c in labelColors"
                 :key="c"
-                @click="editRoleColor = c"
-                :class="['h-8 w-8 rounded-full border-2', editRoleColor === c ? 'border-foreground' : 'border-transparent']"
+                @click="editLabelColor = c"
+                :class="['h-8 w-8 rounded-full border-2', editLabelColor === c ? 'border-foreground' : 'border-transparent']"
                 :style="{ backgroundColor: c }"
               />
             </div>
           </div>
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ $t('server.permissions') }}</label>
-            <div class="grid grid-cols-2 gap-2">
-              <label
-                v-for="(label, key) in permissionLabels"
-                :key="key"
-                class="flex items-center gap-2 text-sm text-foreground"
-              >
-                <Checkbox
-                  :checked="hasEditPermission(permissionValues[key as keyof typeof permissionValues])"
-                  @update:checked="togglePermission(permissionValues[key as keyof typeof permissionValues])"
-                />
-                {{ label }}
-              </label>
-            </div>
-          </div>
           <div class="flex gap-2">
-            <Button size="sm" @click="saveRole">{{ $t('common.save') }}</Button>
-            <Button v-if="!selectedRole.isDefault" size="sm" variant="destructive" @click="deleteSelectedRole">
+            <Button size="sm" @click="saveLabel">{{ $t('common.save') }}</Button>
+            <Button v-if="!selectedLabel.isEveryone" size="sm" variant="destructive" @click="deleteSelectedLabel">
               {{ $t('common.delete') }}
             </Button>
           </div>

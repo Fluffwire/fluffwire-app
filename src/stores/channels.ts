@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { Channel, ChannelCategory, CreateChannelPayload } from '@/types'
+import type { Channel, ChannelCategory, ChannelAccessMode, CreateChannelPayload } from '@/types'
 import { channelApi } from '@/services/channelApi'
 import type { ChannelPositionPayload, CategoryPositionPayload } from '@/services/channelApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
@@ -93,7 +93,15 @@ export const useChannelsStore = defineStore('channels', () => {
     return data
   }
 
-  async function updateChannel(channelId: string, payload: { name?: string; topic?: string }) {
+  async function updateChannel(channelId: string, payload: {
+    name?: string
+    topic?: string
+    accessMode?: ChannelAccessMode
+    allowedUserIds?: string[]
+    allowedLabelIds?: string[]
+    maxParticipants?: number | null
+    uploadsEnabled?: boolean
+  }) {
     const { data } = await channelApi.updateChannel(channelId, payload)
     const idx = channels.value.findIndex((c) => c.id === data.id)
     if (idx !== -1) channels.value[idx] = data

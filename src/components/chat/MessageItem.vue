@@ -1,7 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import type { Message } from '@/types'
+import type { Tier } from '@/constants/tiers'
+import { canBypassChannelRestrictions } from '@/constants/tiers'
+import { useChannelsStore } from '@/stores/channels'
+import { useMembersStore } from '@/stores/members'
+import { useLabelsStore } from '@/stores/labels'
+import { useAuthStore } from '@/stores/auth'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserProfilePopover from '@/components/common/UserProfilePopover.vue'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -20,6 +27,12 @@ import EmojiPicker from './EmojiPicker.vue'
 import ImageAttachment from './ImageAttachment.vue'
 import { toast } from 'vue-sonner'
 import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight, Copy, Link, Hash, Eye } from 'lucide-vue-next'
+
+const route = useRoute()
+const channelsStore = useChannelsStore()
+const membersStore = useMembersStore()
+const labelsStore = useLabelsStore()
+const authStore = useAuthStore()
 
 interface Props {
   message: Message
@@ -77,6 +90,43 @@ watch(showReactionPicker, (isOpen) => {
 
 const isOwnMessage = computed(() => props.currentUserId === props.message.author.id)
 
+// Check if user has write access to the channel
+const canWrite = computed(() => {
+  const serverId = route.params.serverId as string
+  if (!serverId || serverId === '@me') return true // DMs always allow write
+
+  const channel = channelsStore.channels.find(c => c.id === props.message.channelId)
+  if (!channel) return true // Unknown channel, allow by default
+
+  const member = membersStore.getMembers(serverId).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+
+  const tier = member.tier as Tier
+
+  // Owner/Admin/Moderator bypass all restrictions
+  if (canBypassChannelRestrictions(tier)) return true
+
+  const accessMode = channel.accessMode || 'open'
+  const userLabelIds = member.labels || []
+
+  switch (accessMode) {
+    case 'open':
+      return true
+    case 'read_only':
+      return false
+    case 'private':
+      const allowedUserIds = channel.allowedUserIds || []
+      const allowedLabelIds = channel.allowedLabelIds || []
+      return allowedUserIds.includes(member.userId) || userLabelIds.some(id => allowedLabelIds.includes(id))
+    case 'restricted_write':
+      const allowedWriteUsers = channel.allowedUserIds || []
+      const allowedWriteLabels = channel.allowedLabelIds || []
+      return allowedWriteUsers.includes(member.userId) || userLabelIds.some(id => allowedWriteLabels.includes(id))
+    default:
+      return true
+  }
+})
+
 const formattedTime = computed(() => {
   const date = new Date(props.message.timestamp)
   const today = new Date()
@@ -93,7 +143,29 @@ const shortTime = computed(() => {
   return new Date(props.message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 })
 
-const renderedContent = computed(() => renderMarkdown(props.message.content))
+// Build list of valid mentions (usernames + label names) for this server
+const validMentions = computed(() => {
+  const serverId = route.params.serverId as string
+  if (!serverId || serverId === '@me') return undefined // DMs don't need validation
+
+  const mentions: string[] = []
+
+  // Add all member usernames (lowercase for case-insensitive matching)
+  const members = membersStore.getMembers(serverId)
+  members.forEach(m => {
+    mentions.push(m.user.username.toLowerCase())
+  })
+
+  // Add all label names (lowercase)
+  const labels = labelsStore.getLabels(serverId)
+  labels.forEach(l => {
+    mentions.push(l.name.toLowerCase())
+  })
+
+  return mentions
+})
+
+const renderedContent = computed(() => renderMarkdown(props.message.content, validMentions.value))
 
 const youtubeVideoId = computed(() => {
   const match = props.message.content.match(
@@ -202,7 +274,7 @@ function copyMessageId() {
         keepActionBarVisible ? 'flex' : 'hidden group-hover:flex'
       ]"
     >
-      <Tooltip>
+      <Tooltip v-if="canWrite">
         <TooltipTrigger as-child>
           <Button variant="ghost" size="icon" class="h-7 w-7" @click="emit('reply', message)">
             <CornerDownRight class="h-3.5 w-3.5" />
@@ -210,7 +282,7 @@ function copyMessageId() {
         </TooltipTrigger>
         <TooltipContent>{{ $t('chat.reply') }}</TooltipContent>
       </Tooltip>
-      <Popover v-model:open="showReactionPicker">
+      <Popover v-if="canWrite" v-model:open="showReactionPicker">
         <PopoverTrigger as-child>
           <Button variant="ghost" size="icon" class="h-7 w-7">
             <SmilePlus class="h-3.5 w-3.5" />
@@ -522,14 +594,14 @@ function copyMessageId() {
       </div>
     </ContextMenuTrigger>
     <ContextMenuContent class="w-56">
-      <ContextMenuItem class="gap-2" @select="emit('reply', message)">
+      <ContextMenuItem v-if="canWrite" class="gap-2" @select="emit('reply', message)">
         <CornerDownRight class="h-4 w-4" /> {{ $t('chat.reply') }}
       </ContextMenuItem>
-      <ContextMenuItem class="gap-2" @select="showReactionPicker = true">
+      <ContextMenuItem v-if="canWrite" class="gap-2" @select="showReactionPicker = true">
         <SmilePlus class="h-4 w-4" /> {{ $t('chat.addReaction') }}
       </ContextMenuItem>
-      <ContextMenuSeparator />
-      <ContextMenuItem v-if="isOwnMessage" class="gap-2" @select="startEditing()">
+      <ContextMenuSeparator v-if="canWrite" />
+      <ContextMenuItem v-if="isOwnMessage && canWrite" class="gap-2" @select="startEditing()">
         <Pencil class="h-4 w-4" /> {{ $t('chat.editMessage') }}
       </ContextMenuItem>
       <ContextMenuItem v-if="isOwnMessage || canDelete" class="gap-2" @select="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)">
@@ -548,7 +620,7 @@ function copyMessageId() {
       <ContextMenuItem class="gap-2" @select="copyMessageId()">
         <Hash class="h-4 w-4" /> {{ $t('chat.copyId') }}
       </ContextMenuItem>
-      <template v-if="isOwnMessage || canDelete">
+      <template v-if="(isOwnMessage && canWrite) || canDelete">
         <ContextMenuSeparator />
         <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @select="showDeleteDialog = true">
           <Trash2 class="h-4 w-4" /> {{ $t('chat.deleteMessage') }}

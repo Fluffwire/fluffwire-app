@@ -7,7 +7,10 @@ import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useReadStateStore } from '@/stores/readState'
 import { useAuthStore } from '@/stores/auth'
+import { useMembersStore } from '@/stores/members'
 import { useNotificationSettingsStore } from '@/stores/notificationSettings'
+import { canManageServer, canManageChannels } from '@/constants/tiers'
+import type { Tier } from '@/constants/tiers'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import ServerIcon from './ServerIcon.vue'
@@ -36,6 +39,7 @@ const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const readStateStore = useReadStateStore()
 const authStore = useAuthStore()
+const membersStore = useMembersStore()
 const notifSettings = useNotificationSettingsStore()
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +77,18 @@ function isActive(serverId: string) {
 
 function isOwner(server: Server) {
   return server.ownerId === authStore.user?.id
+}
+
+function canManageServerSettings(server: Server) {
+  const member = membersStore.getMembers(server.id).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+  return canManageServer(member.tier as Tier)
+}
+
+function canCreateChannels(server: Server) {
+  const member = membersStore.getMembers(server.id).find(m => m.userId === authStore.user?.id)
+  if (!member) return false
+  return canManageChannels(member.tier as Tier)
 }
 
 function navigateHome() {
@@ -201,11 +217,11 @@ async function confirmLeave() {
                   <UserPlus class="h-4 w-4" />
                   {{ $t('server.inviteModal') }}
                 </ContextMenuItem>
-                <template v-if="isOwner(server)">
-                  <ContextMenuItem @click="handleServerSettings(server)" class="gap-2">
-                    <Settings class="h-4 w-4" />
-                    {{ $t('server.serverSettings') }}
-                  </ContextMenuItem>
+                <ContextMenuItem v-if="canManageServerSettings(server)" @click="handleServerSettings(server)" class="gap-2">
+                  <Settings class="h-4 w-4" />
+                  {{ $t('server.serverSettings') }}
+                </ContextMenuItem>
+                <template v-if="canCreateChannels(server)">
                   <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
                     <Hash class="h-4 w-4" />
                     {{ $t('channel.createChannel') }}

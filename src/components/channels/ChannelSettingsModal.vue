@@ -8,15 +8,14 @@ import { useLabelsStore } from '@/stores/labels'
 import { useUiStore } from '@/stores/ui'
 import { channelAccessApi } from '@/services/channelAccessApi'
 import { AccessModeLabels, AccessModeDescriptions } from '@/constants/channelAccess'
-import type { Channel, ChannelAccessMode } from '@/types'
+import type { ChannelAccessMode } from '@/types/message'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Separator } from '@/components/ui/separator'
 import { Loader2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 
@@ -28,9 +27,14 @@ const labelsStore = useLabelsStore()
 const uiStore = useUiStore()
 
 const serverId = computed(() => route.params.serverId as string)
+const channelId = computed(() => uiStore.modalData as string)
+const channel = computed(() => channelsStore.channels.find(c => c.id === channelId.value))
 
-const channelName = ref('')
-const channelTopic = ref('')
+const isOpen = computed({
+  get: () => uiStore.activeModal === 'channelSettings',
+  set: (v) => { if (!v) uiStore.closeModal() },
+})
+
 const accessMode = ref<ChannelAccessMode>('open')
 const allowedUserIds = ref<string[]>([])
 const allowedLabelIds = ref<string[]>([])
@@ -38,12 +42,6 @@ const maxParticipants = ref<number | null>(null)
 const uploadsEnabled = ref(true)
 const isLoading = ref(false)
 
-const isOpen = computed({
-  get: () => uiStore.activeModal === 'editChannel',
-  set: (v) => { if (!v) uiStore.closeModal() },
-})
-
-const channel = computed(() => uiStore.modalData as Channel | null)
 const members = computed(() => membersStore.getMembers(serverId.value))
 const labels = computed(() => labelsStore.getLabels(serverId.value))
 
@@ -60,18 +58,11 @@ const maxParticipantsInput = computed({
 
 watch(isOpen, (open) => {
   if (open && channel.value) {
-    console.log('EditChannelModal - Opening with channel:', channel.value)
-    console.log('channel.uploadsEnabled:', channel.value.uploadsEnabled)
-
-    channelName.value = channel.value.name
-    channelTopic.value = channel.value.topic ?? ''
     accessMode.value = channel.value.accessMode || 'open'
     allowedUserIds.value = channel.value.allowedUserIds || []
     allowedLabelIds.value = channel.value.allowedLabelIds || []
     maxParticipants.value = channel.value.maxParticipants || null
     uploadsEnabled.value = channel.value.uploadsEnabled ?? true
-
-    console.log('uploadsEnabled.value set to:', uploadsEnabled.value)
   }
 })
 
@@ -102,28 +93,29 @@ function toggleLabel(labelId: string) {
 }
 
 async function handleSave() {
-  if (!channel.value || !channelName.value.trim()) return
+  if (!channel.value) return
   isLoading.value = true
   try {
-    const payload = {
-      name: channelName.value.trim().toLowerCase().replace(/\s+/g, '-'),
-      topic: channelTopic.value.trim() || undefined,
-      accessMode: accessMode.value,
-      allowedUserIds: allowedUserIds.value,
-      allowedLabelIds: allowedLabelIds.value,
-      maxParticipants: channel.value.type === 'voice' ? maxParticipants.value : undefined,
-      uploadsEnabled: channel.value.type === 'text' ? uploadsEnabled.value : undefined,
+    // Update access control
+    await channelAccessApi.updateAccessControl(
+      channel.value.id,
+      accessMode.value,
+      allowedUserIds.value,
+      allowedLabelIds.value
+    )
+
+    // Update max participants for voice channels
+    if (channel.value.type === 'voice') {
+      await channelAccessApi.setMaxParticipants(channel.value.id, maxParticipants.value)
     }
-    console.log('EditChannelModal - Saving channel with payload:', payload)
-    console.log('uploadsEnabled.value:', uploadsEnabled.value)
 
-    // Single PATCH call with all fields
-    await channelsStore.updateChannel(channel.value.id, payload)
+    // Update uploads enabled
+    await channelAccessApi.setUploadsEnabled(channel.value.id, uploadsEnabled.value)
 
-    toast.success(t('channel.channelUpdated'))
+    toast.success(t('channels.settingsUpdated'))
     uiStore.closeModal()
   } catch {
-    toast.error(t('channel.failedUpdateChannel'))
+    toast.error(t('channels.failedUpdateSettings'))
   } finally {
     isLoading.value = false
   }
@@ -134,35 +126,15 @@ async function handleSave() {
   <Dialog v-model:open="isOpen">
     <DialogContent class="sm:max-w-2xl max-h-[85vh] flex flex-col">
       <DialogHeader>
-        <DialogTitle>{{ $t('channel.editChannel') }}</DialogTitle>
+        <DialogTitle>
+          {{ $t('channels.channelSettings') }}: #{{ channel?.name }}
+        </DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleSave" class="flex-1 space-y-4 overflow-y-auto">
-        <!-- Basic Info -->
+      <div class="flex-1 space-y-4 overflow-y-auto">
+        <!-- Access Mode -->
         <div class="space-y-2">
-          <Label for="edit-channel-name">{{ $t('channel.channelName') }}</Label>
-          <Input
-            id="edit-channel-name"
-            v-model="channelName"
-            :placeholder="$t('channel.channelNamePlaceholder')"
-            required
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="edit-channel-topic">Topic</Label>
-          <Input
-            id="edit-channel-topic"
-            v-model="channelTopic"
-            placeholder="What's this channel about?"
-          />
-        </div>
-
-        <Separator />
-
-        <!-- Access Control -->
-        <div class="space-y-2">
-          <Label for="access-mode">{{ $t('channel.accessMode') }}</Label>
+          <Label for="access-mode">{{ $t('channels.accessMode') }}</Label>
           <select
             id="access-mode"
             v-model="accessMode"
@@ -184,7 +156,7 @@ async function handleSave() {
         <!-- Whitelists (for private/restricted_write) -->
         <div v-if="showWhitelist" class="space-y-4 rounded-lg border border-border p-4">
           <div>
-            <h3 class="mb-2 text-sm font-medium">{{ $t('channel.allowedUsers') }}</h3>
+            <h3 class="mb-2 text-sm font-medium">{{ $t('channels.allowedUsers') }}</h3>
             <p class="mb-3 text-xs text-muted-foreground">
               Owner/Admin/Moderator always have access
             </p>
@@ -192,7 +164,7 @@ async function handleSave() {
               <label
                 v-for="member in members"
                 :key="member.userId"
-                class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent cursor-pointer"
+                class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent"
               >
                 <Checkbox
                   :checked="isUserAllowed(member.userId)"
@@ -206,12 +178,12 @@ async function handleSave() {
           </div>
 
           <div>
-            <h3 class="mb-2 text-sm font-medium">{{ $t('channel.allowedLabels') }}</h3>
+            <h3 class="mb-2 text-sm font-medium">{{ $t('channels.allowedLabels') }}</h3>
             <div class="max-h-32 space-y-1 overflow-y-auto">
               <label
                 v-for="label in labels"
                 :key="label.id"
-                class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent cursor-pointer"
+                class="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-accent"
               >
                 <Checkbox
                   :checked="isLabelAllowed(label.id)"
@@ -231,7 +203,7 @@ async function handleSave() {
 
         <!-- Max Participants (voice only) -->
         <div v-if="channel?.type === 'voice'" class="space-y-2">
-          <Label for="max-participants">{{ $t('channel.maxParticipants') }}</Label>
+          <Label for="max-participants">{{ $t('channels.maxParticipants') }}</Label>
           <Input
             id="max-participants"
             v-model.number="maxParticipantsInput"
@@ -248,21 +220,24 @@ async function handleSave() {
         <div v-if="channel?.type === 'text'" class="flex items-center gap-2">
           <Checkbox
             id="uploads-enabled"
-            v-model="uploadsEnabled"
+            :checked="uploadsEnabled"
+            @update:checked="uploadsEnabled = $event"
           />
           <Label for="uploads-enabled" class="cursor-pointer">
-            {{ $t('channel.uploadsEnabled') }}
+            {{ $t('channels.uploadsEnabled') }}
           </Label>
         </div>
+      </div>
 
-        <DialogFooter class="gap-2 pt-4">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
-          <Button type="submit" :disabled="isLoading">
-            <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            {{ $t('settings.saveChanges') }}
-          </Button>
-        </DialogFooter>
-      </form>
+      <DialogFooter class="gap-2">
+        <Button variant="ghost" @click="uiStore.closeModal()">
+          {{ $t('common.cancel') }}
+        </Button>
+        <Button @click="handleSave" :disabled="isLoading">
+          <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+          {{ $t('common.save') }}
+        </Button>
+      </DialogFooter>
     </DialogContent>
   </Dialog>
 </template>
