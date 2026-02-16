@@ -480,7 +480,7 @@ function handleMessageClick(event: MouseEvent) {
           <!-- Normal content -->
           <template v-else>
             <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
-            <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
+            <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
               <iframe
                 v-if="youtubePlaying"
                 :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
@@ -591,7 +591,7 @@ function handleMessageClick(event: MouseEvent) {
           <!-- Normal content -->
           <template v-else>
             <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
-            <div v-if="youtubeVideoId" class="mt-2 max-w-[400px] overflow-hidden rounded-lg border border-border/50">
+            <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
               <iframe
                 v-if="youtubePlaying"
                 :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"

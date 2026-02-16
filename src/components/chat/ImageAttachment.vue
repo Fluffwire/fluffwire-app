@@ -19,7 +19,7 @@ function handleClick(e: MouseEvent) {
     <img
       :src="url"
       :alt="filename"
-      class="max-h-[300px] max-w-[400px] rounded-lg border border-border/50 object-contain transition-opacity hover:opacity-80"
+      class="max-h-[300px] max-w-full rounded-lg border border-border/50 object-contain transition-opacity hover:opacity-80 sm:max-w-[400px]"
     />
   </div>
 </template>
