@@ -5,6 +5,7 @@ import { channelApi } from '@/services/channelApi'
 import type { ChannelPositionPayload, CategoryPositionPayload } from '@/services/channelApi'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { useReadStateStore } from './readState'
+import { useDraftsStore } from './drafts'
 
 export const useChannelsStore = defineStore('channels', () => {
   const channels = ref<Channel[]>([])
@@ -43,6 +44,10 @@ export const useChannelsStore = defineStore('channels', () => {
     wsDispatcher.register(WS_EVENTS.CHANNEL_DELETE, (data: unknown) => {
       const { id } = data as { id: string }
       channels.value = channels.value.filter((c) => c.id !== id)
+
+      // Clear draft for deleted channel
+      const draftsStore = useDraftsStore()
+      draftsStore.clearDraftsForChannel(id)
     })
     wsDispatcher.register(WS_EVENTS.CHANNELS_REORDER, (data: unknown) => {
       channels.value = data as Channel[]

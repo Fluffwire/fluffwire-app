@@ -21,7 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe, HelpCircle, Bug } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe, HelpCircle, Bug, RefreshCw } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { loadLocale, setLocale } from '@/i18n'
@@ -56,6 +56,11 @@ const appVersion = ref<string | null>(null)
 const autoStartEnabled = ref(false)
 const autoStartLoading = ref(false)
 const startMinimized = ref(true) // Default to true
+
+// Auto-update state (desktop only)
+const autoUpdateEnabled = ref(true) // Default to true
+const updateCheckLoading = ref(false)
+const lastUpdateCheck = ref<Date | null>(null)
 
 function handleSoundToggle(value: boolean) {
   setSoundEnabled(value)
@@ -467,6 +472,11 @@ watch(() => settingsStore.settings, (newSettings) => {
   if (isTauri() && typeof newSettings.autoStartEnabled === 'boolean') {
     autoStartEnabled.value = newSettings.autoStartEnabled
   }
+
+  // Update autoUpdateEnabled from backend (desktop only)
+  if (isTauri() && typeof newSettings.autoUpdateEnabled === 'boolean') {
+    autoUpdateEnabled.value = newSettings.autoUpdateEnabled
+  }
 }, { immediate: true })
 
 onMounted(async () => {
@@ -554,6 +564,36 @@ async function handleAutoStartToggle(value: boolean) {
     toast.error(t('settings.failedAutoStart'))
   } finally {
     autoStartLoading.value = false
+  }
+}
+
+async function handleManualUpdateCheck() {
+  if (!isTauri()) return
+
+  updateCheckLoading.value = true
+  try {
+    const { checkForUpdates } = await import('@/services/updater')
+    await checkForUpdates()
+    lastUpdateCheck.value = new Date()
+    toast.success(t('settings.updateCheckComplete'))
+  } catch (error) {
+    console.error('Update check failed:', error)
+    toast.error(t('settings.updateCheckFailed'))
+  } finally {
+    updateCheckLoading.value = false
+  }
+}
+
+async function handleAutoUpdateToggle(value: boolean) {
+  if (!isTauri()) return
+
+  autoUpdateEnabled.value = value
+  settingsStore.updateSetting({ autoUpdateEnabled: value })
+
+  if (value) {
+    toast.success(t('settings.autoUpdateEnabled'))
+  } else {
+    toast.success(t('settings.autoUpdateDisabled'))
   }
 }
 
@@ -1046,7 +1086,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                 </CardContent>
               </Card>
 
-              <Card>
+              <Card class="mb-4">
                 <CardContent class="flex items-center justify-between p-6">
                   <div>
                     <h3 class="text-sm font-medium text-foreground">{{ $t('settings.startMinimized') }}</h3>
@@ -1056,6 +1096,47 @@ const themePreviewColors: Record<ThemeName, string> = {
                     :model-value="startMinimized"
                     @update:model-value="handleStartMinimizedToggle"
                   />
+                </CardContent>
+              </Card>
+
+              <!-- Version & Updates -->
+              <Card>
+                <CardHeader>
+                  <CardTitle>{{ $t('settings.versionAndUpdates') }}</CardTitle>
+                  <CardDescription>{{ $t('settings.versionAndUpdatesDescription') }}</CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-4">
+                  <!-- Current version -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-medium">{{ $t('settings.currentVersion') }}</div>
+                      <div class="text-sm text-muted-foreground">v{{ appVersion || 'Unknown' }}</div>
+                    </div>
+                  </div>
+
+                  <!-- Manual update check -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-medium">{{ $t('settings.checkForUpdates') }}</div>
+                      <div class="text-sm text-muted-foreground">
+                        {{ lastUpdateCheck ? $t('settings.lastChecked', { time: lastUpdateCheck.toLocaleString() }) : $t('settings.neverChecked') }}
+                      </div>
+                    </div>
+                    <Button @click="handleManualUpdateCheck" :disabled="updateCheckLoading" variant="outline" size="sm">
+                      <Loader2 v-if="updateCheckLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      <RefreshCw v-else class="mr-2 h-4 w-4" />
+                      {{ $t('settings.checkNow') }}
+                    </Button>
+                  </div>
+
+                  <!-- Auto-update toggle -->
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-medium">{{ $t('settings.autoUpdate') }}</div>
+                      <div class="text-sm text-muted-foreground">{{ $t('settings.autoUpdateDescription') }}</div>
+                    </div>
+                    <Switch :model-value="autoUpdateEnabled" @update:model-value="handleAutoUpdateToggle" />
+                  </div>
                 </CardContent>
               </Card>
             </template>

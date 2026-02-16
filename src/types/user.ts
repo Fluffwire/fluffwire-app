@@ -53,6 +53,7 @@ export interface UserSettings {
   allowDMsFromServerMembers: boolean
   autoStartEnabled?: boolean // Desktop only - start app on system startup
   startMinimized?: boolean // Desktop only - start app minimized to tray
+  autoUpdateEnabled?: boolean // Desktop only - auto-check for updates on app start (default: true)
 }
 
 export interface AuthTokens {

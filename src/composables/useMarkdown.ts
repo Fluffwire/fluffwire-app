@@ -95,7 +95,21 @@ function highlightMentions(html: string, validMentions?: string[]): string {
   )
 }
 
-export function renderMarkdown(content: string, validMentions?: string[]): string {
+function highlightChannelMentions(html: string, validChannels?: string[]): string {
+  // Match #channelname that is NOT inside an HTML tag attribute or code block
+  return html.replace(
+    /(?<![<\w])#(\w{1,32})(?![^<]*>)/g,
+    (match, channelName) => {
+      // If validChannels provided, only highlight if it's in the list
+      if (validChannels && !validChannels.includes(channelName.toLowerCase())) {
+        return match // Return unchanged if not a valid channel mention
+      }
+      return `<span class="channel-mention">#${channelName}</span>`
+    }
+  )
+}
+
+export function renderMarkdown(content: string, validMentions?: string[], validChannels?: string[]): string {
   const raw = marked.parse(replaceEmoticons(content), { async: false }) as string
   const clean = DOMPurify.sanitize(raw.trim(), {
     ALLOWED_TAGS,
@@ -105,6 +119,8 @@ export function renderMarkdown(content: string, validMentions?: string[]): strin
   const trimmed = clean.replace(/(<br>)+$/, '')
   // Highlight @mentions (post-sanitization, so spans are safe)
   const withMentions = highlightMentions(trimmed, validMentions)
+  // Highlight #channel mentions
+  const withChannels = highlightChannelMentions(withMentions, validChannels)
   // Ensure links open in new tabs
-  return withMentions.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
+  return withChannels.replace(/<a /g, '<a target="_blank" rel="noopener noreferrer" ')
 }

@@ -189,7 +189,20 @@
     "startMinimized": "Start Minimized to Tray",
     "startMinimizedDesc": "When auto-starting, open the app minimized to system tray instead of showing the window",
     "startMinimizedEnabled": "App will start minimized to tray",
-    "startMinimizedDisabled": "App will start with window visible"
+    "startMinimizedDisabled": "App will start with window visible",
+    "versionAndUpdates": "Version & Updates",
+    "versionAndUpdatesDescription": "Manage app version and automatic updates",
+    "currentVersion": "Current Version",
+    "checkForUpdates": "Check for Updates",
+    "lastChecked": "Last checked: {time}",
+    "neverChecked": "Never checked",
+    "checkNow": "Check Now",
+    "autoUpdate": "Automatic Updates",
+    "autoUpdateDescription": "Automatically check for updates when app starts",
+    "updateCheckComplete": "Update check complete",
+    "updateCheckFailed": "Update check failed",
+    "autoUpdateEnabled": "Automatic updates enabled",
+    "autoUpdateDisabled": "Automatic updates disabled"
   },
   "server": {
     "createServer": "Create a Server",

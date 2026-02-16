@@ -25,6 +25,7 @@ import { renderMarkdown } from '@/composables/useMarkdown'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiPicker from './EmojiPicker.vue'
 import ImageAttachment from './ImageAttachment.vue'
+import ImageLightbox from './ImageLightbox.vue'
 import { toast } from 'vue-sonner'
 import { Pencil, Trash2, Pin, SmilePlus, CornerDownRight, Copy, Link, Hash, Eye } from 'lucide-vue-next'
 
@@ -66,6 +67,11 @@ const showDeleteDialog = ref(false)
 const showReactionPicker = ref(false)
 const keepActionBarVisible = ref(false)
 const showFullEmojiPicker = ref(false)
+
+// Image lightbox state
+const showImageLightbox = ref(false)
+const lightboxImages = ref<{ url: string; filename: string }[]>([])
+const lightboxInitialIndex = ref(0)
 
 // Quick reaction emojis
 const quickEmojis = ['👍', '❤️', '😂', '😮', '😢', '🎉']
@@ -165,7 +171,20 @@ const validMentions = computed(() => {
   return mentions
 })
 
-const renderedContent = computed(() => renderMarkdown(props.message.content, validMentions.value))
+// Build list of valid channel names for this server
+const validChannels = computed(() => {
+  const serverId = route.params.serverId as string
+  if (!serverId || serverId === '@me') return undefined // DMs don't have channels
+
+  const channels: string[] = []
+  channelsStore.textChannels.forEach(c => {
+    channels.push(c.name.toLowerCase())
+  })
+
+  return channels
+})
+
+const renderedContent = computed(() => renderMarkdown(props.message.content, validMentions.value, validChannels.value))
 
 const youtubeVideoId = computed(() => {
   const match = props.message.content.match(
@@ -188,6 +207,16 @@ function formatFileSize(bytes: number): string {
   if (bytes < 1024) return bytes + ' B'
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB'
+}
+
+// Handle image click to open lightbox
+function openImageLightbox(url: string, filename: string) {
+  lightboxImages.value = imageAttachments.value.map(att => ({
+    url: att.url,
+    filename: att.filename
+  }))
+  lightboxInitialIndex.value = imageAttachments.value.findIndex(att => att.url === url)
+  showImageLightbox.value = true
 }
 
 function resizeEditTextarea(event: Event) {
@@ -424,6 +453,7 @@ function copyMessageId() {
                 :key="att.id"
                 :url="att.url"
                 :filename="att.filename"
+                @click="openImageLightbox"
               />
             </div>
 
@@ -534,6 +564,7 @@ function copyMessageId() {
                 :key="att.id"
                 :url="att.url"
                 :filename="att.filename"
+                @click="openImageLightbox"
               />
             </div>
 
@@ -628,4 +659,11 @@ function copyMessageId() {
       </template>
     </ContextMenuContent>
   </ContextMenu>
+
+  <!-- Image Lightbox -->
+  <ImageLightbox
+    v-model:open="showImageLightbox"
+    :images="lightboxImages"
+    :initial-index="lightboxInitialIndex"
+  />
 </template>

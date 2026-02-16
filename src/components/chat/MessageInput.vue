@@ -7,16 +7,19 @@ import { useMembersStore } from '@/stores/members'
 import { useChannelsStore } from '@/stores/channels'
 import { useLabelsStore } from '@/stores/labels'
 import { useAuthStore } from '@/stores/auth'
+import { useDraftsStore } from '@/stores/drafts'
 import { canBypassChannelRestrictions } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
 import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
 import { wsService } from '@/services/websocket'
+import { searchEmojis, shortcodeToEmoji } from '@/data/emojiShortcodes'
+import type { EmojiData } from '@/data/emojiShortcodes'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import FilePreview from './FilePreview.vue'
 import EmojiPicker from './EmojiPicker.vue'
-import { SendHorizontal, Paperclip, Smile, Loader2, CornerDownRight, X } from 'lucide-vue-next'
+import { SendHorizontal, Paperclip, Smile, Loader2, CornerDownRight, X, Hash } from 'lucide-vue-next'
 
 interface Props {
   channelId: string
@@ -31,6 +34,7 @@ const membersStore = useMembersStore()
 const channelsStore = useChannelsStore()
 const labelsStore = useLabelsStore()
 const authStore = useAuthStore()
+const draftsStore = useDraftsStore()
 
 const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
 
@@ -86,13 +90,22 @@ const showMentionPopup = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
 
+// Emoji autocomplete state
+const showEmojiAutocomplete = ref(false)
+const emojiQuery = ref('')
+const emojiIndex = ref(0)
+
+// Mention type tracking
+const mentionType = ref<'user' | 'channel'>('user')
+
 interface MentionResult {
-  type: 'user' | 'label'
+  type: 'user' | 'label' | 'channel'
   id: string
   name: string
   displayName: string
   avatar?: string | null
   color?: string
+  channelType?: 'text' | 'voice' // For channel icon
 }
 
 const mentionResults = computed((): MentionResult[] => {
@@ -102,38 +115,60 @@ const mentionResults = computed((): MentionResult[] => {
   const query = mentionQuery.value.toLowerCase()
   const results: MentionResult[] = []
 
-  // Add matching members
-  const members = membersStore.getMembers(serverIdValue)
-  members
-    .filter(m =>
-      m.user.username.toLowerCase().includes(query) ||
-      m.user.displayName.toLowerCase().includes(query)
-    )
-    .forEach(m => {
-      results.push({
-        type: 'user',
-        id: m.user.id,
-        name: m.user.username,
-        displayName: m.user.displayName,
-        avatar: m.user.avatar ?? undefined,
+  if (mentionType.value === 'user') {
+    // Add matching members
+    const members = membersStore.getMembers(serverIdValue)
+    members
+      .filter(m =>
+        m.user.username.toLowerCase().includes(query) ||
+        m.user.displayName.toLowerCase().includes(query)
+      )
+      .forEach(m => {
+        results.push({
+          type: 'user',
+          id: m.user.id,
+          name: m.user.username,
+          displayName: m.user.displayName,
+          avatar: m.user.avatar ?? undefined,
+        })
       })
-    })
 
-  // Add matching labels
-  const labels = labelsStore.getLabels(serverIdValue)
-  labels
-    .filter(l => l.name.toLowerCase().includes(query))
-    .forEach(l => {
-      results.push({
-        type: 'label',
-        id: l.id,
-        name: l.name,
-        displayName: l.name,
-        color: l.color,
+    // Add matching labels
+    const labels = labelsStore.getLabels(serverIdValue)
+    labels
+      .filter(l => l.name.toLowerCase().includes(query))
+      .forEach(l => {
+        results.push({
+          type: 'label',
+          id: l.id,
+          name: l.name,
+          displayName: l.name,
+          color: l.color,
+        })
       })
-    })
+  } else if (mentionType.value === 'channel') {
+    // Add matching channels (text channels only)
+    const channels = channelsStore.textChannels
+    channels
+      .filter(c => c.name.toLowerCase().includes(query))
+      .forEach(c => {
+        results.push({
+          type: 'channel',
+          id: c.id,
+          name: c.name,
+          displayName: c.name,
+          channelType: c.type,
+        })
+      })
+  }
 
   return results.slice(0, 8)
+})
+
+// Emoji autocomplete results
+const emojiResults = computed((): EmojiData[] => {
+  if (emojiQuery.value.length < 3) return []
+  return searchEmojis(emojiQuery.value)
 })
 
 const wsConnected = ref(wsService.isConnected)
@@ -141,6 +176,34 @@ const unsubConnection = wsService.addConnectionListener((connected) => {
   wsConnected.value = connected
 })
 onBeforeUnmount(() => unsubConnection())
+
+// Flag to prevent saving when loading a draft
+const isLoadingDraft = ref(false)
+
+// Load draft when channelId changes
+watch(() => props.channelId, (newChannelId) => {
+  if (newChannelId) {
+    isLoadingDraft.value = true
+    content.value = draftsStore.getDraft(newChannelId)
+    nextTick(() => {
+      isLoadingDraft.value = false
+    })
+  }
+}, { immediate: true })
+
+// Save draft on content change (debounced)
+let draftTimer: ReturnType<typeof setTimeout> | null = null
+watch(content, (newContent) => {
+  // Don't save if we're currently loading a draft
+  if (isLoadingDraft.value) return
+
+  if (draftTimer) clearTimeout(draftTimer)
+  draftTimer = setTimeout(() => {
+    if (props.channelId) {
+      draftsStore.setDraft(props.channelId, newContent)
+    }
+  }, 500) // 500ms debounce
+})
 
 // Auto-focus input when replying to a message
 watch(replyingTo, (newReply) => {
@@ -199,14 +262,42 @@ function checkForMention() {
   if (!ta) return
   const pos = ta.selectionStart
   const text = content.value.substring(0, pos)
-  // Find the last @ that isn't preceded by a word character
-  const match = text.match(/@(\w*)$/)
-  if (match) {
-    mentionQuery.value = match[1] ?? ''
+
+  // Check for channel mention (#text)
+  const channelMatch = text.match(/#(\w*)$/)
+  if (channelMatch) {
+    mentionQuery.value = channelMatch[1] ?? ''
+    mentionType.value = 'channel'
     showMentionPopup.value = true
     mentionIndex.value = 0
+    showEmojiAutocomplete.value = false
+    return
+  }
+
+  // Check for emoji autocomplete (:text)
+  const emojiMatch = text.match(/:([a-z_]{0,})$/i)
+  if (emojiMatch) {
+    const query = emojiMatch[1] ?? ''
+    if (query.length >= 3) {
+      emojiQuery.value = query
+      showEmojiAutocomplete.value = true
+      emojiIndex.value = 0
+      showMentionPopup.value = false // Hide mentions
+      return
+    }
+  }
+
+  // Check for user/label mention (@text)
+  const userMatch = text.match(/@(\w*)$/)
+  if (userMatch) {
+    mentionQuery.value = userMatch[1] ?? ''
+    mentionType.value = 'user'
+    showMentionPopup.value = true
+    mentionIndex.value = 0
+    showEmojiAutocomplete.value = false // Hide emojis
   } else {
     showMentionPopup.value = false
+    showEmojiAutocomplete.value = false
   }
 }
 
@@ -215,13 +306,47 @@ function selectMention(name: string) {
   if (!ta) return
   const pos = ta.selectionStart
   const text = content.value.substring(0, pos)
-  const atIndex = text.lastIndexOf('@')
-  if (atIndex === -1) return
-  const before = content.value.substring(0, atIndex)
+
+  let triggerChar = '@'
+  let triggerIndex = text.lastIndexOf('@')
+
+  if (mentionType.value === 'channel') {
+    triggerChar = '#'
+    triggerIndex = text.lastIndexOf('#')
+  }
+
+  if (triggerIndex === -1) return
+
+  const before = content.value.substring(0, triggerIndex)
   const after = content.value.substring(pos)
-  content.value = before + '@' + name + ' ' + after
+  content.value = before + triggerChar + name + ' ' + after
   showMentionPopup.value = false
-  const newPos = atIndex + name.length + 2
+
+  const newPos = triggerIndex + name.length + 2
+  nextTick(() => {
+    ta.selectionStart = newPos
+    ta.selectionEnd = newPos
+    ta.focus()
+  })
+}
+
+function selectEmoji(shortcode: string) {
+  const ta = textareaRef.value
+  if (!ta) return
+  const pos = ta.selectionStart
+  const text = content.value.substring(0, pos)
+  const colonIndex = text.lastIndexOf(':')
+  if (colonIndex === -1) return
+
+  const emoji = shortcodeToEmoji.get(shortcode)
+  if (!emoji) return
+
+  const before = content.value.substring(0, colonIndex)
+  const after = content.value.substring(pos)
+  content.value = before + emoji + ' ' + after
+  showEmojiAutocomplete.value = false
+
+  const newPos = colonIndex + emoji.length + 1
   nextTick(() => {
     ta.selectionStart = newPos
     ta.selectionEnd = newPos
@@ -240,6 +365,10 @@ async function handleSubmit() {
 
   // Clear input immediately to prevent double-submit
   content.value = ''
+  pendingFiles.value = []
+
+  // Clear draft after successful send
+  draftsStore.clearDraft(props.channelId)
 
   if (files.length === 0) {
     // Fast path: no attachments, use WebSocket
@@ -258,13 +387,38 @@ async function handleSubmit() {
       text || ' ',
       attachments,
     )
-    pendingFiles.value = []
   } finally {
     isSending.value = false
   }
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  // Emoji autocomplete handling
+  if (showEmojiAutocomplete.value && emojiResults.value.length > 0) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      emojiIndex.value = (emojiIndex.value + 1) % emojiResults.value.length
+      return
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      emojiIndex.value = (emojiIndex.value - 1 + emojiResults.value.length) % emojiResults.value.length
+      return
+    }
+    if (e.key === 'Tab' || e.key === 'Enter') {
+      e.preventDefault()
+      const result = emojiResults.value[emojiIndex.value]
+      if (result && result.shortcodes[0]) selectEmoji(result.shortcodes[0])
+      return
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      showEmojiAutocomplete.value = false
+      return
+    }
+  }
+
+  // Mention autocomplete handling
   if (showMentionPopup.value && mentionResults.value.length > 0) {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
@@ -344,6 +498,28 @@ defineExpose({ insertAtCursor })
     @dragover="handleDragOver"
     @drop="handleDrop"
   >
+    <!-- Emoji autocomplete popup -->
+    <div
+      v-if="showEmojiAutocomplete && emojiResults.length > 0"
+      class="absolute bottom-full left-0 z-50 mb-1 w-64 rounded-lg border border-border bg-popover p-1 shadow-lg"
+    >
+      <button
+        v-for="(result, i) in emojiResults"
+        :key="result.shortcodes[0] || result.emoji"
+        @mousedown.prevent="result.shortcodes[0] && selectEmoji(result.shortcodes[0])"
+        :class="[
+          'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
+          i === emojiIndex ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50',
+        ]"
+      >
+        <span class="text-2xl">{{ result.emoji }}</span>
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-sm font-medium">:{{ result.shortcodes[0] }}:</div>
+          <div class="truncate text-xs text-muted-foreground">{{ result.keywords.join(', ') || result.category }}</div>
+        </div>
+      </button>
+    </div>
+
     <!-- @Mention autocomplete popup -->
     <div
       v-if="showMentionPopup && mentionResults.length > 0"
@@ -372,18 +548,27 @@ defineExpose({ insertAtCursor })
 
         <!-- Label icon -->
         <div
-          v-else
+          v-else-if="result.type === 'label'"
           class="flex h-6 w-6 items-center justify-center rounded-full"
           :style="{ backgroundColor: result.color || '#99aab5' }"
         >
           <span class="text-xs font-medium text-white">#</span>
         </div>
 
+        <!-- Channel icon -->
+        <div
+          v-else-if="result.type === 'channel'"
+          class="flex h-6 w-6 items-center justify-center rounded bg-primary/20 text-primary"
+        >
+          <Hash class="h-4 w-4" />
+        </div>
+
         <div class="min-w-0 flex-1">
           <div class="truncate text-sm font-medium">{{ result.displayName }}</div>
           <div class="truncate text-xs text-muted-foreground">
-            @{{ result.name }}
-            <span v-if="result.type === 'label'" class="ml-1 opacity-60">(label)</span>
+            <template v-if="result.type === 'user'">@{{ result.name }}</template>
+            <template v-else-if="result.type === 'label'">@{{ result.name }} <span class="opacity-60">(label)</span></template>
+            <template v-else-if="result.type === 'channel'">#{{ result.name }}</template>
           </div>
         </div>
       </button>

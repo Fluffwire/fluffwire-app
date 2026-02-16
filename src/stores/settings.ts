@@ -105,6 +105,11 @@ export const useSettingsStore = defineStore('settings', () => {
     if (typeof s.startMinimized === 'boolean') {
       localStorage.setItem('fluffwire-start-minimized', String(s.startMinimized))
     }
+
+    // Auto-update (desktop only)
+    if (typeof s.autoUpdateEnabled === 'boolean') {
+      localStorage.setItem('fluffwire-auto-update', String(s.autoUpdateEnabled))
+    }
   }
 
   return {
