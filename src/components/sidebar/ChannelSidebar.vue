@@ -163,8 +163,6 @@ function initSortables() {
       delay: 200,
       delayOnTouchOnly: true,
       touchStartThreshold: 5,
-      swapThreshold: 0.65,
-      invertSwap: true,
       onEnd: syncChannelPositions,
     })
   }
