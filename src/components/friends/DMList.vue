@@ -3,12 +3,14 @@ import { onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useReadStateStore } from '@/stores/readState'
+import { usePresenceStore } from '@/stores/presence'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const route = useRoute()
 const dmStore = useDirectMessagesStore()
 const readStateStore = useReadStateStore()
+const presenceStore = usePresenceStore()
 
 onMounted(() => {
   dmStore.fetchDMChannels()
@@ -34,7 +36,7 @@ onMounted(() => {
         :src="dm.recipient.avatar"
         :alt="dm.recipient.displayName"
         size="sm"
-        :status="dm.recipient.status"
+        :status="presenceStore.getStatus(dm.recipient.id)"
       />
       <div class="min-w-0 flex-1 text-left">
         <div class="truncate text-sm font-medium">{{ dm.recipient.displayName }}</div>
