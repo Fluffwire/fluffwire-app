@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref } from 'vue'
 import type { VoicePeer } from '@/types'
-import { useVoiceStore } from '@/stores/voice'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Card } from '@/components/ui/card'
 import {
@@ -23,18 +22,7 @@ const emit = defineEmits<{
   watchStream: [userId: string]
 }>()
 
-const voiceStore = useVoiceStore()
 const peerVolume = ref(100)
-const previewVideo = ref<HTMLVideoElement | null>(null)
-
-const screenStream = computed(() => voiceStore.getScreenStream(props.peer.userId))
-
-watch(screenStream, async (stream) => {
-  await nextTick()
-  if (previewVideo.value) {
-    previewVideo.value.srcObject = stream ?? null
-  }
-}, { immediate: true })
 
 function onVolumeChange(e: Event) {
   const target = e.target as HTMLInputElement
@@ -74,28 +62,10 @@ function onVolumeChange(e: Event) {
 
         <span class="text-sm font-medium text-foreground">{{ peer.displayName }}</span>
 
-        <!-- Streaming badge when no stream received yet -->
-        <div v-if="peer.streaming && !screenStream" class="flex items-center gap-1 text-xs text-primary">
+        <!-- Streaming badge (screen share active) -->
+        <div v-if="peer.streaming" class="flex items-center gap-1 text-xs text-primary">
           <Monitor class="h-3 w-3" />
           <span>Streaming</span>
-        </div>
-
-        <!-- Screen preview + Watch button -->
-        <div v-if="peer.streaming && screenStream" class="relative mt-1 w-full overflow-hidden rounded-md">
-          <video
-            ref="previewVideo"
-            autoplay
-            muted
-            playsinline
-            class="w-full rounded-md"
-          />
-          <Button
-            size="sm"
-            class="absolute inset-0 m-auto h-7 w-16 opacity-0 transition-opacity hover:opacity-100 focus:opacity-100"
-            @click.stop="emit('watchStream', peer.userId)"
-          >
-            Watch
-          </Button>
         </div>
       </Card>
     </ContextMenuTrigger>
@@ -107,6 +77,15 @@ function onVolumeChange(e: Event) {
       <ContextMenuItem @click="emit('addFriend', peer.userId)" class="gap-2">
         <UserPlus class="h-4 w-4" />
         Add Friend
+      </ContextMenuItem>
+
+      <ContextMenuItem
+        v-if="peer.streaming"
+        @click="emit('watchStream', peer.userId)"
+        class="gap-2"
+      >
+        <Monitor class="h-4 w-4" />
+        Watch Stream
       </ContextMenuItem>
 
       <ContextMenuSeparator />

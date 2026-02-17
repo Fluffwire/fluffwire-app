@@ -17,7 +17,11 @@ export const useVoiceStore = defineStore('voice', () => {
   const isScreenSharing = ref(false)
   const connectedSince = ref<Date | null>(null)
   const watchingUserId = ref<string | null>(null)
-  const screenStreams = ref<Map<string, MediaStream>>(new Map())
+  // Single active screen share (backend enforces one share at a time)
+  const activeScreenShare = ref<{
+    userId: string
+    stream: MediaStream
+  } | null>(null)
   const showSelfStream = ref(false) // Toggle for streamer to see their own screen share
   // All voice channel members across the server: channelId -> VoicePeer[]
   const voiceChannelMembers = ref<Map<string, VoicePeer[]>>(new Map())
@@ -220,7 +224,7 @@ export const useVoiceStore = defineStore('voice', () => {
         // Clean up old connection and peers
         await webrtcService.leaveVoiceChannel()
         peers.value = []
-        screenStreams.value.clear()
+        activeScreenShare.value = null
         isScreenSharing.value = false
         watchingUserId.value = null
 
@@ -270,11 +274,18 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   webrtcService.onRemoteVideoStream = (userId: string, stream: MediaStream) => {
-    screenStreams.value.set(userId, stream)
+    activeScreenShare.value = { userId, stream }
+
+    // Auto-watch when screen share starts (if not already watching someone else)
+    if (!watchingUserId.value) {
+      watchingUserId.value = userId
+    }
   }
 
   webrtcService.onRemoteVideoRemoved = (userId: string) => {
-    screenStreams.value.delete(userId)
+    if (activeScreenShare.value?.userId === userId) {
+      activeScreenShare.value = null
+    }
     if (watchingUserId.value === userId) {
       watchingUserId.value = null
     }
@@ -307,7 +318,7 @@ export const useVoiceStore = defineStore('voice', () => {
     isScreenSharing.value = false
     connectedSince.value = null
     watchingUserId.value = null
-    screenStreams.value.clear()
+    activeScreenShare.value = null
   }
 
   async function startScreenShare() {
@@ -334,8 +345,10 @@ export const useVoiceStore = defineStore('voice', () => {
     watchingUserId.value = null
   }
 
-  function getScreenStream(userId: string): MediaStream | undefined {
-    return screenStreams.value.get(userId)
+  function getScreenStream(userId: string): MediaStream | null {
+    return activeScreenShare.value?.userId === userId
+      ? activeScreenShare.value.stream
+      : null
   }
 
   function toggleMute() {
@@ -394,7 +407,7 @@ export const useVoiceStore = defineStore('voice', () => {
     isScreenSharing,
     connectedSince,
     watchingUserId,
-    screenStreams,
+    activeScreenShare,
     showSelfStream,
     voiceChannelMembers,
     activeInvites,

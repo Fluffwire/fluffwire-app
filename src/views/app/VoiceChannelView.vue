@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useVoiceStore } from '@/stores/voice'
@@ -11,6 +11,7 @@ import { useUiStore } from '@/stores/ui'
 import { webrtcService } from '@/services/webrtc'
 import { wsService } from '@/services/websocket'
 import VoicePeerTile from '@/components/voice/VoicePeerTile.vue'
+import VideoStream from '@/components/voice/VideoStream.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -35,7 +36,6 @@ const channel = computed(() =>
   channelsStore.channels.find((c) => c.id === channelId.value)
 )
 
-const fullScreenVideo = ref<HTMLVideoElement | null>(null)
 const showInvitePicker = ref(false)
 
 const watchingPeer = computed(() =>
@@ -47,7 +47,7 @@ const watchingPeer = computed(() =>
 const watchingStream = computed(() =>
   voiceStore.watchingUserId
     ? voiceStore.getScreenStream(voiceStore.watchingUserId)
-    : undefined
+    : null
 )
 
 // Members not currently in this voice channel
@@ -58,22 +58,6 @@ const invitableMembers = computed(() => {
     (m) => m.userId !== authStore.user?.id && !inVoice.has(m.userId)
   )
 })
-
-watch(watchingStream, async (stream) => {
-  await nextTick()
-  if (fullScreenVideo.value) {
-    fullScreenVideo.value.srcObject = stream ?? null
-    if (stream) {
-      // Explicitly play - some browsers need this even with autoplay
-      try {
-        await fullScreenVideo.value.play()
-        console.log('[VoiceChannel] Video playback started for stream:', stream.id)
-      } catch (err) {
-        console.warn('[VoiceChannel] Video play() failed:', err)
-      }
-    }
-  }
-}, { immediate: true })
 
 const recentInvites = ref<Map<string, number>>(new Map())
 
@@ -207,11 +191,12 @@ function handleAddFriend(userId: string) {
         </Button>
       </div>
       <div class="flex flex-1 items-center justify-center bg-black">
-        <video
-          ref="fullScreenVideo"
-          autoplay
-          playsinline
-          class="max-h-full max-w-full object-contain"
+        <VideoStream
+          :stream="watchingStream"
+          :skip-muted-check="true"
+          :muted="true"
+          :label="watchingPeer ? `${watchingPeer.displayName}'s screen` : 'Screen share'"
+          @error="() => toast.error('Video playback failed')"
         />
       </div>
       <!-- Peer tiles row at bottom when watching -->

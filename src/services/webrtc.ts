@@ -137,7 +137,6 @@ class WebRTCService {
       // Monitor connection state for disconnections
       this.peerConnection.onconnectionstatechange = () => {
         const state = this.peerConnection?.connectionState
-        console.log('[WebRTC] Connection state:', state)
 
         if (state === 'failed' || state === 'disconnected') {
           console.warn('[WebRTC] Connection lost, cleaning up...')
@@ -158,7 +157,6 @@ class WebRTCService {
 
       this.peerConnection.oniceconnectionstatechange = () => {
         const state = this.peerConnection?.iceConnectionState
-        console.log('[WebRTC] ICE connection state:', state)
 
         // ICE disconnected or failed - might affect screen sharing
         if (state === 'disconnected' || state === 'failed') {
@@ -172,6 +170,8 @@ class WebRTCService {
         this.peerConnection!.addTrack(track, this.localStream!)
       })
 
+const remoteVideo = document.querySelector('#remoteVideo');
+
       this.peerConnection.ontrack = (event: RTCTrackEvent) => {
         const [stream] = event.streams
         if (!stream) return
@@ -179,16 +179,22 @@ class WebRTCService {
         // Route by stream ID: "screen-stream-{userId}" → video, "stream-{userId}" → audio
         if (stream.id.startsWith('screen-stream-')) {
           const userId = stream.id.slice('screen-stream-'.length)
-          this.remoteStreams.set(stream.id, stream)
 
-          // Wait for track to be ready before notifying (prevents black screen)
-          if (event.track.readyState === 'live') {
-            this.onRemoteVideoStream?.(userId, stream)
-          } else {
-            event.track.onunmute = () => {
-              this.onRemoteVideoStream?.(userId, stream)
+          // Skip if we already have this exact track object (prevents duplicate processing during renegotiation)
+          // NOTE: Pion uses deterministic track IDs (screen-{userId}), so we must check track object identity, not ID
+          const existingStream = this.remoteStreams.get(stream.id)
+          if (existingStream) {
+            const existingTracks = existingStream.getTracks()
+            // Check if this is the exact same track object (not just same ID)
+            if (existingTracks.includes(event.track)) {
+              return // Don't update Map or call callback - keep existing stream object
             }
           }
+
+          this.remoteStreams.set(stream.id, stream)
+
+          // Always notify immediately - VideoStream component will handle track readiness
+          this.onRemoteVideoStream?.(userId, stream)
 
           // Clean up when track ends
           event.track.onended = () => {
@@ -257,7 +263,6 @@ class WebRTCService {
       const pending = this.pendingSignals
       this.pendingSignals = []
       if (pending.length > 0) {
-        console.log(`[WebRTC] Processing ${pending.length} pending signals`)
         for (const signal of pending) {
           await this.handleSignal(signal)
         }
@@ -272,7 +277,6 @@ class WebRTCService {
   async handleSignal(signal: VoiceSignal): Promise<void> {
     // If PC is null (e.g., during rejoin), buffer the signal for retry
     if (!this.peerConnection) {
-      console.log('[WebRTC] Buffering signal during reconnection:', signal.type)
       this.pendingSignals.push(signal)
       return
     }
@@ -419,17 +423,6 @@ class WebRTCService {
     // Auto-stop when user clicks browser's "Stop sharing" button
     const videoTrack = this.screenStream.getVideoTracks()[0]
     if (videoTrack) {
-      // Log actual track settings for debugging
-      const settings = videoTrack.getSettings()
-      console.log('[WebRTC] Screen share video track settings:', {
-        frameRate: settings.frameRate,
-        width: settings.width,
-        height: settings.height,
-        enabled: videoTrack.enabled,
-        readyState: videoTrack.readyState,
-        muted: videoTrack.muted,
-      })
-
       // Ensure track is enabled
       videoTrack.enabled = true
 
@@ -444,7 +437,7 @@ class WebRTCService {
       }
 
       videoTrack.onunmute = () => {
-        console.log('[WebRTC] Screen share video track UNMUTED')
+        // Track unmuted - video data should flow now
       }
 
       // Poll track state every 2 seconds to detect if it stops
@@ -454,13 +447,7 @@ class WebRTCService {
           return
         }
         const track = this.screenStream.getVideoTracks()[0]
-        if (track) {
-          console.log('[WebRTC] Screen share track state:', {
-            readyState: track.readyState,
-            enabled: track.enabled,
-            muted: track.muted,
-          })
-        } else {
+        if (!track) {
           console.warn('[WebRTC] Screen share video track disappeared!')
           clearInterval(pollInterval)
         }
@@ -494,25 +481,7 @@ class WebRTCService {
         return
       }
 
-      try {
-        const stats = await this.peerConnection.getStats()
-        let videoBytesSent = 0
-        let videoFramesSent = 0
-
-        stats.forEach((report) => {
-          if (report.type === 'outbound-rtp' && report.mediaType === 'video') {
-            videoBytesSent = report.bytesSent || 0
-            videoFramesSent = report.framesSent || 0
-          }
-        })
-
-        console.log('[WebRTC] Screen share stats:', {
-          bytesSent: videoBytesSent,
-          framesSent: videoFramesSent,
-        })
-      } catch (err) {
-        console.error('[WebRTC] Failed to get stats:', err)
-      }
+      // Stats monitoring removed to reduce console spam
     }, 3000)
   }
 
@@ -584,6 +553,12 @@ class WebRTCService {
     // Persist mute/deafen state across leave/join
     this.hasRemoteDescription = false
     // ICE buffer is already cleared in joinVoiceChannel, don't double-clear here
+  }
+
+  getPeerConnection(_userId?: string): RTCPeerConnection | null {
+    // For now, return the single peer connection
+    // In the future, this could be extended to support per-user peer connections
+    return this.peerConnection
   }
 
   private setupRemoteVAD(stream: MediaStream, userId: string): void {
