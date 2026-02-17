@@ -30,9 +30,15 @@ describe('VideoStream', () => {
       removeTrack: vi.fn(),
     } as unknown as MediaStream
 
-    // Mock HTMLVideoElement play method
+    // Mock HTMLVideoElement play method and readyState
     HTMLVideoElement.prototype.play = vi.fn().mockResolvedValue(undefined)
     HTMLVideoElement.prototype.pause = vi.fn()
+
+    // Mock readyState to HAVE_ENOUGH_DATA (4) so tests don't wait for canplay event
+    Object.defineProperty(HTMLVideoElement.prototype, 'readyState', {
+      writable: true,
+      value: 4,
+    })
   })
 
   it('should show empty state when stream is null', async () => {
