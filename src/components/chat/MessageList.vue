@@ -149,6 +149,13 @@ function scrollToMessage(messageId: string) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('bg-primary/10')
     setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
+  } else {
+    // Message not in current view - show toast notification
+    import('vue-sonner').then(({ toast }) => {
+      toast.info('Message not in current view', {
+        description: 'Try scrolling up to load older messages'
+      })
+    })
   }
 }
 
