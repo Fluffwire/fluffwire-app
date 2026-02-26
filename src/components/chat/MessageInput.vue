@@ -49,7 +49,9 @@ const canWrite = computed(() => {
 
   // Get user's tier and labels
   const member = membersStore.getMembers(serverId.value).find(m => m.userId === authStore.user?.id)
-  if (!member) return false
+  // If members aren't loaded yet, optimistically allow writing (prevents false negatives on page load)
+  // The backend will still enforce permissions, and UI will update once members load
+  if (!member) return true
 
   const tier = member.tier as Tier
 

@@ -416,6 +416,40 @@ export const useVoiceStore = defineStore('voice', () => {
     })
   }
 
+  function setInitialVoiceStates(states: Array<{
+    userId: string
+    username: string
+    displayName: string
+    avatar: string | null
+    channelId: string
+    selfMute: boolean
+    selfDeaf: boolean
+    streaming: boolean
+  }>) {
+    // Group states by channelId
+    const channelMap = new Map<string, VoicePeer[]>()
+
+    for (const state of states) {
+      const peer: VoicePeer = {
+        userId: state.userId,
+        username: state.username,
+        displayName: state.displayName,
+        avatar: state.avatar,
+        selfMute: state.selfMute,
+        selfDeaf: state.selfDeaf,
+        speaking: false,
+        streaming: state.streaming,
+      }
+
+      const existing = channelMap.get(state.channelId) || []
+      existing.push(peer)
+      channelMap.set(state.channelId, existing)
+    }
+
+    // Replace voiceChannelMembers with the new map
+    voiceChannelMembers.value = channelMap
+  }
+
   return {
     currentChannelId,
     currentServerId,
@@ -449,5 +483,6 @@ export const useVoiceStore = defineStore('voice', () => {
     setVoiceMode,
     setVadThreshold,
     setPttKey,
+    setInitialVoiceStates,
   }
 })

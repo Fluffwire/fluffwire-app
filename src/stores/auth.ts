@@ -11,6 +11,7 @@ import { useFriendsStore } from './friends'
 import { usePresenceStore } from './presence'
 import { useReadStateStore } from './readState'
 import { useSettingsStore } from './settings'
+import { useVoiceStore } from './voice'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { getTokenStorage, setRememberMe } from '@/services/tokenStorage'
 import { debugLogger } from '@/utils/debug'
@@ -34,6 +35,16 @@ export const useAuthStore = defineStore('auth', () => {
         friends: unknown[]
         presences: unknown[]
         readStates: { userId: string; channelId: string; lastMessageId: string }[]
+        voiceStates?: Array<{
+          userId: string
+          username: string
+          displayName: string
+          avatar: string | null
+          channelId: string
+          selfMute: boolean
+          selfDeaf: boolean
+          streaming: boolean
+        }>
       }
       user.value = payload.user
       useServersStore().setServers(payload.servers as never[])
@@ -43,6 +54,9 @@ export const useAuthStore = defineStore('auth', () => {
       presenceStore.restoreOwnStatus()
       if (payload.readStates) {
         useReadStateStore().setReadStates(payload.readStates)
+      }
+      if (payload.voiceStates) {
+        useVoiceStore().setInitialVoiceStates(payload.voiceStates)
       }
     })
   }
