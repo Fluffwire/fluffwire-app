@@ -14,7 +14,21 @@ debugLogger.info('API', 'Initializing API client', {
 const tauriAdapter: AxiosAdapter = async (config) => {
   try {
     const { fetch } = await import('@tauri-apps/plugin-http')
-    const url = config.baseURL ? `${config.baseURL}${config.url}` : config.url!
+    let url = config.baseURL ? `${config.baseURL}${config.url}` : config.url!
+
+    // Serialize query parameters from config.params
+    if (config.params) {
+      const searchParams = new URLSearchParams()
+      for (const [key, value] of Object.entries(config.params)) {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value))
+        }
+      }
+      const queryString = searchParams.toString()
+      if (queryString) {
+        url += (url.includes('?') ? '&' : '?') + queryString
+      }
+    }
 
     // Determine the Origin header based on the platform
     // Windows uses https://tauri.localhost, Linux/macOS uses tauri://localhost
