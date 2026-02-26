@@ -135,6 +135,31 @@ export const useMessagesStore = defineStore('messages', () => {
     }
   }
 
+  async function fetchMessagesAround(channelId: string, messageId: string): Promise<boolean> {
+    isLoading.value = true
+    try {
+      const { data } = await messageApi.getMessagesAround(channelId, messageId, 50)
+
+      // Ensure all messages have reactions array initialized
+      const messagesWithReactions = data.messages.map(msg => ({
+        ...msg,
+        reactions: msg.reactions ?? []
+      }))
+
+      // Replace current messages with messages around the target
+      messagesByChannel.value.set(channelId, messagesWithReactions)
+
+      // Clear cursor since we're loading around a specific message (not pagination)
+      cursors.value.delete(channelId)
+      hasMore.value.set(channelId, false) // Can't paginate when loading around
+
+      // Return true if the target message was found in the results
+      return messagesWithReactions.some(msg => msg.id === messageId)
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   function setReplyTo(channelId: string, message: Message) {
     replyingTo.value.set(channelId, message)
   }
@@ -210,6 +235,7 @@ export const useMessagesStore = defineStore('messages', () => {
     replyingTo,
     getMessages,
     fetchMessages,
+    fetchMessagesAround,
     sendMessage,
     sendMessageWithAttachments,
     editMessage,

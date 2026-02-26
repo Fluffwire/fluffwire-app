@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
+import { useMessagesStore } from '@/stores/messages'
 import ChatHeader from './ChatHeader.vue'
 import MessageList from './MessageList.vue'
 import MessageInput from './MessageInput.vue'
@@ -14,7 +15,7 @@ interface Props {
   isServerOwner?: boolean
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
 
 const showPins = ref(false)
 const showSearch = ref(false)
@@ -24,8 +25,20 @@ function togglePins() {
   showPins.value = !showPins.value
 }
 
-function handleJumpTo(messageId: string) {
-  messageListRef.value?.scrollToMessage(messageId)
+async function handleJumpTo(messageId: string) {
+  // First try to scroll (in case message is already loaded)
+  const scrolled = messageListRef.value?.scrollToMessage(messageId)
+
+  // If message wasn't found in current view, load messages around it
+  if (!scrolled) {
+    const messagesStore = useMessagesStore()
+    const found = await messagesStore.fetchMessagesAround(props.channelId, messageId)
+    if (found) {
+      // Give Vue time to render the newly loaded messages
+      await nextTick()
+      messageListRef.value?.scrollToMessage(messageId)
+    }
+  }
 }
 </script>
 

@@ -142,21 +142,16 @@ function scrollToBottom() {
   showJumpButton.value = false
 }
 
-function scrollToMessage(messageId: string) {
-  if (!containerRef.value) return
+function scrollToMessage(messageId: string): boolean {
+  if (!containerRef.value) return false
   const el = containerRef.value.querySelector(`[data-message-id="${messageId}"]`)
   if (el) {
     el.scrollIntoView({ behavior: 'smooth', block: 'center' })
     el.classList.add('bg-primary/10')
     setTimeout(() => el.classList.remove('bg-primary/10'), 2000)
-  } else {
-    // Message not in current view - show toast notification
-    import('vue-sonner').then(({ toast }) => {
-      toast.info('Message not in current view', {
-        description: 'Try scrolling up to load older messages'
-      })
-    })
+    return true
   }
+  return false
 }
 
 defineExpose({ scrollToMessage })

@@ -9,6 +9,11 @@ export const messageApi = {
     return api.get(API.CHANNELS.MESSAGES(channelId), { params })
   },
 
+  getMessagesAround(channelId: string, messageId: string, limit = 50): Promise<{ data: { messages: Message[] } }> {
+    const params: Record<string, string | number> = { around: messageId, limit }
+    return api.get(API.CHANNELS.MESSAGES(channelId), { params })
+  },
+
   createMessage(channelId: string, content: string, attachments?: { id: string; filename: string; url: string; contentType: string; size: number }[], replyToId?: string): Promise<{ data: Message }> {
     return api.post(API.CHANNELS.MESSAGES(channelId), { content, attachments, replyToId })
   },
