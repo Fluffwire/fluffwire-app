@@ -291,6 +291,23 @@ export const useVoiceStore = defineStore('voice', () => {
     }
   }
 
+  webrtcService.onLocalScreenShareStopped = () => {
+    // Update UI state when browser's "Stop sharing" button is clicked
+    isScreenSharing.value = false
+    showSelfStream.value = false
+
+    // If watching own stream, stop watching
+    const currentUserId = useAuthStore().user?.id
+    if (currentUserId && watchingUserId.value === currentUserId) {
+      watchingUserId.value = null
+    }
+
+    // Clear active screen share if it was ours
+    if (currentUserId && activeScreenShare.value?.userId === currentUserId) {
+      activeScreenShare.value = null
+    }
+  }
+
   function dismissInvite(inviterId: string, channelId: string) {
     activeInvites.value = activeInvites.value.filter(
       (i) => !(i.inviterId === inviterId && i.channelId === channelId)
@@ -300,6 +317,9 @@ export const useVoiceStore = defineStore('voice', () => {
   async function joinChannel(serverId: string, channelId: string) {
     isConnecting.value = true
     try {
+      // Clear peers from previous channel to prevent state mixing
+      peers.value = []
+
       await webrtcService.joinVoiceChannel(serverId, channelId)
       currentChannelId.value = channelId
       currentServerId.value = serverId

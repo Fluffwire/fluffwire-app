@@ -55,6 +55,7 @@ class WebRTCService {
   onPeerDisconnected: ((userId: string) => void) | null = null
   onRemoteVideoStream: ((userId: string, stream: MediaStream) => void) | null = null
   onRemoteVideoRemoved: ((userId: string) => void) | null = null
+  onLocalScreenShareStopped: (() => void) | null = null
 
   get isMuted(): boolean { return this._isMuted }
   get isDeafened(): boolean { return this._isDeafened }
@@ -510,6 +511,9 @@ const remoteVideo = document.querySelector('#remoteVideo');
 
     this.screenStream = null
     this._isScreenSharing = false
+
+    // Notify voice store that screen sharing stopped
+    this.onLocalScreenShareStopped?.()
   }
 
   async leaveVoiceChannel(): Promise<void> {
