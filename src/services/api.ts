@@ -231,52 +231,44 @@ export async function uploadFile(file: File): Promise<{
   size: number
 }> {
   if (isTauri()) {
-    // Use Tauri upload plugin
-    const { upload } = await import('@tauri-apps/plugin-upload')
-    const { BaseDirectory, writeFile, remove } = await import('@tauri-apps/plugin-fs')
+    // Use Tauri HTTP plugin with FormData (simpler and more reliable than upload plugin)
+    const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http')
 
-    // Save file to temp directory
-    const tempFileName = `upload_${Date.now()}_${file.name}`
+    // Get auth token
+    const token = getTokenStorage().getItem('accessToken')
+    if (!token) {
+      throw new Error('No access token available for upload')
+    }
+
+    // Create FormData from File
     const arrayBuffer = await file.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
+    const blob = new Blob([arrayBuffer], { type: file.type })
+    const formData = new FormData()
+    formData.append('file', blob, file.name)
 
-    await writeFile(tempFileName, uint8Array, {
-      baseDir: BaseDirectory.Temp
+    debugLogger.info('API', 'Uploading file via Tauri HTTP plugin', {
+      fileName: file.name,
+      size: file.size,
+      type: file.type
     })
 
     try {
-      // Get auth token
-      const token = getTokenStorage().getItem('accessToken')
-      if (!token) {
-        throw new Error('No access token available for upload')
-      }
-
-      // Upload using Tauri plugin
       const url = `${import.meta.env.VITE_API_BASE_URL}/upload`
-      const headers = new Map<string, string>()
-      headers.set('Authorization', `Bearer ${token}`)
-
-      debugLogger.info('API', 'Uploading file via Tauri upload plugin', {
-        url,
-        fileName: file.name,
-        size: file.size
+      const response = await tauriFetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
       })
 
-      const response = await upload(
-        url,
-        tempFileName,
-        (progress) => {
-          debugLogger.info('API', 'Upload progress', progress)
-        },
-        headers
-      )
+      if (!response.ok) {
+        const errorText = await response.text()
+        throw new Error(`Upload failed: ${response.status} ${errorText}`)
+      }
 
-      debugLogger.success('API', 'Upload complete', response)
-
-      // Parse response - the upload plugin returns raw response
-      // We need to parse it as JSON
-      const data = typeof response === 'string' ? JSON.parse(response) : response
-
+      const data = await response.json()
+      debugLogger.success('API', 'Upload complete', data)
       return data
     } catch (error) {
       debugLogger.error('API', 'Upload failed', {
@@ -285,13 +277,6 @@ export async function uploadFile(file: File): Promise<{
         size: file.size
       })
       throw error
-    } finally {
-      // Clean up temp file
-      try {
-        await remove(tempFileName, { baseDir: BaseDirectory.Temp })
-      } catch (e) {
-        debugLogger.warn('API', 'Failed to clean up temp file', e)
-      }
     }
   } else {
     // Browser: use FormData
