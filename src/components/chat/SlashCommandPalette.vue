@@ -1,13 +1,15 @@
 <template>
   <div
     v-if="mode === 'list' && filteredCommands.length > 0"
-    class="absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 max-h-64 overflow-y-auto"
+    ref="paletteContainer"
+    class="absolute bottom-full left-0 right-0 mb-2 bg-zinc-800 rounded-lg shadow-xl border border-zinc-700 max-h-80 overflow-y-auto"
   >
-    <div class="p-2 space-y-1">
+    <div class="p-1 space-y-0.5">
       <div
         v-for="(cmd, index) in filteredCommands"
         :key="cmd.id"
-        class="px-3 py-2 rounded cursor-pointer transition-colors flex items-center gap-3"
+        :ref="el => { if (el) commandRefs[index] = el as HTMLElement }"
+        class="px-2 py-1 rounded cursor-pointer transition-colors flex items-center gap-2 text-sm"
         :class="{
           'bg-zinc-700': index === selectedIndex,
           'hover:bg-zinc-700/50': index !== selectedIndex
@@ -21,11 +23,11 @@
             v-if="cmd.bot?.avatar"
             :src="cmd.bot.avatar"
             :alt="cmd.bot.name"
-            class="w-6 h-6 rounded-full"
+            class="w-4 h-4 rounded-full"
           />
           <div
             v-else
-            class="w-6 h-6 rounded-full bg-zinc-600 flex items-center justify-center text-xs font-medium"
+            class="w-4 h-4 rounded-full bg-zinc-600 flex items-center justify-center text-[10px] font-medium"
           >
             {{ cmd.bot?.name?.[0]?.toUpperCase() || 'B' }}
           </div>
@@ -33,18 +35,18 @@
 
         <!-- Command Info -->
         <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="font-medium text-white">/{{ cmd.name }}</span>
-            <span v-if="cmd.minTier !== 'member'" class="text-xs text-zinc-400 px-1.5 py-0.5 bg-zinc-700 rounded">
+          <div class="flex items-center gap-1.5">
+            <span class="font-medium text-white text-sm">/{{ cmd.name }}</span>
+            <span v-if="cmd.minTier !== 'member'" class="text-[10px] text-zinc-400 px-1 py-0.5 bg-zinc-700 rounded">
               {{ cmd.minTier }}
             </span>
           </div>
-          <p class="text-sm text-zinc-400 truncate">{{ cmd.description }}</p>
+          <p class="text-xs text-zinc-400 truncate">{{ cmd.description }}</p>
         </div>
 
         <!-- Bot Name -->
-        <div class="text-xs text-zinc-500">
-          {{ cmd.bot?.name || 'Unknown Bot' }}
+        <div class="text-[10px] text-zinc-500 flex-shrink-0">
+          {{ cmd.bot?.name || 'Bot' }}
         </div>
       </div>
     </div>
@@ -200,10 +202,20 @@ const mode = ref<'list' | 'params'>('list')
 const selectedIndex = ref(0)
 const selectedCommand = ref<BotCommand | null>(null)
 const paramValues = ref<Record<string, unknown>>({})
+const commandRefs = ref<Record<number, HTMLElement>>({})
+const paletteContainer = ref<HTMLElement | null>(null)
 
 // Filter commands based on query
 const filteredCommands = computed(() => {
   return commandsStore.searchCommands(props.serverId, props.query)
+})
+
+// Scroll selected item into view
+watch(selectedIndex, (newIndex) => {
+  const element = commandRefs.value[newIndex]
+  if (element && paletteContainer.value) {
+    element.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
 })
 
 // Get server data for pickers
