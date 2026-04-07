@@ -34,37 +34,28 @@ export const useCommandsStore = defineStore('commands', () => {
     }
   }
 
-  function handleCommandRegister(data: BotCommand) {
+  function handleCommandRegister(data: { serverId: string; command: BotCommand }) {
     const commands = commandsByServer.value.get(data.serverId) || []
     // Add if not already exists
-    if (!commands.find(c => c.id === data.id)) {
-      commands.push(data)
+    if (!commands.find(c => c.id === data.command.id)) {
+      commands.push(data.command)
       commandsByServer.value.set(data.serverId, commands)
     }
   }
 
-  function handleCommandUpdate(data: BotCommand) {
+  function handleCommandUpdate(data: { serverId: string; command: BotCommand }) {
     const commands = commandsByServer.value.get(data.serverId) || []
-    const index = commands.findIndex(c => c.id === data.id)
+    const index = commands.findIndex(c => c.id === data.command.id)
     if (index !== -1) {
-      commands[index] = data
+      commands[index] = data.command
       commandsByServer.value.set(data.serverId, commands)
     }
   }
 
-  function handleCommandDelete(data: { commandId: string; serverId?: string }) {
-    // If serverId not provided, search all servers
-    if (data.serverId) {
-      const commands = commandsByServer.value.get(data.serverId) || []
-      const filtered = commands.filter(c => c.id !== data.commandId)
-      commandsByServer.value.set(data.serverId, filtered)
-    } else {
-      // Remove from all servers
-      commandsByServer.value.forEach((commands, serverId) => {
-        const filtered = commands.filter(c => c.id !== data.commandId)
-        commandsByServer.value.set(serverId, filtered)
-      })
-    }
+  function handleCommandDelete(data: { commandId: string; serverId: string }) {
+    const commands = commandsByServer.value.get(data.serverId) || []
+    const filtered = commands.filter(c => c.id !== data.commandId)
+    commandsByServer.value.set(data.serverId, filtered)
   }
 
   function clearServerCommands(serverId: string) {
@@ -74,15 +65,15 @@ export const useCommandsStore = defineStore('commands', () => {
   // WebSocket handlers setup
   function setupWsHandlers() {
     wsDispatcher.register('COMMAND_REGISTER', (data: unknown) => {
-      handleCommandRegister(data as BotCommand)
+      handleCommandRegister(data as { serverId: string; command: BotCommand })
     })
 
     wsDispatcher.register('COMMAND_UPDATE', (data: unknown) => {
-      handleCommandUpdate(data as BotCommand)
+      handleCommandUpdate(data as { serverId: string; command: BotCommand })
     })
 
     wsDispatcher.register('COMMAND_DELETE', (data: unknown) => {
-      handleCommandDelete(data as { commandId: string; serverId?: string })
+      handleCommandDelete(data as { commandId: string; serverId: string })
     })
   }
 

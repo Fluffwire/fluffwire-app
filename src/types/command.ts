@@ -14,12 +14,10 @@ export interface CommandOption {
 export interface BotCommand {
   id: string
   botId: string
-  serverId: string
   name: string
   description: string
   options: CommandOption[]
   minTier: 'member' | 'moderator' | 'admin' | 'owner'
-  enabled: boolean
   createdAt: string
   updatedAt: string
   bot?: {
