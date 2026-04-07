@@ -9,6 +9,7 @@ import { useLabelsStore } from '@/stores/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useDraftsStore } from '@/stores/drafts'
 import { useCommandsStore } from '@/stores/commands'
+import { useTypingStore } from '@/stores/typing'
 import { canBypassChannelRestrictions } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
 import { messageApi } from '@/services/messageApi'
@@ -39,6 +40,7 @@ const labelsStore = useLabelsStore()
 const authStore = useAuthStore()
 const draftsStore = useDraftsStore()
 const commandsStore = useCommandsStore()
+const typingStore = useTypingStore()
 
 const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
 
@@ -91,7 +93,6 @@ const isSending = ref(false)
 const showEmojiPicker = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const textareaRef = ref<HTMLTextAreaElement | null>(null)
-const lastTypingSent = ref(0)
 const showMentionPopup = ref(false)
 const mentionQuery = ref('')
 const mentionIndex = ref(0)
@@ -226,10 +227,7 @@ watch(replyingTo, (newReply) => {
 })
 
 function emitTyping() {
-  const now = Date.now()
-  if (now - lastTypingSent.value < 3000) return
-  lastTypingSent.value = now
-  messageApi.sendTyping(props.channelId).catch(() => {})
+  typingStore.sendTyping(props.channelId)
 }
 
 function openFilePicker() {
