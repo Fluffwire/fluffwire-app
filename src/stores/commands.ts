@@ -19,20 +19,19 @@ export const useCommandsStore = defineStore('commands', () => {
 
     const lowerQuery = query.toLowerCase()
 
-    // Separate matches into prefix and substring matches for better sorting
+    // Only match on command NAME, not description (to avoid noise)
     const prefixMatches: BotCommand[] = []
     const substringMatches: BotCommand[] = []
 
     for (const cmd of commands) {
       const lowerName = cmd.name.toLowerCase()
-      const lowerDesc = cmd.description.toLowerCase()
 
       // Prioritize commands that START with the query
       if (lowerName.startsWith(lowerQuery)) {
         prefixMatches.push(cmd)
       }
-      // Then include commands that contain the query anywhere
-      else if (lowerName.includes(lowerQuery) || lowerDesc.includes(lowerQuery)) {
+      // Then include commands that contain the query in the name
+      else if (lowerName.includes(lowerQuery)) {
         substringMatches.push(cmd)
       }
     }

@@ -399,6 +399,57 @@ function handleCommandAutocomplete(commandName: string) {
   slashQuery.value = ''
 }
 
+async function tryExecuteSlashCommand(text: string): Promise<boolean> {
+  // Parse: "/commandname arg1 arg2 arg3" → commandName + args
+  const parts = text.slice(1).split(/\s+/).filter(p => p.length > 0) // Remove leading / and split by whitespace
+  if (parts.length === 0) return false
+
+  const commandName = parts[0]
+  if (!commandName) return false
+
+  const textArgs = parts.slice(1)
+
+  // Find matching command
+  const commandsStore = useCommandsStore()
+  const commands = commandsStore.getServerCommands(serverId.value)
+  const command = commands.find(c => c.name.toLowerCase() === commandName.toLowerCase())
+
+  if (!command) return false // Not a registered command
+
+  // Map text args to parameter names
+  const options: Record<string, unknown> = {}
+  if (command.options && command.options.length > 0) {
+    for (let i = 0; i < command.options.length && i < textArgs.length; i++) {
+      const param = command.options[i]!
+      let value: unknown = textArgs[i]
+
+      // Convert type if needed
+      if (param.type === 'integer') {
+        value = parseInt(textArgs[i]!, 10)
+        if (isNaN(value as number)) value = textArgs[i] // Keep as string if not a number
+      } else if (param.type === 'boolean') {
+        value = textArgs[i]!.toLowerCase() === 'true' || textArgs[i] === '1'
+      }
+
+      options[param.name] = value
+    }
+
+    // Check if all REQUIRED params are satisfied
+    const missingRequired = command.options.filter(opt =>
+      opt.required && (options[opt.name] === undefined || options[opt.name] === '')
+    )
+
+    if (missingRequired.length > 0) {
+      // Missing required params - send as regular message (let user use @ mentions, etc)
+      return false
+    }
+  }
+
+  // All required params satisfied (or no params) - execute immediately!
+  handleCommandExecute(command.id, options)
+  return true
+}
+
 function handleCommandExecute(commandId: string, options: Record<string, unknown>) {
   // Find the command to get its name
   const commandsStore = useCommandsStore()
@@ -472,6 +523,19 @@ async function handleSubmit() {
 
   if (!text && files.length === 0) return
   if (isSending.value) return
+
+  // Check if this is a slash command (starts with / and no attachments)
+  if (files.length === 0 && text.startsWith('/') && !text.startsWith('//')) {
+    const handled = await tryExecuteSlashCommand(text)
+    if (handled) {
+      // Command was executed, clear input and return
+      content.value = ''
+      pendingFiles.value = []
+      draftsStore.clearDraft(props.channelId)
+      return
+    }
+    // If not handled, fall through to send as regular message
+  }
 
   // Clear input immediately to prevent double-submit
   content.value = ''
