@@ -121,14 +121,17 @@ watch(() => props.channelId, async (id) => {
 
 watch(() => messages.value.length, async () => {
   await nextTick()
-  if (containerRef.value) {
-    const el = containerRef.value
-    const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-    // Only auto-scroll if near bottom and not loading more messages at the top
-    if (isNearBottom && !isLoadingMore.value) {
-      scrollToBottom()
+  // Use rAF to ensure DOM is fully rendered before checking scroll position
+  requestAnimationFrame(() => {
+    if (containerRef.value) {
+      const el = containerRef.value
+      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
+      // Only auto-scroll if near bottom and not loading more messages at the top
+      if (isNearBottom && !isLoadingMore.value) {
+        scrollToBottom()
+      }
     }
-  }
+  })
   // Mark as read when new messages arrive while viewing this channel
   if (!document.hidden) {
     readStateStore.markAsRead(props.channelId)

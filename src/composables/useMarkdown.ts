@@ -59,6 +59,10 @@ const renderer: RendererObject = {
   paragraph({ tokens }) {
     return this.parser.parseInline(tokens) + '<br><br>'
   },
+  // Ensure line breaks are rendered as <br> tags
+  br() {
+    return '<br>'
+  },
   heading({ text }) {
     return text + '\n'
   },
