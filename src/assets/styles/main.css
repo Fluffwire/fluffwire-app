@@ -152,12 +152,21 @@ html.theme-transitioning *::after {
 /* ──────────────────────────────────────────────
    Message content (markdown) styles
    ────────────────────────────────────────────── */
+.message-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+}
+
 .message-content code {
   padding: 0.1em 0.3em;
   border-radius: 4px;
   background: oklch(0.2 0 0 / 50%);
   font-family: 'Fira Code', 'Cascadia Code', monospace;
   font-size: 0.85em;
+  overflow-wrap: break-word;
+  word-break: break-all;
 }
 
 .message-content pre {
@@ -166,11 +175,14 @@ html.theme-transitioning *::after {
   border-radius: 6px;
   background: oklch(0.14 0 0 / 70%);
   overflow-x: auto;
+  max-width: 100%;
 }
 
 .message-content pre code {
   padding: 0;
   background: transparent;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .message-content a {

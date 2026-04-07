@@ -438,12 +438,12 @@ function handleMessageClick(event: MouseEvent) {
           <!-- Reply preview -->
           <button
             v-if="message.replyTo"
-            class="mb-1 flex items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors"
+            class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
             @click="emit('jumpTo', message.replyTo!.id)"
           >
             <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span class="font-semibold text-foreground">{{ message.replyTo.author.displayName }}</span>
-            <span class="truncate text-muted-foreground">{{ message.replyTo.content }}</span>
+            <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
+            <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
           </button>
           <div class="flex items-baseline gap-2">
             <UserProfilePopover :user="message.author" side="right">
@@ -565,12 +565,12 @@ function handleMessageClick(event: MouseEvent) {
           <!-- Reply preview -->
           <button
             v-if="message.replyTo"
-            class="mb-1 flex items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors"
+            class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
             @click="emit('jumpTo', message.replyTo!.id)"
           >
             <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span class="font-semibold text-foreground">{{ message.replyTo.author.displayName }}</span>
-            <span class="truncate text-muted-foreground">{{ message.replyTo.content }}</span>
+            <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
+            <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
           </button>
           <!-- Inline edit mode -->
           <div v-if="isEditing">
