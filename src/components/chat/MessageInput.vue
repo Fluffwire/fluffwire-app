@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useMessagesStore } from '@/stores/messages'
@@ -224,6 +224,29 @@ watch(replyingTo, (newReply) => {
       textareaRef.value?.focus()
     })
   }
+})
+
+// Auto-resize textarea as content grows
+function autoResizeTextarea() {
+  const textarea = textareaRef.value
+  if (!textarea) return
+
+  // Reset height to auto to get the correct scrollHeight
+  textarea.style.height = 'auto'
+
+  // Set height based on scrollHeight, with max of ~6 lines (150px)
+  const newHeight = Math.min(textarea.scrollHeight, 150)
+  textarea.style.height = `${newHeight}px`
+}
+
+// Watch content changes to auto-resize
+watch(content, () => {
+  nextTick(() => autoResizeTextarea())
+})
+
+// Resize on mount
+onMounted(() => {
+  autoResizeTextarea()
 })
 
 function emitTyping() {
@@ -728,12 +751,12 @@ defineExpose({ insertAtCursor })
         ref="textareaRef"
         v-model="content"
         @keydown="handleKeydown"
-        @input="emitTyping(); checkForMention()"
+        @input="emitTyping(); checkForMention(); autoResizeTextarea()"
         @paste="handlePaste"
         :placeholder="!canWrite ? t('chat.noWritePermission') : (wsConnected ? t('chat.messagePlaceholder', { channel: channelName }) : t('chat.reconnecting'))"
         :disabled="!wsConnected || !canWrite"
         rows="1"
-        class="max-h-[50vh] min-h-[44px] flex-1 resize-none bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        class="min-h-[44px] max-h-[150px] flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
       />
 
       <!-- Emoji picker -->
