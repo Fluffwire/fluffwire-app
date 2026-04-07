@@ -46,10 +46,11 @@ Fluffwire is a real-time communication platform with an **open-source frontend**
 - **Direct Messages** - Private 1-on-1 conversations
 - **Message Formatting** - Full markdown support with code blocks, lists, and more
 - **Emoji Reactions** - React to messages with emojis
+- **Message Pinning** - Pin important messages to channels
 - **File Attachments** - Share images, documents, and media
 - **Message Editing & Deletion** - Edit or delete your messages
-- **Typing Indicators** - See when someone is typing
-- **Message History** - Paginated message loading
+- **Typing Indicators** - See when someone is typing (persists across channel switches)
+- **Message History** - Paginated message loading with infinite scroll
 
 ### 🏰 Server & Channel Management
 - **Servers (Guilds)** - Create and manage community servers
@@ -65,6 +66,13 @@ Fluffwire is a real-time communication platform with an **open-source frontend**
 - **5 Permission Tiers** - Owner, Admin, Moderator, Member, Viewer
 - **Granular Control** - Fine-tune what each role can do
 - **Member Labels** - Assign multiple labels to users
+
+### 🤖 Bots & Automation
+- **Bot System** - Create and manage custom bots for server automation
+- **Slash Commands** - Bot-powered slash commands with interactive parameter forms
+- **Tab Autocomplete** - Press Tab to autocomplete slash commands
+- **Command Permissions** - Tier-based command restrictions (admin, moderator, member, viewer)
+- **Bot Authentication** - Secure bot tokens and API access
 
 ### 👥 Social Features
 - **Friends System** - Add and manage friends
@@ -344,6 +352,9 @@ fluffwire-app/
 │   │   ├── voice.ts            # Voice state
 │   │   ├── friends.ts          # Friends
 │   │   ├── presence.ts         # User presence
+│   │   ├── typing.ts           # Typing indicators
+│   │   ├── labels.ts           # Labels & permissions
+│   │   ├── commands.ts         # Bot commands
 │   │   └── ui.ts               # UI state
 │   ├── types/                  # TypeScript interfaces
 │   │   ├── user.ts
@@ -533,23 +544,21 @@ This will:
 
 ## 🗺️ Roadmap
 
-### Current Version: v0.8.x
+### Current Version: v0.10.0
 
 ✅ Real-time messaging and voice channels
 ✅ Server and channel management
 ✅ Friends and DMs
 ✅ Desktop app with auto-updates
-✅ Role/permission system
+✅ Role/permission system with labels
 ✅ Multi-device settings sync
+✅ **Bot system with slash commands**
+✅ **Message reactions and pinning**
+✅ **Typing indicators**
 
 ### Upcoming Features
 
-🚧 **v0.9.0** - Bot System
-- Bot API for server automation
-- Webhook integrations
-- Custom bot SDK
-
-🔮 **v1.0.0** - Public Release
+🚧 **v1.0.0** - Public Release
 - Mobile apps (iOS/Android)
 - Video calls and screen sharing
 - End-to-end encryption for DMs
