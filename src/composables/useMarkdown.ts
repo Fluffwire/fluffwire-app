@@ -63,6 +63,13 @@ const renderer: RendererObject = {
   br() {
     return '<br>'
   },
+  // Flatten lists to avoid <ul>/<ol> wrapping
+  list({ items }) {
+    return items.map(item => this.parser.parse(item.tokens)).join('<br>') + '<br><br>'
+  },
+  listitem({ tokens }) {
+    return this.parser.parseInline(tokens)
+  },
   heading({ text }) {
     return text + '\n'
   },
@@ -114,7 +121,9 @@ function highlightChannelMentions(html: string, validChannels?: string[]): strin
 }
 
 export function renderMarkdown(content: string, validMentions?: string[], validChannels?: string[]): string {
-  const raw = marked.parse(replaceEmoticons(content), { async: false }) as string
+  // Convert literal \n strings to actual newline characters
+  const normalizedContent = content.replace(/\\n/g, '\n')
+  const raw = marked.parse(replaceEmoticons(normalizedContent), { async: false }) as string
   const clean = DOMPurify.sanitize(raw.trim(), {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
