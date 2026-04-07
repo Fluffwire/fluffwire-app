@@ -22,7 +22,6 @@ import FilePreview from './FilePreview.vue'
 import EmojiPicker from './EmojiPicker.vue'
 import SlashCommandPalette from './SlashCommandPalette.vue'
 import { SendHorizontal, Paperclip, Smile, Loader2, CornerDownRight, X, Hash } from 'lucide-vue-next'
-import type { BotCommand } from '@/types/command'
 import { WsOpCode } from '@/types/websocket'
 
 interface Props {
@@ -354,14 +353,14 @@ function selectMention(name: string) {
   })
 }
 
-function handleCommandSelect(command: BotCommand) {
+function handleCommandExecute(commandId: string, options: Record<string, unknown>) {
   // Send command invocation via WebSocket
   wsService.send({
     op: WsOpCode.COMMAND_INVOKE,
     d: {
-      commandId: command.id,
+      commandId,
       channelId: props.channelId,
-      options: {} // TODO: Phase 2 - Add parameter input form
+      options
     }
   })
 
@@ -577,7 +576,7 @@ defineExpose({ insertAtCursor })
       ref="slashPaletteRef"
       :server-id="serverId"
       :query="slashQuery"
-      @select="handleCommandSelect"
+      @execute="handleCommandExecute"
       @close="showSlashPalette = false"
     />
 
