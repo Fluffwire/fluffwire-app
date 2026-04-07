@@ -81,6 +81,9 @@ async function handleAddBot() {
       selectedBotId.value = ''
     }
 
+    // Trigger member sidebar refresh
+    window.dispatchEvent(new CustomEvent('bot-member-updated', { detail: { serverId: props.serverId } }))
+
     toast.success('Bot added to server')
   } catch (error: any) {
     toast.error(error.response?.data?.error || 'Failed to add bot')
@@ -104,6 +107,10 @@ async function handleRemoveBot() {
     showDeleteDialog.value = false
     deletingBotId.value = null
     deletingBotName.value = ''
+
+    // Trigger member sidebar refresh
+    window.dispatchEvent(new CustomEvent('bot-member-updated', { detail: { serverId: props.serverId } }))
+
     toast.success('Bot removed from server')
   } catch (error: any) {
     toast.error(error.response?.data?.error || 'Failed to remove bot')

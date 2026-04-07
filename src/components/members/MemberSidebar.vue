@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMembersStore } from '@/stores/members'
 import { useLabelsStore } from '@/stores/labels'
@@ -45,6 +45,23 @@ watch(serverId, async (id) => {
     await fetchBots(id)
   }
 }, { immediate: true })
+
+// Listen for bot member updates (when bots are added/removed via server settings)
+function handleBotMemberUpdate(event: Event) {
+  const customEvent = event as CustomEvent
+  const { serverId: updatedServerId } = customEvent.detail
+  if (updatedServerId === serverId.value) {
+    fetchBots(serverId.value)
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('bot-member-updated', handleBotMemberUpdate)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('bot-member-updated', handleBotMemberUpdate)
+})
 
 const members = computed(() => membersStore.getMembers(serverId.value))
 
