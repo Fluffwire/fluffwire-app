@@ -3,6 +3,7 @@ import { API } from '@/constants/endpoints'
 import { getTokenStorage } from '@/services/tokenStorage'
 import { debugLogger } from '@/utils/debug'
 import { isTauri } from '@/utils/platform'
+import { toast } from 'vue-sonner'
 
 debugLogger.info('API', 'Initializing API client', {
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -188,6 +189,48 @@ api.interceptors.response.use(
       code: error.code,
       responseData: error.response?.data
     })
+
+    // Show user-friendly error toasts (especially important in Tauri)
+    const status = error.response?.status
+    const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message
+
+    if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+      // Network/timeout errors
+      toast.error('Network Error', {
+        description: 'Unable to connect to server. Please check your internet connection.'
+      })
+    } else if (error.code === 'ECONNREFUSED') {
+      // Server not responding
+      toast.error('Server Unavailable', {
+        description: 'The server is not responding. Please try again later.'
+      })
+    } else if (status && status >= 500) {
+      // Server errors (5xx)
+      toast.error('Server Error', {
+        description: errorMessage || 'An unexpected server error occurred. Please try again.'
+      })
+    } else if (status === 403) {
+      // Forbidden
+      toast.error('Access Denied', {
+        description: errorMessage || 'You do not have permission to perform this action.'
+      })
+    } else if (status === 404) {
+      // Not found
+      toast.error('Not Found', {
+        description: errorMessage || 'The requested resource was not found.'
+      })
+    } else if (status === 429) {
+      // Rate limit
+      toast.error('Rate Limit Exceeded', {
+        description: 'Too many requests. Please wait a moment before trying again.'
+      })
+    } else if (status && status >= 400 && status !== 401) {
+      // Other client errors (except 401 which is handled below)
+      toast.error('Request Failed', {
+        description: errorMessage || 'An error occurred while processing your request.'
+      })
+    }
+
     const originalRequest = error.config
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
@@ -226,7 +269,12 @@ api.interceptors.response.use(
         localStorage.removeItem('refreshToken')
         sessionStorage.removeItem('accessToken')
         sessionStorage.removeItem('refreshToken')
-        window.location.href = '/login'
+        toast.error('Session Expired', {
+          description: 'Your session has expired. Please log in again.'
+        })
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1500)
         return Promise.reject(refreshError)
       } finally {
         isRefreshing = false

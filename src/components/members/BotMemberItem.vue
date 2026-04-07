@@ -57,9 +57,20 @@ async function removeBot() {
       <div class="group relative flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 hover:bg-accent/50 transition-colors">
         <div class="relative">
           <UserAvatar :src="botMember.bot.avatar" :alt="botMember.bot.name" size="sm" :is-bot="true" />
+          <!-- Online status indicator -->
+          <span v-if="botMember.status"
+            :class="[
+              'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card',
+              botMember.status === 'online' ? 'bg-online' : 'bg-offline'
+            ]"
+            :title="botMember.status === 'online' ? 'Online' : 'Offline'"
+          />
         </div>
         <div class="min-w-0 flex-1">
           <p class="truncate text-sm text-foreground">{{ botMember.bot.name }}</p>
+          <p v-if="botMember.status" class="text-xs text-muted-foreground">
+            {{ botMember.status === 'online' ? 'Online' : 'Offline' }}
+          </p>
         </div>
       </div>
     </ContextMenuTrigger>
