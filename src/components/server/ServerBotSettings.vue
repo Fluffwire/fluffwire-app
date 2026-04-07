@@ -1,12 +1,20 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { botApi } from '@/services/botApi'
+import { useBotsStore } from '@/stores/bots'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
-import { Bot as BotIcon, Trash2, Loader2 } from 'lucide-vue-next'
+import { Bot as BotIcon, Trash2, Loader2, ChevronDown } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import type { BotMember } from '@/types'
 
@@ -14,7 +22,10 @@ const props = defineProps<{
   serverId: string
 }>()
 
+const botsStore = useBotsStore()
 const serverBots = ref<BotMember[]>([])
+const selectedBotId = ref<string>('')
+const showAdvanced = ref(false)
 const botIdInput = ref('')
 const isLoading = ref(false)
 const isAdding = ref(false)
@@ -24,8 +35,17 @@ const showDeleteDialog = ref(false)
 const deletingBotId = ref<string | null>(null)
 const deletingBotName = ref('')
 
-onMounted(() => {
-  fetchServerBots()
+// Filter out bots that are already in the server
+const availableUserBots = computed(() => {
+  const serverBotIds = new Set(serverBots.value.map(b => b.botId))
+  return botsStore.userBots.filter(bot => !serverBotIds.has(bot.id))
+})
+
+onMounted(async () => {
+  await Promise.all([
+    fetchServerBots(),
+    botsStore.fetchUserBots()
+  ])
 })
 
 async function fetchServerBots() {
@@ -42,16 +62,25 @@ async function fetchServerBots() {
 }
 
 async function handleAddBot() {
-  if (!botIdInput.value.trim()) {
-    toast.error('Please enter a bot ID')
+  const botId = showAdvanced.value ? botIdInput.value.trim() : selectedBotId.value
+
+  if (!botId) {
+    toast.error(showAdvanced.value ? 'Please enter a bot ID' : 'Please select a bot')
     return
   }
 
   isAdding.value = true
   try {
-    await botApi.addBotToServer(props.serverId, botIdInput.value.trim())
+    await botApi.addBotToServer(props.serverId, botId)
     await fetchServerBots()
-    botIdInput.value = ''
+
+    // Reset form
+    if (showAdvanced.value) {
+      botIdInput.value = ''
+    } else {
+      selectedBotId.value = ''
+    }
+
     toast.success('Bot added to server')
   } catch (error: any) {
     toast.error(error.response?.data?.error || 'Failed to add bot')
@@ -97,17 +126,52 @@ function formatDate(dateString: string) {
     <Card>
       <CardHeader>
         <CardTitle class="text-base">Add Bot</CardTitle>
-        <CardDescription>Add a bot to this server by entering its ID</CardDescription>
+        <CardDescription>
+          {{ showAdvanced ? 'Enter the ID of any bot to add it to this server' : 'Select one of your bots to add to this server' }}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form @submit.prevent="handleAddBot" class="space-y-4">
-          <div class="space-y-2">
+          <!-- Simple mode: Select from your bots -->
+          <div v-if="!showAdvanced" class="space-y-2">
+            <Label for="bot-select">Your Bots</Label>
+            <div class="flex gap-2">
+              <Select v-model="selectedBotId">
+                <SelectTrigger id="bot-select" class="flex-1">
+                  <SelectValue placeholder="Select a bot" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem
+                    v-for="bot in availableUserBots"
+                    :key="bot.id"
+                    :value="bot.id"
+                  >
+                    <div class="flex items-center gap-2">
+                      <BotIcon class="h-4 w-4" />
+                      <span>{{ bot.name }}</span>
+                    </div>
+                  </SelectItem>
+                  <div v-if="availableUserBots.length === 0" class="px-2 py-6 text-center text-sm text-muted-foreground">
+                    <p class="mb-2">No bots available</p>
+                    <p class="text-xs">Create a bot in Settings → Developers</p>
+                  </div>
+                </SelectContent>
+              </Select>
+              <Button type="submit" :disabled="isAdding || !selectedBotId">
+                <Loader2 v-if="isAdding" class="mr-2 h-4 w-4 animate-spin" />
+                {{ isAdding ? 'Adding...' : 'Add Bot' }}
+              </Button>
+            </div>
+          </div>
+
+          <!-- Advanced mode: Enter bot ID manually -->
+          <div v-else class="space-y-2">
             <Label for="bot-id">Bot ID</Label>
             <div class="flex gap-2">
               <Input
                 id="bot-id"
                 v-model="botIdInput"
-                placeholder="Enter bot ID"
+                placeholder="Enter bot ID (UUID)"
                 class="flex-1"
               />
               <Button type="submit" :disabled="isAdding || !botIdInput.trim()">
@@ -115,6 +179,20 @@ function formatDate(dateString: string) {
                 {{ isAdding ? 'Adding...' : 'Add Bot' }}
               </Button>
             </div>
+          </div>
+
+          <!-- Toggle advanced mode -->
+          <div class="pt-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              class="text-xs"
+              @click="showAdvanced = !showAdvanced"
+            >
+              <ChevronDown :class="['h-3 w-3 mr-1 transition-transform', showAdvanced ? 'rotate-180' : '']" />
+              {{ showAdvanced ? 'Select from your bots' : 'Enter bot ID manually' }}
+            </Button>
           </div>
         </form>
       </CardContent>
