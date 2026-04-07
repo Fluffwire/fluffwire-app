@@ -4,6 +4,7 @@ export const WsOpCode = {
   IDENTIFY: 2,
   PRESENCE_UPDATE: 3,
   VOICE_STATE_UPDATE: 4,
+  COMMAND_INVOKE: 5,
   RESUME: 6,
   RECONNECT: 7,
   HELLO: 10,
@@ -51,3 +52,8 @@ export type WsEventName =
   | 'DM_CREATE'
   | 'MESSAGE_PIN'
   | 'MESSAGE_UNPIN'
+  | 'COMMAND_REGISTER'
+  | 'COMMAND_UPDATE'
+  | 'COMMAND_DELETE'
+  | 'COMMAND_INVOKE'
+  | 'COMMAND_RESULT'

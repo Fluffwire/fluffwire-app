@@ -8,6 +8,7 @@ import { useChannelsStore } from '@/stores/channels'
 import { useLabelsStore } from '@/stores/labels'
 import { useAuthStore } from '@/stores/auth'
 import { useDraftsStore } from '@/stores/drafts'
+import { useCommandsStore } from '@/stores/commands'
 import { canBypassChannelRestrictions } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
 import { messageApi } from '@/services/messageApi'
@@ -19,7 +20,10 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import FilePreview from './FilePreview.vue'
 import EmojiPicker from './EmojiPicker.vue'
+import SlashCommandPalette from './SlashCommandPalette.vue'
 import { SendHorizontal, Paperclip, Smile, Loader2, CornerDownRight, X, Hash } from 'lucide-vue-next'
+import type { BotCommand } from '@/types/command'
+import { WsOpCode } from '@/types/websocket'
 
 interface Props {
   channelId: string
@@ -35,6 +39,7 @@ const channelsStore = useChannelsStore()
 const labelsStore = useLabelsStore()
 const authStore = useAuthStore()
 const draftsStore = useDraftsStore()
+const commandsStore = useCommandsStore()
 
 const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
 
@@ -96,6 +101,11 @@ const mentionIndex = ref(0)
 const showEmojiAutocomplete = ref(false)
 const emojiQuery = ref('')
 const emojiIndex = ref(0)
+
+// Slash command state
+const showSlashPalette = ref(false)
+const slashQuery = ref('')
+const slashPaletteRef = ref<InstanceType<typeof SlashCommandPalette> | null>(null)
 
 // Mention type tracking
 const mentionType = ref<'user' | 'channel'>('user')
@@ -265,6 +275,18 @@ function checkForMention() {
   const pos = ta.selectionStart
   const text = content.value.substring(0, pos)
 
+  // Check for slash command (/text) - only at start of message
+  const slashMatch = text.match(/(^|\s)\/(\w*)$/)
+  if (slashMatch && serverId.value && serverId.value !== '@me') {
+    slashQuery.value = slashMatch[2] ?? ''
+    showSlashPalette.value = true
+    showMentionPopup.value = false
+    showEmojiAutocomplete.value = false
+    return
+  } else {
+    showSlashPalette.value = false
+  }
+
   // Check for channel mention (#text)
   const channelMatch = text.match(/#(\w*)$/)
   if (channelMatch) {
@@ -332,6 +354,27 @@ function selectMention(name: string) {
   })
 }
 
+function handleCommandSelect(command: BotCommand) {
+  // Send command invocation via WebSocket
+  wsService.send({
+    op: WsOpCode.COMMAND_INVOKE,
+    d: {
+      commandId: command.id,
+      channelId: props.channelId,
+      options: {} // TODO: Phase 2 - Add parameter input form
+    }
+  })
+
+  // Clear input and hide palette
+  content.value = ''
+  showSlashPalette.value = false
+
+  // Focus textarea
+  nextTick(() => {
+    textareaRef.value?.focus()
+  })
+}
+
 function selectEmoji(shortcode: string) {
   const ta = textareaRef.value
   if (!ta) return
@@ -395,6 +438,12 @@ async function handleSubmit() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  // Slash command palette handling
+  if (showSlashPalette.value && slashPaletteRef.value) {
+    slashPaletteRef.value.handleKeydown(e)
+    return
+  }
+
   // Emoji autocomplete handling
   if (showEmojiAutocomplete.value && emojiResults.value.length > 0) {
     if (e.key === 'ArrowDown') {
@@ -521,6 +570,16 @@ defineExpose({ insertAtCursor })
         </div>
       </button>
     </div>
+
+    <!-- Slash command palette -->
+    <SlashCommandPalette
+      v-if="showSlashPalette && serverId && serverId !== '@me'"
+      ref="slashPaletteRef"
+      :server-id="serverId"
+      :query="slashQuery"
+      @select="handleCommandSelect"
+      @close="showSlashPalette = false"
+    />
 
     <!-- @Mention autocomplete popup -->
     <div
