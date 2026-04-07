@@ -24,8 +24,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useLabelsStore } from '@/stores/labels'
-import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link, ScrollText } from 'lucide-vue-next'
+import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link, ScrollText, Bot } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import ServerBotSettings from './ServerBotSettings.vue'
 
 const { t } = useI18n()
 const serversStore = useServersStore()
@@ -36,7 +37,7 @@ const { isMobile } = useResponsive()
 
 const labelsStore = useLabelsStore()
 
-const activeTab = ref<'general' | 'bans' | 'webhooks' | 'invites' | 'labels' | 'audit'>('general')
+const activeTab = ref<'general' | 'bans' | 'webhooks' | 'bots' | 'invites' | 'labels' | 'audit'>('general')
 const serverName = ref('')
 const iconUrl = ref<string | null>(null)
 const iconFile = ref<File | null>(null)
@@ -445,6 +446,10 @@ async function handleSave() {
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'webhooks' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.webhooks') }}</button>
         <button
+          @click="activeTab = 'bots'"
+          :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'bots' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
+        >{{ $t('server.bots') }}</button>
+        <button
           @click="activeTab = 'invites'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'invites' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
         >{{ $t('server.invites') }}</button>
@@ -571,6 +576,11 @@ async function handleSave() {
             </div>
           </div>
         </div>
+      </div>
+
+      <!-- Bots tab -->
+      <div v-if="activeTab === 'bots'">
+        <ServerBotSettings v-if="serversStore.currentServer" :server-id="serversStore.currentServer.id" />
       </div>
 
       <!-- Invites tab -->

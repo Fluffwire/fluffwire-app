@@ -3,6 +3,7 @@ export * from './server'
 export * from './message'
 export * from './voice'
 export * from './websocket'
+export * from './bot'
 
 export interface Friend {
   id: string

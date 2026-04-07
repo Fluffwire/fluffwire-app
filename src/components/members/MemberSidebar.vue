@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useMembersStore } from '@/stores/members'
 import { useLabelsStore } from '@/stores/labels'
 import { usePresenceStore } from '@/stores/presence'
 import MemberItem from './MemberItem.vue'
+import BotMemberItem from './BotMemberItem.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
+import { botApi } from '@/services/botApi'
+import type { BotMember } from '@/types'
 
 interface Props {
   isSheet?: boolean
@@ -20,11 +23,26 @@ const labelsStore = useLabelsStore()
 const presenceStore = usePresenceStore()
 
 const serverId = computed(() => route.params.serverId as string)
+const serverBots = ref<BotMember[]>([])
 
-watch(serverId, (id) => {
+async function fetchBots(id: string) {
+  if (!id || id === '@me') {
+    serverBots.value = []
+    return
+  }
+  try {
+    const { data } = await botApi.listServerBots(id)
+    serverBots.value = data
+  } catch {
+    serverBots.value = []
+  }
+}
+
+watch(serverId, async (id) => {
   if (id && id !== '@me') {
     membersStore.fetchMembers(id)
     labelsStore.fetchLabels(id)
+    await fetchBots(id)
   }
 }, { immediate: true })
 
@@ -69,6 +87,19 @@ const offlineMembers = computed(() =>
             v-for="member in offlineMembers"
             :key="member.userId"
             :member="member"
+          />
+        </div>
+
+        <div v-if="serverBots.length" class="mt-4">
+          <h3 class="mb-2 flex items-center gap-2 px-2 text-xs font-semibold uppercase text-muted-foreground">
+            Bots
+            <Badge variant="secondary" class="text-[10px] px-1.5 py-0">{{ serverBots.length }}</Badge>
+          </h3>
+          <BotMemberItem
+            v-for="bot in serverBots"
+            :key="bot.botId"
+            :bot-member="bot"
+            :server-id="serverId"
           />
         </div>
       </div>

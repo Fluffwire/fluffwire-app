@@ -9,6 +9,7 @@ import { useTheme, themeLabels, themeNames, type ThemeName } from '@/composables
 import { uploadFile } from '@/services/api'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import BugReportDialog from '@/components/common/BugReportDialog.vue'
+import DeveloperTab from '@/components/settings/DeveloperTab.vue'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -21,7 +22,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { useNotificationSettings } from '@/composables/useNotifications'
-import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe, HelpCircle, Bug, RefreshCw } from 'lucide-vue-next'
+import { X, LogOut, User, Volume2, Palette, Bell, Camera, Loader2, Mic, AlertTriangle, Shield, Copy, Eye, EyeOff, Monitor, Smartphone, Globe, HelpCircle, Bug, RefreshCw, Bot } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useI18n } from 'vue-i18n'
 import { loadLocale, setLocale } from '@/i18n'
@@ -511,6 +512,7 @@ const tabs = computed(() => {
     { key: 'privacy', label: t('settings.privacy'), icon: EyeOff },
     { key: 'appearance', label: t('settings.appearance'), icon: Palette },
     { key: 'language', label: t('settings.language'), icon: Globe },
+    { key: 'developers', label: t('settings.developers'), icon: Bot },
     { key: 'help', label: t('settings.help'), icon: HelpCircle },
   ]
 
@@ -1492,6 +1494,12 @@ const themePreviewColors: Record<ThemeName, string> = {
                   </div>
                 </CardContent>
               </Card>
+            </template>
+
+            <!-- Developers -->
+            <template v-if="activeTab === 'developers'">
+              <h2 class="mb-6 text-xl font-bold text-foreground">{{ $t('settings.developers') }}</h2>
+              <DeveloperTab />
             </template>
 
             <!-- Help -->

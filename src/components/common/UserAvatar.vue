@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import type { UserStatus } from '@/types'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Bot } from 'lucide-vue-next'
 
 interface Props {
   src: string | null
   alt?: string
   size?: 'xs' | 'sm' | 'md' | 'lg'
   status?: UserStatus | null
+  isBot?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   alt: '',
   size: 'md',
   status: null,
+  isBot: false,
 })
 
 const sizeClasses = {
@@ -60,5 +63,11 @@ const fallbackTextSize = {
         statusDotSize[size],
       ]"
     />
+    <div
+      v-if="isBot"
+      class="absolute -bottom-0.5 -right-0.5 rounded-full bg-primary p-0.5 border-2 border-card"
+    >
+      <Bot :class="size === 'xs' ? 'h-2 w-2' : size === 'sm' ? 'h-2.5 w-2.5' : size === 'md' ? 'h-3 w-3' : 'h-4 w-4'" class="text-primary-foreground" />
+    </div>
   </div>
 </template>
