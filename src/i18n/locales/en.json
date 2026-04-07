@@ -259,6 +259,8 @@
     "serverIdCopied": "Server ID copied",
     "leaveServer": "Leave Server",
     "failedLeave": "Failed to leave server",
+    "deleteServer": "Delete Server",
+    "failedDelete": "Failed to delete server",
     "copyServerId": "Copy Server ID",
     "failedUpdateServer": "Failed to update server",
     "muteServer": "Mute Server",

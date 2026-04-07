@@ -24,7 +24,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Plus, UserPlus, Settings, Hash, FolderPlus, Copy, LogOut, BellOff, Bell } from 'lucide-vue-next'
+import { Plus, UserPlus, Settings, Hash, FolderPlus, Copy, LogOut, BellOff, Bell, Trash2 } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import type { Server } from '@/types'
 
@@ -47,6 +47,8 @@ const uiStore = useUiStore()
 
 const showLeaveDialog = ref(false)
 const leaveTarget = ref<Server | null>(null)
+const showDeleteDialog = ref(false)
+const deleteTarget = ref<Server | null>(null)
 const sortableContainer = ref<HTMLElement | null>(null)
 const sortableInstance = ref<Sortable | null>(null)
 
@@ -174,6 +176,25 @@ async function confirmLeave() {
     leaveTarget.value = null
   }
 }
+
+function handleDeleteServer(server: Server) {
+  deleteTarget.value = server
+  showDeleteDialog.value = true
+}
+
+async function confirmDelete() {
+  if (!deleteTarget.value) return
+  try {
+    await serversStore.deleteServer(deleteTarget.value.id)
+    toast.success(`Deleted ${deleteTarget.value.name}`)
+    router.push('/channels/@me')
+  } catch {
+    toast.error(t('server.failedDelete'))
+  } finally {
+    showDeleteDialog.value = false
+    deleteTarget.value = null
+  }
+}
 </script>
 
 <template>
@@ -266,8 +287,14 @@ async function confirmLeave() {
                   <Copy class="h-4 w-4" />
                   {{ $t('server.copyServerId') }}
                 </ContextMenuItem>
-                <template v-if="!isOwner(server)">
-                  <ContextMenuSeparator />
+                <ContextMenuSeparator />
+                <template v-if="isOwner(server)">
+                  <ContextMenuItem @click="handleDeleteServer(server)" class="gap-2 text-destructive focus:text-destructive">
+                    <Trash2 class="h-4 w-4" />
+                    {{ $t('server.deleteServer') }}
+                  </ContextMenuItem>
+                </template>
+                <template v-else>
                   <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
                     <LogOut class="h-4 w-4" />
                     {{ $t('server.leaveServer') }}
@@ -306,6 +333,23 @@ async function confirmLeave() {
       <AlertDialogFooter>
         <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
         <AlertDialogAction @click="confirmLeave" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">{{ $t('server.leaveServer') }}</AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
+
+  <!-- Delete server confirmation -->
+  <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ $t('server.deleteServer') }}</AlertDialogTitle>
+        <AlertDialogDescription>
+          Are you sure you want to <strong class="text-destructive">permanently delete</strong> <strong>{{ deleteTarget?.name }}</strong>?
+          This action cannot be undone. All channels, messages, and settings will be lost forever.
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
+        <AlertDialogAction @click="confirmDelete" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">{{ $t('server.deleteServer') }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
