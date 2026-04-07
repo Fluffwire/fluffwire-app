@@ -21,7 +21,8 @@ export const useLabelsStore = defineStore('labels', () => {
     if (!labelsByServer.value[serverId]) labelsByServer.value[serverId] = []
     // Only add if not already present (prevent duplicates from WebSocket)
     if (!labelsByServer.value[serverId].find(l => l.id === label.id)) {
-      labelsByServer.value[serverId].push(label)
+      // Create new array to trigger reactivity
+      labelsByServer.value[serverId] = [...labelsByServer.value[serverId], label]
     }
     return label
   }
@@ -73,7 +74,8 @@ export const useLabelsStore = defineStore('labels', () => {
     }
     // Only add if not already present (prevent duplicates from optimistic updates)
     if (!labelsByServer.value[label.serverId]!.find(l => l.id === label.id)) {
-      labelsByServer.value[label.serverId]!.push(label)
+      // Create new array to trigger reactivity
+      labelsByServer.value[label.serverId] = [...labelsByServer.value[label.serverId]!, label]
     }
   })
 
