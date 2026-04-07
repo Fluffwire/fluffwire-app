@@ -164,7 +164,14 @@ watch(() => messages.value.length, async (newLength, oldLength) => {
 
 function scrollToBottom() {
   if (containerRef.value) {
-    containerRef.value.scrollTop = containerRef.value.scrollHeight
+    // Use double-RAF to ensure DOM is fully rendered and measured
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (containerRef.value) {
+          containerRef.value.scrollTop = containerRef.value.scrollHeight
+        }
+      })
+    })
   }
   showJumpButton.value = false
   newMessageCount.value = 0
