@@ -69,11 +69,15 @@ const scrollEnabled = ref(false)
 const showJumpButton = ref(false)
 const newMessageCount = ref(0)
 const dividerMessageId = ref<string | null>(null)
+const wasNearBottom = ref(true) // Track if user was near bottom before messages changed
 
 function handleScroll() {
   if (!containerRef.value) return
   const el = containerRef.value
   const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+
+  // Track if user is near bottom for auto-scroll logic
+  wasNearBottom.value = distanceFromBottom < 100
 
   // Don't update button visibility while loading more messages to prevent flicker
   if (!isLoadingMore.value) {
@@ -133,9 +137,6 @@ watch(() => messages.value.length, async (newLength, oldLength) => {
   // Use rAF to ensure DOM is fully rendered before checking scroll position
   requestAnimationFrame(() => {
     if (containerRef.value) {
-      const el = containerRef.value
-      const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-
       // Get the newest message (last in array)
       const latestMessage = messages.value[messages.value.length - 1]
       const isOwnMessage = latestMessage?.author?.id === authStore.user?.id
@@ -144,8 +145,8 @@ watch(() => messages.value.length, async (newLength, oldLength) => {
       if (isOwnMessage && !isLoadingMore.value) {
         scrollToBottom()
       }
-      // Auto-scroll if near bottom and not loading more messages at the top
-      else if (isNearBottom && !isLoadingMore.value) {
+      // Auto-scroll if user WAS near bottom before message arrived
+      else if (wasNearBottom.value && !isLoadingMore.value) {
         scrollToBottom()
       }
       // Otherwise, increment new message counter for the jump button

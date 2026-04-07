@@ -191,6 +191,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   execute: [commandId: string, options: Record<string, unknown>]
   close: []
+  autocomplete: [commandName: string]
 }>()
 
 const commandsStore = useCommandsStore()
@@ -270,6 +271,13 @@ function handleKeydown(event: KeyboardEvent) {
       selectedIndex.value = selectedIndex.value === 0
         ? filteredCommands.value.length - 1
         : selectedIndex.value - 1
+      break
+    case 'Tab':
+      event.preventDefault()
+      const autocompleteCmd = filteredCommands.value[selectedIndex.value]
+      if (autocompleteCmd) {
+        emit('autocomplete', autocompleteCmd.name)
+      }
       break
     case 'Enter':
       event.preventDefault()

@@ -351,6 +351,31 @@ function selectMention(name: string) {
   })
 }
 
+function handleCommandAutocomplete(commandName: string) {
+  // Replace the current slash command text with the full command name
+  const cursorPos = textareaRef.value?.selectionStart ?? 0
+  const beforeCursor = content.value.slice(0, cursorPos)
+  const afterCursor = content.value.slice(cursorPos)
+
+  // Find the start of the slash command (last / before cursor)
+  const slashIndex = beforeCursor.lastIndexOf('/')
+  if (slashIndex !== -1) {
+    // Replace from slash to cursor with the full command
+    content.value = beforeCursor.slice(0, slashIndex) + `/${commandName} ` + afterCursor
+
+    // Move cursor to after the command name
+    nextTick(() => {
+      const newCursorPos = slashIndex + commandName.length + 2 // +2 for "/" and " "
+      textareaRef.value?.setSelectionRange(newCursorPos, newCursorPos)
+      textareaRef.value?.focus()
+    })
+  }
+
+  // Close the palette
+  showSlashPalette.value = false
+  slashQuery.value = ''
+}
+
 function handleCommandExecute(commandId: string, options: Record<string, unknown>) {
   // Find the command to get its name
   const commandsStore = useCommandsStore()
@@ -595,6 +620,7 @@ defineExpose({ insertAtCursor })
       :server-id="serverId"
       :query="slashQuery"
       @execute="handleCommandExecute"
+      @autocomplete="handleCommandAutocomplete"
       @close="showSlashPalette = false"
     />
 
