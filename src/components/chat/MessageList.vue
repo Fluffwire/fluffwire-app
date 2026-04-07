@@ -67,6 +67,7 @@ function handleMarkUnread(messageId: string) {
 const containerRef = ref<HTMLElement | null>(null)
 const scrollEnabled = ref(false)
 const showJumpButton = ref(false)
+const newMessageCount = ref(0)
 const dividerMessageId = ref<string | null>(null)
 
 function handleScroll() {
@@ -77,6 +78,10 @@ function handleScroll() {
   // Don't update button visibility while loading more messages to prevent flicker
   if (!isLoadingMore.value) {
     showJumpButton.value = distanceFromBottom > 300
+    // Reset counter if we're near the bottom
+    if (distanceFromBottom < 100) {
+      newMessageCount.value = 0
+    }
   }
 
   if (distanceFromBottom < 100) {
@@ -98,6 +103,7 @@ watch(() => props.channelId, async (id) => {
   if (id) {
     scrollEnabled.value = false
     showJumpButton.value = false
+    newMessageCount.value = 0
     // Capture last read message before marking as read
     const lastRead = readStateStore.readStates.get(id)
     const latest = readStateStore.latestMessageIds.get(id)
@@ -119,16 +125,33 @@ watch(() => props.channelId, async (id) => {
   }
 }, { immediate: true })
 
-watch(() => messages.value.length, async () => {
+watch(() => messages.value.length, async (newLength, oldLength) => {
+  // Skip if messages decreased (deletion) or initial load
+  if (!oldLength || newLength <= oldLength) return
+
   await nextTick()
   // Use rAF to ensure DOM is fully rendered before checking scroll position
   requestAnimationFrame(() => {
     if (containerRef.value) {
       const el = containerRef.value
       const isNearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100
-      // Only auto-scroll if near bottom and not loading more messages at the top
-      if (isNearBottom && !isLoadingMore.value) {
+
+      // Get the newest message (last in array)
+      const latestMessage = messages.value[messages.value.length - 1]
+      const isOwnMessage = latestMessage?.author?.id === authStore.user?.id
+
+      // ALWAYS scroll to bottom if the user sent the message
+      if (isOwnMessage && !isLoadingMore.value) {
         scrollToBottom()
+      }
+      // Auto-scroll if near bottom and not loading more messages at the top
+      else if (isNearBottom && !isLoadingMore.value) {
+        scrollToBottom()
+      }
+      // Otherwise, increment new message counter for the jump button
+      else if (!isLoadingMore.value) {
+        newMessageCount.value++
+        showJumpButton.value = true
       }
     }
   })
@@ -143,6 +166,7 @@ function scrollToBottom() {
     containerRef.value.scrollTop = containerRef.value.scrollHeight
   }
   showJumpButton.value = false
+  newMessageCount.value = 0
 }
 
 function scrollToMessage(messageId: string): boolean {
@@ -236,7 +260,8 @@ defineExpose({ scrollToMessage })
       class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
     >
       <ArrowDown class="size-4" />
-      Jump to Latest
+      <span v-if="newMessageCount > 0">{{ newMessageCount }} New Message{{ newMessageCount > 1 ? 's' : '' }}</span>
+      <span v-else>Jump to Latest</span>
     </button>
   </div>
 </template>
