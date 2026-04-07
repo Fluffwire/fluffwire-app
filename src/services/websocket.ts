@@ -212,7 +212,10 @@ class WebSocketService {
 
   send(message: Omit<WsMessage, 's' | 't'>): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('[WS] Sending message:', message.op, message)
       this.ws.send(JSON.stringify(message))
+    } else {
+      console.error('[WS] Cannot send - WebSocket not open. State:', this.ws?.readyState, 'Message:', message)
     }
   }
 

@@ -354,15 +354,35 @@ function selectMention(name: string) {
 }
 
 function handleCommandExecute(commandId: string, options: Record<string, unknown>) {
+  // Find the command to get its name
+  const commandsStore = useCommandsStore()
+  const commands = commandsStore.getServerCommands(serverId.value)
+  const command = commands.find(c => c.id === commandId)
+
+  // Build display text for the command
+  let commandText = `/${command?.name || 'command'}`
+  if (Object.keys(options).length > 0) {
+    const params = Object.entries(options)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join(', ')
+    commandText += ` ${params}`
+  }
+
   // Send command invocation via WebSocket
   wsService.send({
     op: WsOpCode.COMMAND_INVOKE,
     d: {
       commandId,
+      commandName: command?.name,
       channelId: props.channelId,
+      userId: authStore.user?.id,
+      username: authStore.user?.username,
       options
     }
   })
+
+  // Also send as a regular message for visibility in chat
+  messagesStore.sendMessage({ content: commandText, channelId: props.channelId })
 
   // Clear input and hide palette
   content.value = ''
