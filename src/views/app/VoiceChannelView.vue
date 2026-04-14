@@ -16,7 +16,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Headphones, X, PhoneCall, Users, Menu } from 'lucide-vue-next'
+import { Headphones, X, PhoneCall, PhoneOff, Users, Menu } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useResponsive } from '@/composables/useResponsive'
 
@@ -172,6 +172,19 @@ function handleAddFriend(userId: string) {
               </Button>
             </TooltipTrigger>
             <TooltipContent>{{ $t('voice.toggleMemberList') }}</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                @click="voiceStore.leaveChannel()"
+              >
+                <PhoneOff class="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>{{ $t('voice.disconnect') }}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
       </div>
