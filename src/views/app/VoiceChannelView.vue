@@ -120,8 +120,8 @@ onMounted(async () => {
     peersCount: voiceStore.peers.length,
   })
 
-  // If we're viewing a voice channel but not connected to it, auto-join
-  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value) {
+  // If we're viewing a voice channel but not connected to it AND not currently connecting, auto-join
+  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value && !voiceStore.isConnecting) {
     debugLogger.info('VoiceChannelView', 'Auto-joining voice channel')
     try {
       await voiceStore.joinChannel(serverId.value, channelId.value)
@@ -141,8 +141,8 @@ watch([channelId, serverId], async ([newChannelId, newServerId], [oldChannelId, 
     isConnectedToThisChannel: isConnectedToThisChannel.value,
   })
 
-  // If navigating to a different voice channel and not already connected to it, join
-  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value) {
+  // If navigating to a different voice channel and not already connected to it AND not currently connecting, join
+  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value && !voiceStore.isConnecting) {
     debugLogger.info('VoiceChannelView', 'Auto-joining on route change')
     try {
       await voiceStore.joinChannel(newServerId, newChannelId)
