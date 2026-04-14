@@ -50,6 +50,12 @@ const watchingStream = computed(() =>
     : null
 )
 
+// Check if user is actually connected to THIS voice channel
+const isConnectedToThisChannel = computed(() =>
+  voiceStore.currentChannelId === channelId.value &&
+  voiceStore.currentServerId === serverId.value
+)
+
 // Members not currently in this voice channel
 const invitableMembers = computed(() => {
   const members = membersStore.getMembers(serverId.value)
@@ -120,7 +126,7 @@ function handleAddFriend(userId: string) {
         <h3 class="font-semibold text-foreground">{{ channel?.name ?? $t('voice.voiceChannel') }}</h3>
         <span class="text-xs text-muted-foreground">{{ voiceStore.peers.length }} connected</span>
       </div>
-      <div class="flex items-center gap-1">
+      <div v-if="isConnectedToThisChannel" class="flex items-center gap-1">
         <TooltipProvider>
           <Popover v-model:open="showInvitePicker">
             <Tooltip>
