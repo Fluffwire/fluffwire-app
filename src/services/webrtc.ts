@@ -486,6 +486,69 @@ const remoteVideo = document.querySelector('#remoteVideo');
     }, 3000)
   }
 
+  async changeScreenSource(): Promise<void> {
+    if (!this._isScreenSharing || !this.peerConnection || !this.screenStream) {
+      console.warn('[WebRTC] Cannot change source: not currently screen sharing')
+      return
+    }
+
+    try {
+      // Get new screen/window selection from user
+      const newStream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          cursor: 'always',
+          frameRate: { ideal: 30, max: 60 },
+        } as MediaTrackConstraints,
+        audio: true,
+      })
+
+      const oldVideoTrack = this.screenStream.getVideoTracks()[0]
+      const newVideoTrack = newStream.getVideoTracks()[0]
+
+      if (!oldVideoTrack || !newVideoTrack) {
+        console.error('[WebRTC] Missing video track during source change')
+        newStream.getTracks().forEach(t => t.stop())
+        return
+      }
+
+      // Find the sender for the old video track
+      const senders = this.peerConnection.getSenders()
+      const videoSender = senders.find((s) => s.track === oldVideoTrack)
+
+      if (!videoSender) {
+        console.error('[WebRTC] Could not find video sender to replace track')
+        newStream.getTracks().forEach(t => t.stop())
+        return
+      }
+
+      // Replace the video track (seamless switch without renegotiation)
+      await videoSender.replaceTrack(newVideoTrack)
+
+      // Set up event listeners for new track
+      newVideoTrack.enabled = true
+      newVideoTrack.onended = () => {
+        console.warn('[WebRTC] Screen share video track ENDED')
+        this.stopScreenShare()
+      }
+
+      // Stop old tracks
+      this.screenStream.getTracks().forEach(t => t.stop())
+
+      // Update screen stream reference
+      this.screenStream = newStream
+
+      console.log('[WebRTC] Screen source changed successfully')
+
+      // Optionally notify backend of source change (not strictly necessary)
+      // The video track replacement handles it at WebRTC level
+    } catch (error) {
+      console.error('[WebRTC] Failed to change screen source:', error)
+      // If user cancels the picker or an error occurs, keep current stream
+      const { toast } = await import('vue-sonner')
+      toast.error('Failed to change screen source')
+    }
+  }
+
   async stopScreenShare(): Promise<void> {
     if (!this._isScreenSharing) return
 

@@ -3,7 +3,10 @@ import { computed } from 'vue'
 import { useVoiceStore } from '@/stores/voice'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff, Eye, EyeOff } from 'lucide-vue-next'
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff, Eye, EyeOff, RefreshCw } from 'lucide-vue-next'
 
 const voiceStore = useVoiceStore()
 
@@ -45,38 +48,54 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
         <TooltipContent>{{ voiceStore.isDeafened ? $t('voice.undeafen') : $t('voice.deafen') }} ({{ $t('voice.ctrlD') }})</TooltipContent>
       </Tooltip>
 
-      <!-- Share Screen -->
-      <Tooltip>
+      <!-- Share Screen - Simple button when not streaming, dropdown when streaming -->
+      <Tooltip v-if="!voiceStore.isScreenSharing">
         <TooltipTrigger as-child>
           <Button
             variant="ghost"
             size="icon"
-            :class="['h-8 w-8', voiceStore.isScreenSharing ? 'bg-primary/20 text-primary hover:bg-primary/30 hover:text-primary' : 'text-muted-foreground']"
-            :disabled="!voiceStore.isScreenSharing && anyoneStreaming"
-            @click="voiceStore.isScreenSharing ? voiceStore.stopScreenShare() : voiceStore.startScreenShare()"
+            class="h-8 w-8 text-muted-foreground"
+            :disabled="anyoneStreaming"
+            @click="voiceStore.startScreenShare()"
           >
-            <MonitorOff v-if="voiceStore.isScreenSharing" class="h-4 w-4" />
-            <Monitor v-else class="h-4 w-4" />
+            <Monitor class="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent>{{ voiceStore.isScreenSharing ? $t('voice.stopSharing') : anyoneStreaming ? $t('voice.someoneSharing') : $t('voice.shareScreen') }}</TooltipContent>
+        <TooltipContent>{{ anyoneStreaming ? $t('voice.someoneSharing') : $t('voice.shareScreen') }}</TooltipContent>
       </Tooltip>
 
-      <!-- Self-View Toggle (only show when streaming) -->
-      <Tooltip v-if="voiceStore.isScreenSharing">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon"
-            :class="['h-8 w-8', voiceStore.showSelfStream ? 'bg-accent text-foreground' : 'text-muted-foreground']"
-            @click="voiceStore.toggleSelfView()"
-          >
-            <Eye v-if="voiceStore.showSelfStream" class="h-4 w-4" />
-            <EyeOff v-else class="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ voiceStore.showSelfStream ? $t('voice.hideSelfView') : $t('voice.showSelfView') }}</TooltipContent>
-      </Tooltip>
+      <!-- Screen Share Menu (when streaming) -->
+      <DropdownMenu v-else>
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <DropdownMenuTrigger as-child>
+              <Button
+                variant="ghost"
+                size="icon"
+                class="h-8 w-8 bg-primary/20 text-primary hover:bg-primary/30 hover:text-primary"
+              >
+                <Monitor class="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>{{ $t('voice.screenOptions') }}</TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem @click="voiceStore.stopScreenShare()" class="gap-2 text-destructive">
+            <MonitorOff class="h-4 w-4" />
+            {{ $t('voice.stopSharing') }}
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem @click="voiceStore.changeScreenSource()" class="gap-2">
+            <RefreshCw class="h-4 w-4" />
+            {{ $t('voice.changeSource') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="voiceStore.toggleSelfView()" class="gap-2">
+            <component :is="voiceStore.showSelfStream ? EyeOff : Eye" class="h-4 w-4" />
+            {{ voiceStore.showSelfStream ? $t('voice.hideSelfView') : $t('voice.showSelfView') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
 
       <!-- Disconnect -->
       <Tooltip>

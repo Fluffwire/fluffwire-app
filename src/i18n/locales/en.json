@@ -334,6 +334,7 @@
     "shareScreen": "Share Screen",
     "stopSharing": "Stop Sharing",
     "someoneSharing": "Someone is already sharing",
+    "screenOptions": "Screen Share Options",
     "disconnect": "Disconnect",
     "connected": "Voice Connected",
     "inviteSent": "Voice invite sent",
@@ -346,6 +347,7 @@
     "noOneInChannel": "No one is in this voice channel yet",
     "inviteToVoice": "Invite to Voice",
     "toggleMemberList": "Toggle Member List",
+    "changeSource": "Change Screen/Window",
     "joinError": "Failed to join voice channel",
     "desktopPermissionError": "Microphone access blocked",
     "desktopPermissionErrorDesc": "Voice channels are not working in the desktop app due to a known Tauri bug. Please use the web app at app.fluffwire.com to join voice channels."

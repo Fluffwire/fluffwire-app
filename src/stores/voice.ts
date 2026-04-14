@@ -419,6 +419,10 @@ export const useVoiceStore = defineStore('voice', () => {
     showSelfStream.value = false // Hide self-view when stopping stream
   }
 
+  async function changeScreenSource() {
+    await webrtcService.changeScreenSource()
+  }
+
   function watchStream(userId: string) {
     watchingUserId.value = userId
   }
@@ -542,6 +546,7 @@ export const useVoiceStore = defineStore('voice', () => {
     toggleDeafen,
     startScreenShare,
     stopScreenShare,
+    changeScreenSource,
     watchStream,
     stopWatching,
     getScreenStream,

@@ -317,6 +317,7 @@
     "shareScreen": "Dela skärm",
     "stopSharing": "Sluta dela",
     "someoneSharing": "Någon delar redan",
+    "screenOptions": "Skärmdelningsalternativ",
     "disconnect": "Koppla från",
     "connected": "Röst ansluten",
     "inviteSent": "Röstinbjudan skickad",
@@ -329,6 +330,7 @@
     "noOneInChannel": "Ingen är i den här röstkanalen ännu",
     "inviteToVoice": "Bjud in till röst",
     "toggleMemberList": "Visa/dölj medlemslista",
+    "changeSource": "Byt skärm/fönster",
     "joinError": "Kunde inte ansluta till röstkanal",
     "desktopPermissionError": "Mikrofonåtkomst blockerad",
     "desktopPermissionErrorDesc": "Röstkanaler fungerar inte i desktop-appen på grund av en känd Tauri-bugg. Använd webbappen på app.fluffwire.com för att gå med i röstkanaler."
