@@ -333,16 +333,19 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   async function joinChannel(serverId: string, channelId: string) {
+    console.log('[Voice] joinChannel called', { serverId, channelId })
     isConnecting.value = true
     try {
       // Clear peers from previous channel to prevent state mixing
       peers.value = []
 
+      console.log('[Voice] Calling webrtcService.joinVoiceChannel...')
       await webrtcService.joinVoiceChannel(serverId, channelId)
+      console.log('[Voice] Successfully joined voice channel')
       currentChannelId.value = channelId
       currentServerId.value = serverId
       connectedSince.value = new Date()
-      // Don't play sound when YOU join - only when others join (line 169)
+      soundManager.play('voiceSelfJoin')
     } catch (error: unknown) {
       // Reset state on error
       currentChannelId.value = null
@@ -350,6 +353,11 @@ export const useVoiceStore = defineStore('voice', () => {
       peers.value = []
 
       console.error('[Voice] Failed to join channel:', error)
+      console.error('[Voice] Error details:', {
+        name: error instanceof Error ? error.name : 'unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      })
 
       // Show user-friendly error message
       const { toast } = await import('vue-sonner')
@@ -397,6 +405,7 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   async function leaveChannel() {
+    soundManager.play('voiceDisconnect')
     await webrtcService.leaveVoiceChannel()
     currentChannelId.value = null
     currentServerId.value = null

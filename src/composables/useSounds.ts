@@ -110,6 +110,34 @@ const SOUND_DEFS: Record<string, SoundDef> = {
       osc.stop(0.15)
     },
   },
+  voiceSelfJoin: {
+    sampleRate: 22050,
+    duration: 0.4,
+    build(ctx) {
+      // Two ascending notes — more prominent than peer join
+      const osc1 = ctx.createOscillator()
+      const osc2 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+      const gain2 = ctx.createGain()
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+      osc2.connect(gain2)
+      gain2.connect(ctx.destination)
+      osc1.type = 'sine'
+      osc1.frequency.setValueAtTime(440, 0)
+      gain1.gain.setValueAtTime(0.3, 0)
+      gain1.gain.exponentialRampToValueAtTime(0.01, 0.15)
+      osc1.start(0)
+      osc1.stop(0.15)
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(660, 0.15)
+      gain2.gain.setValueAtTime(0.01, 0)
+      gain2.gain.setValueAtTime(0.3, 0.15)
+      gain2.gain.exponentialRampToValueAtTime(0.01, 0.38)
+      osc2.start(0.15)
+      osc2.stop(0.38)
+    },
+  },
   voiceLeave: {
     sampleRate: 22050,
     duration: 0.2,
