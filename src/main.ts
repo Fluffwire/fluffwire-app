@@ -31,7 +31,7 @@ authStore.initialize().finally(() => {
 
   // Check for updates on app start (Tauri only, if auto-update enabled)
   import('./utils/platform').then(({ isTauri }) => {
-    if (!isTauri) return
+    if (!isTauri()) return
 
     const autoUpdateEnabled = localStorage.getItem('fluffwire-auto-update')
     if (autoUpdateEnabled !== 'false') { // Default to true if not set

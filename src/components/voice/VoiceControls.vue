@@ -66,32 +66,27 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
 
       <!-- Screen Share Menu (when streaming) -->
       <DropdownMenu v-else>
-        <Tooltip>
-          <TooltipTrigger as-child>
-            <DropdownMenuTrigger as-child>
-              <Button
-                variant="ghost"
-                size="icon"
-                class="h-8 w-8 bg-primary/20 text-primary hover:bg-primary/30 hover:text-primary"
-              >
-                <Monitor class="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-          </TooltipTrigger>
-          <TooltipContent>{{ $t('voice.screenOptions') }}</TooltipContent>
-        </Tooltip>
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="h-8 w-8 bg-primary/20 text-primary hover:bg-primary/30 hover:text-primary"
+          >
+            <Monitor class="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem class="gap-2 text-destructive" @click="voiceStore.stopScreenShare()">
-            <MonitorOff class="h-4 w-4" />
+          <DropdownMenuItem @click="voiceStore.stopScreenShare()">
+            <MonitorOff class="h-4 w-4 mr-2" />
             {{ $t('voice.stopSharing') }}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem class="gap-2" @click="voiceStore.changeScreenSource()">
-            <RefreshCw class="h-4 w-4" />
+          <DropdownMenuItem @click="voiceStore.changeScreenSource()">
+            <RefreshCw class="h-4 w-4 mr-2" />
             {{ $t('voice.changeSource') }}
           </DropdownMenuItem>
-          <DropdownMenuItem class="gap-2" @click="voiceStore.toggleSelfView()">
-            <component :is="voiceStore.showSelfStream ? EyeOff : Eye" class="h-4 w-4" />
+          <DropdownMenuItem @click="voiceStore.toggleSelfView()">
+            <component :is="voiceStore.showSelfStream ? EyeOff : Eye" class="h-4 w-4 mr-2" />
             {{ voiceStore.showSelfStream ? $t('voice.hideSelfView') : $t('voice.showSelfView') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
