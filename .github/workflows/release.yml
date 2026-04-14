@@ -17,12 +17,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Disabled: DMG bundling fails on GitHub Actions for ARM64 cross-compilation
-          # macOS x64 build works on Apple Silicon via Rosetta 2
-          # - os: macos-latest
-          #   target: aarch64-apple-darwin
-          #   label: macOS-arm64
-          - os: macos-latest
+          # macOS ARM64 (Apple Silicon M1/M2/M3) - native build on macos-14
+          - os: macos-14
+            target: aarch64-apple-darwin
+            label: macOS-arm64
+          # macOS x64 (Intel) - works on Apple Silicon via Rosetta 2
+          - os: macos-13
             target: x86_64-apple-darwin
             label: macOS-x64
           - os: ubuntu-22.04
