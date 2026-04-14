@@ -4,13 +4,12 @@ import { useI18n } from 'vue-i18n'
 import type { Message } from '@/types'
 import { messageApi } from '@/services/messageApi'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog'
-import { Search, X, File, Image, Link } from 'lucide-vue-next'
+import { Search, File, Image, Link } from 'lucide-vue-next'
 import { renderMarkdown } from '@/composables/useMarkdown'
 
 const { t } = useI18n()
@@ -128,13 +127,13 @@ function handleJump(messageId: string) {
           <button
             v-for="f in filterOptions"
             :key="f.key"
-            @click="toggleFilter(f.key)"
             :class="[
               'flex items-center gap-1 rounded-full px-3 py-1 text-xs transition-colors',
               activeFilter === f.key
                 ? 'bg-primary text-primary-foreground'
                 : 'bg-secondary text-muted-foreground hover:text-foreground',
             ]"
+            @click="toggleFilter(f.key)"
           >
             <component :is="f.icon" class="h-3 w-3" />
             {{ $t(f.labelKey) }}
@@ -162,8 +161,8 @@ function handleJump(messageId: string) {
             <button
               v-for="msg in results"
               :key="msg.id"
-              @click="handleJump(msg.id)"
               class="w-full rounded-lg border border-border/50 bg-background p-3 text-left transition-colors hover:border-primary/30 hover:bg-accent/30"
+              @click="handleJump(msg.id)"
             >
               <div class="flex items-start gap-2">
                 <UserAvatar
@@ -176,6 +175,7 @@ function handleJump(messageId: string) {
                     <span class="text-xs font-medium text-foreground">{{ msg.author.displayName }}</span>
                     <span class="text-[10px] text-muted-foreground">{{ formatDate(msg.timestamp) }}</span>
                   </div>
+                  <!-- eslint-disable-next-line vue/no-v-html -->
                   <div class="mt-0.5 text-xs text-foreground/80 line-clamp-3 message-content" v-html="renderMarkdown(msg.content)" />
                 </div>
               </div>

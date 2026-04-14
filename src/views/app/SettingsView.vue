@@ -37,16 +37,14 @@ const authStore = useAuthStore()
 const uiStore = useUiStore()
 const router = useRouter()
 const { isMobile } = useResponsive()
-const { theme, setTheme } = useTheme()
+const { theme } = useTheme()
 const { t, locale } = useI18n()
 const {
   soundEnabled,
   desktopEnabled,
   setSoundEnabled,
   setDesktopEnabled,
-  requestDesktopPermission,
   playTestSound,
-  desktopPermission,
 } = useNotificationSettings()
 
 const desktopPermissionDenied = ref(false)
@@ -620,13 +618,13 @@ const themePreviewColors: Record<ThemeName, string> = {
             <button
               v-for="tab in tabs"
               :key="tab.key"
-              @click="activeTab = tab.key"
               :class="[
                 'flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors',
                 activeTab === tab.key
                   ? 'bg-accent font-medium text-foreground'
                   : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
               ]"
+              @click="activeTab = tab.key"
             >
               <component :is="tab.icon" class="h-4 w-4" />
               {{ tab.label }}
@@ -635,8 +633,8 @@ const themePreviewColors: Record<ThemeName, string> = {
             <Separator class="my-2" />
 
             <button
-              @click="handleLogout"
               class="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-destructive hover:bg-destructive/10"
+              @click="handleLogout"
             >
               <LogOut class="h-4 w-4" />
               {{ $t('nav.logOut') }}
@@ -652,8 +650,8 @@ const themePreviewColors: Record<ThemeName, string> = {
       <div v-if="isMobile" class="flex items-center border-b border-border/50">
         <!-- Close button (fixed on left) -->
         <button
-          @click="close"
           class="flex shrink-0 items-center justify-center h-12 w-12 text-muted-foreground hover:text-foreground transition-colors"
+          @click="close"
         >
           <X class="h-5 w-5" />
         </button>
@@ -663,13 +661,13 @@ const themePreviewColors: Record<ThemeName, string> = {
           <button
             v-for="tab in tabs"
             :key="tab.key"
-            @click="activeTab = tab.key"
             :class="[
               'flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors',
               activeTab === tab.key
                 ? 'bg-accent font-medium text-foreground'
                 : 'text-muted-foreground',
             ]"
+            @click="activeTab = tab.key"
           >
             <component :is="tab.icon" class="h-4 w-4" />
             {{ tab.label }}
@@ -678,8 +676,8 @@ const themePreviewColors: Record<ThemeName, string> = {
           <Separator orientation="vertical" class="h-6" />
 
           <button
-            @click="handleLogout"
             class="flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-destructive"
+            @click="handleLogout"
           >
             <LogOut class="h-4 w-4" />
             {{ $t('nav.logOut') }}
@@ -698,7 +696,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <div class="flex items-start gap-4">
                     <!-- Avatar with upload -->
                     <div class="relative shrink-0">
-                      <button @click="avatarInput?.click()" class="group relative">
+                      <button class="group relative" @click="avatarInput?.click()">
                         <UserAvatar
                           :src="profileAvatarPreview ?? authStore.user?.avatar ?? null"
                           :alt="authStore.user?.displayName ?? ''"
@@ -714,7 +712,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                         accept="image/*"
                         class="hidden"
                         @change="handleAvatarSelect"
-                      />
+                      >
                     </div>
                     <div class="min-w-0 flex-1 space-y-4">
                       <div>
@@ -746,9 +744,9 @@ const themePreviewColors: Record<ThemeName, string> = {
                       </div>
 
                       <Button
-                        @click="saveProfile"
                         :disabled="!hasProfileChanges || profileSaving"
                         size="sm"
+                        @click="saveProfile"
                       >
                         <Loader2 v-if="profileSaving" class="mr-2 h-4 w-4 animate-spin" />
                         {{ $t('settings.saveChanges') }}
@@ -879,25 +877,25 @@ const themePreviewColors: Record<ThemeName, string> = {
                 <CardContent class="space-y-4">
                   <div class="flex gap-3">
                     <button
-                      @click="voiceStore.setVoiceMode('voice-activity')"
                       :class="[
                         'flex-1 rounded-lg border-2 p-4 text-left transition-all',
                         voiceStore.voiceMode === 'voice-activity'
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/40',
                       ]"
+                      @click="voiceStore.setVoiceMode('voice-activity')"
                     >
                       <div class="text-sm font-medium text-foreground">{{ $t('settings.voiceActivity') }}</div>
                       <div class="mt-1 text-xs text-muted-foreground">{{ $t('settings.voiceActivityDesc') }}</div>
                     </button>
                     <button
-                      @click="voiceStore.setVoiceMode('push-to-talk')"
                       :class="[
                         'flex-1 rounded-lg border-2 p-4 text-left transition-all',
                         voiceStore.voiceMode === 'push-to-talk'
                           ? 'border-primary bg-primary/5'
                           : 'border-border hover:border-primary/40',
                       ]"
+                      @click="voiceStore.setVoiceMode('push-to-talk')"
                     >
                       <div class="text-sm font-medium text-foreground">{{ $t('settings.pushToTalk') }}</div>
                       <div class="mt-1 text-xs text-muted-foreground">{{ $t('settings.pushToTalkDesc') }}</div>
@@ -915,9 +913,9 @@ const themePreviewColors: Record<ThemeName, string> = {
                       min="0"
                       max="50"
                       :value="voiceStore.vadThreshold"
-                      @input="voiceStore.setVadThreshold(Number(($event.target as HTMLInputElement).value))"
                       class="w-full accent-primary"
-                    />
+                      @input="voiceStore.setVadThreshold(Number(($event.target as HTMLInputElement).value))"
+                    >
                     <div class="flex justify-between text-[10px] text-muted-foreground">
                       <span>{{ $t('settings.sensitive') }}</span>
                       <span>{{ $t('settings.lessSensitive') }}</span>
@@ -929,8 +927,8 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <label class="text-sm font-medium text-foreground">{{ $t('settings.shortcut') }}</label>
                     <Button
                       variant="outline"
-                      @click="startPttCapture"
                       class="w-full justify-start gap-2"
+                      @click="startPttCapture"
                     >
                       <Mic class="h-4 w-4" />
                       <template v-if="capturingPttKey">
@@ -989,9 +987,9 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">{{ $t('settings.inputDevice') }}</label>
                     <select
+                      class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                       @focus="loadAudioDevices"
                       @change="webrtcService.setInputDevice(($event.target as HTMLSelectElement).value)"
-                      class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
                     >
                       <option value="">{{ $t('settings.default') }}</option>
                       <option
@@ -1006,8 +1004,8 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <div class="space-y-2">
                     <label class="text-sm font-medium text-foreground">{{ $t('settings.outputDevice') }}</label>
                     <select
-                      @focus="loadAudioDevices"
                       class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                      @focus="loadAudioDevices"
                     >
                       <option value="">{{ $t('settings.default') }}</option>
                       <option
@@ -1112,7 +1110,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                         {{ lastUpdateCheck ? $t('settings.lastChecked', { time: lastUpdateCheck.toLocaleString() }) : $t('settings.neverChecked') }}
                       </div>
                     </div>
-                    <Button @click="handleManualUpdateCheck" :disabled="updateCheckLoading" variant="outline" size="sm">
+                    <Button :disabled="updateCheckLoading" variant="outline" size="sm" @click="handleManualUpdateCheck">
                       <Loader2 v-if="updateCheckLoading" class="mr-2 h-4 w-4 animate-spin" />
                       <RefreshCw v-else class="mr-2 h-4 w-4" />
                       {{ $t('settings.checkNow') }}
@@ -1194,8 +1192,8 @@ const themePreviewColors: Record<ThemeName, string> = {
                   </div>
                   <Button
                     :disabled="!currentPassword || !newPassword || newPassword !== confirmPassword || passwordSaving"
-                    @click="handleChangePassword"
                     size="sm"
+                    @click="handleChangePassword"
                   >
                     <Loader2 v-if="passwordSaving" class="mr-2 h-4 w-4 animate-spin" />
                     {{ $t('settings.changePassword') }}
@@ -1216,7 +1214,7 @@ const themePreviewColors: Record<ThemeName, string> = {
 
                     <!-- Setup flow -->
                     <template v-if="!totpSetup">
-                      <Button @click="handleSetupTotp" size="sm">
+                      <Button size="sm" @click="handleSetupTotp">
                         <Shield class="mr-2 h-4 w-4" />
                         {{ $t('settings.enableTwoFactor') }}
                       </Button>
@@ -1226,7 +1224,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                       <div class="space-y-4">
                         <p class="text-sm text-foreground">{{ $t('settings.scanQrCode') }}</p>
                         <div class="flex justify-center rounded-lg bg-white p-4">
-                          <img :src="totpSetup.qrUri" alt="QR Code" class="h-48 w-48" />
+                          <img :src="totpSetup.qrUri" alt="QR Code" class="h-48 w-48">
                         </div>
                         <div class="space-y-1">
                           <p class="text-xs text-muted-foreground">{{ $t('settings.enterSecretManually') }}</p>
@@ -1245,8 +1243,8 @@ const themePreviewColors: Record<ThemeName, string> = {
                         <div class="flex gap-2">
                           <Button
                             :disabled="!totpEnableCode.trim() || totpEnabling"
-                            @click="handleEnableTotp"
                             size="sm"
+                            @click="handleEnableTotp"
                           >
                             <Loader2 v-if="totpEnabling" class="mr-2 h-4 w-4 animate-spin" />
                             {{ $t('settings.verifyEnable') }}
@@ -1446,13 +1444,13 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <button
                       v-for="name in themeNames"
                       :key="name"
-                      @click="uiStore.setTheme(name); toast.success($t('settings.themeUpdated'))"
                       :class="[
                         'flex items-center gap-3 rounded-xl border-2 p-4 transition-all',
                         theme === name
                           ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
                           : 'border-border hover:border-primary/40',
                       ]"
+                      @click="uiStore.setTheme(name); toast.success($t('settings.themeUpdated'))"
                     >
                       <div
                         class="h-8 w-8 shrink-0 rounded-full shadow-inner"
@@ -1481,13 +1479,13 @@ const themePreviewColors: Record<ThemeName, string> = {
                     <button
                       v-for="lang in [{ code: 'en', name: 'English' }, { code: 'sv', name: 'Svenska' }]"
                       :key="lang.code"
-                      @click="handleLocaleChange(lang.code)"
                       :class="[
                         'flex items-center justify-center rounded-xl border-2 p-4 transition-all',
                         locale === lang.code
                           ? 'border-primary bg-primary/5 shadow-md shadow-primary/10'
                           : 'border-border hover:border-primary/40',
                       ]"
+                      @click="handleLocaleChange(lang.code)"
                     >
                       <span class="text-sm font-medium text-foreground">{{ lang.name }}</span>
                     </button>
@@ -1514,7 +1512,7 @@ const themePreviewColors: Record<ThemeName, string> = {
                   <CardDescription>{{ $t('bugs.reportBugDesc') }}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button @click="showBugReportDialog = true" variant="outline" class="w-full">
+                  <Button variant="outline" class="w-full" @click="showBugReportDialog = true">
                     <Bug class="mr-2 h-4 w-4" />
                     {{ $t('bugs.reportBug') }}
                   </Button>

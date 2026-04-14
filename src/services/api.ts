@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosAdapter } from 'axios'
+import axios, { type AxiosInstance, type InternalAxiosRequestConfig, type AxiosAdapter, AxiosHeaders } from 'axios'
 import { API } from '@/constants/endpoints'
 import { getTokenStorage } from '@/services/tokenStorage'
 import { debugLogger } from '@/utils/debug'
@@ -40,9 +40,9 @@ const tauriAdapter: AxiosAdapter = async (config) => {
     const headers: Record<string, string> = {}
     if (config.headers) {
       // Handle both plain objects and AxiosHeaders
-      if (typeof (config.headers as any).entries === 'function') {
+      if (config.headers instanceof AxiosHeaders) {
         // AxiosHeaders with entries() method
-        for (const [key, value] of (config.headers as any).entries()) {
+        for (const [key, value] of config.headers.entries()) {
           if (value !== undefined && value !== null) {
             headers[key] = String(value)
           }
@@ -111,18 +111,20 @@ const tauriAdapter: AxiosAdapter = async (config) => {
 
     // Throw error for non-2xx status codes (axios behavior)
     if (!response.ok) {
-      const error: any = new Error(`Request failed with status ${response.status}`)
-      error.response = axiosResponse
-      error.config = config
+      const error = Object.assign(new Error(`Request failed with status ${response.status}`), {
+        response: axiosResponse,
+        config,
+      })
       throw error
     }
 
     return axiosResponse
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; response?: { status?: number; data?: unknown } }
     debugLogger.error('API', 'Tauri fetch error', {
-      message: error.message,
-      status: error.response?.status,
-      data: error.response?.data
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data
     })
     throw error
   }

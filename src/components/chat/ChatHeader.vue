@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import { Button } from '@/components/ui/button'

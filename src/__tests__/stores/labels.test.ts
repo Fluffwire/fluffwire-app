@@ -5,14 +5,28 @@ import { serverApi } from '@/services/serverApi'
 import type { Label } from '@/types/server'
 
 vi.mock('@/services/serverApi')
+const wsHandlers = new Map<string, (data: unknown) => void>()
 vi.mock('@/services/wsDispatcher', () => ({
   wsDispatcher: {
-    register: vi.fn(),
+    register: vi.fn((event: string, handler: (data: unknown) => void) => {
+      wsHandlers.set(event, handler)
+    }),
   },
 }))
 
+const baseLabel = (id: string, serverId = 'server1'): Label => ({
+  id,
+  serverId,
+  name: `label-${id}`,
+  color: '#ff0000',
+  position: 1,
+  isEveryone: false,
+  createdAt: '2024-01-01T00:00:00Z',
+})
+
 describe('Labels Store', () => {
   beforeEach(() => {
+    wsHandlers.clear()
     vi.clearAllMocks()
     setActivePinia(createPinia())
   })
@@ -147,6 +161,34 @@ describe('Labels Store', () => {
       await store.transferOwnership('server1', 'user2')
 
       expect(serverApi.transferOwnership).toHaveBeenCalledWith('server1', 'user2')
+    })
+  })
+
+  describe('WS handlers', () => {
+    it('LABEL_UPDATE replaces existing label', () => {
+      useLabelsStore()
+      const store = useLabelsStore()
+      store.labelsByServer['server1'] = [baseLabel('1')]
+      wsHandlers.get('LABEL_UPDATE')!({ ...baseLabel('1'), name: 'Updated' })
+      expect(store.getLabels('server1')[0].name).toBe('Updated')
+    })
+
+    it('LABEL_DELETE removes label', () => {
+      useLabelsStore()
+      const store = useLabelsStore()
+      store.labelsByServer['server1'] = [baseLabel('1'), baseLabel('2')]
+      wsHandlers.get('LABEL_DELETE')!({ id: '1', serverId: 'server1' })
+      expect(store.getLabels('server1')).toHaveLength(1)
+      expect(store.getLabels('server1')[0].id).toBe('2')
+    })
+
+    it('LABELS_REORDER replaces labels for server', () => {
+      useLabelsStore()
+      const store = useLabelsStore()
+      store.labelsByServer['server1'] = [baseLabel('1'), baseLabel('2')]
+      const reordered = [baseLabel('2'), baseLabel('1')]
+      wsHandlers.get('LABELS_REORDER')!({ serverId: 'server1', labels: reordered })
+      expect(store.getLabels('server1').map(l => l.id)).toEqual(['2', '1'])
     })
   })
 })

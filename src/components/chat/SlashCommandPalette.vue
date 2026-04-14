@@ -24,7 +24,7 @@
             :src="cmd.bot.avatar"
             :alt="cmd.bot.name"
             class="w-4 h-4 rounded-full"
-          />
+          >
           <div
             v-else
             class="w-4 h-4 rounded-full bg-zinc-600 flex items-center justify-center text-[10px] font-medium"
@@ -64,8 +64,8 @@
         <span class="text-sm text-zinc-400">{{ selectedCommand.description }}</span>
       </div>
       <button
-        @click="cancelParams"
         class="text-zinc-400 hover:text-white transition-colors"
+        @click="cancelParams"
       >
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -91,7 +91,7 @@
           :minlength="option.minLength"
           :maxlength="option.maxLength"
           class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        >
 
         <!-- Integer Input -->
         <input
@@ -103,7 +103,7 @@
           :min="option.minValue"
           :max="option.maxValue"
           class="w-full px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-md text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+        >
 
         <!-- Boolean Input -->
         <label v-else-if="option.type === 'boolean'" class="flex items-center gap-2 cursor-pointer">
@@ -111,7 +111,7 @@
             v-model="paramValues[option.name]"
             type="checkbox"
             class="w-4 h-4 rounded border-zinc-700 bg-zinc-900 text-blue-600 focus:ring-2 focus:ring-blue-500"
-          />
+          >
           <span class="text-sm text-zinc-400">Enable {{ option.name }}</span>
         </label>
 
@@ -159,15 +159,15 @@
     <!-- Actions -->
     <div class="flex items-center justify-end gap-2 pt-3 border-t border-zinc-700">
       <button
-        @click="cancelParams"
         class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors"
+        @click="cancelParams"
       >
         Cancel
       </button>
       <button
-        @click="executeCommand"
         :disabled="!isFormValid"
         class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-white rounded-md transition-colors"
+        @click="executeCommand"
       >
         Execute
       </button>
@@ -272,20 +272,22 @@ function handleKeydown(event: KeyboardEvent) {
         ? filteredCommands.value.length - 1
         : selectedIndex.value - 1
       break
-    case 'Tab':
+    case 'Tab': {
       event.preventDefault()
       const autocompleteCmd = filteredCommands.value[selectedIndex.value]
       if (autocompleteCmd) {
         emit('autocomplete', autocompleteCmd.name)
       }
       break
-    case 'Enter':
+    }
+    case 'Enter': {
       event.preventDefault()
       const selected = filteredCommands.value[selectedIndex.value]
       if (selected) {
         selectCommand(selected)
       }
       break
+    }
     case 'Escape':
       event.preventDefault()
       emit('close')

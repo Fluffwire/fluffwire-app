@@ -233,7 +233,7 @@ async function handleSave() {
         <Button variant="ghost" @click="uiStore.closeModal()">
           {{ $t('common.cancel') }}
         </Button>
-        <Button @click="handleSave" :disabled="isLoading">
+        <Button :disabled="isLoading" @click="handleSave">
           <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
           {{ $t('common.save') }}
         </Button>

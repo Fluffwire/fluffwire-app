@@ -101,12 +101,12 @@ function selectEmoji(emoji: string) {
       <button
         v-for="(cat, i) in categories"
         :key="cat.name"
-        @click="activeCategory = i"
         :class="[
           'rounded px-1.5 py-0.5 text-lg transition-colors',
           activeCategory === i ? 'bg-accent' : 'hover:bg-accent/50',
         ]"
         :title="cat.name"
+        @click="activeCategory = i"
       >
         {{ cat.emojis[0] }}
       </button>
@@ -127,8 +127,8 @@ function selectEmoji(emoji: string) {
               <button
                 v-for="emoji in cat.emojis"
                 :key="emoji"
-                @click="selectEmoji(emoji)"
                 class="flex h-8 w-8 items-center justify-center rounded text-xl transition-colors hover:bg-accent"
+                @click="selectEmoji(emoji)"
               >
                 {{ emoji }}
               </button>

@@ -50,7 +50,7 @@ defineEmits<{
     <!-- Header -->
     <div class="flex items-center justify-between border-b border-border px-4 py-2">
       <div class="flex items-center gap-2">
-        <div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+        <div class="h-2 w-2 rounded-full bg-primary animate-pulse" />
         <span class="font-semibold text-foreground">Debug Panel ({{ logs.length }} logs)</span>
       </div>
       <div class="flex items-center gap-1">

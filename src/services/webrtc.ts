@@ -171,8 +171,6 @@ class WebRTCService {
         this.peerConnection!.addTrack(track, this.localStream!)
       })
 
-const remoteVideo = document.querySelector('#remoteVideo');
-
       this.peerConnection.ontrack = (event: RTCTrackEvent) => {
         const [stream] = event.streams
         if (!stream) return

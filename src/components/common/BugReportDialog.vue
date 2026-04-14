@@ -61,10 +61,11 @@ async function handleSubmit() {
     // Reset form
     title.value = ''
     description.value = ''
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Failed to report bug:', error)
+    const err = error as { response?: { data?: { message?: string } } }
     toast.error(t('bugs.reportFailed'), {
-      description: error.response?.data?.message || t('bugs.reportFailedDesc'),
+      description: err.response?.data?.message || t('bugs.reportFailedDesc'),
     })
   } finally {
     isSubmitting.value = false
@@ -164,24 +165,24 @@ function openIssue() {
             {{ t('bugs.issueCreatedDesc') }}
           </p>
         </div>
-        <Button @click="openIssue" class="w-full" variant="outline">
+        <Button class="w-full" variant="outline" @click="openIssue">
           <ExternalLink class="mr-2 h-4 w-4" />
           {{ t('bugs.viewIssue') }}
         </Button>
       </div>
 
       <DialogFooter v-if="!createdIssueUrl">
-        <Button @click="handleClose" variant="ghost" :disabled="isSubmitting">
+        <Button variant="ghost" :disabled="isSubmitting" @click="handleClose">
           {{ t('common.cancel') }}
         </Button>
-        <Button @click="handleSubmit" :disabled="!canSubmit || isSubmitting" :loading="isSubmitting">
+        <Button :disabled="!canSubmit || isSubmitting" :loading="isSubmitting" @click="handleSubmit">
           <Bug class="mr-2 h-4 w-4" />
           {{ t('bugs.submit') }}
         </Button>
       </DialogFooter>
 
       <DialogFooter v-else>
-        <Button @click="handleClose" class="w-full">
+        <Button class="w-full" @click="handleClose">
           {{ t('common.close') }}
         </Button>
       </DialogFooter>

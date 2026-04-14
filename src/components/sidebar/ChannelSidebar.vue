@@ -3,7 +3,6 @@ import { ref, computed, watch, provide, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
-import { useDirectMessagesStore } from '@/stores/directMessages'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useVoiceStore } from '@/stores/voice'
@@ -31,7 +30,6 @@ const route = useRoute()
 const router = useRouter()
 const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
-const dmStore = useDirectMessagesStore()
 const uiStore = useUiStore()
 const authStore = useAuthStore()
 const voiceStore = useVoiceStore()
@@ -39,10 +37,6 @@ const membersStore = useMembersStore()
 
 const isHome = computed(() => route.path.startsWith('/channels/@me'))
 const serverId = computed(() => route.params.serverId as string)
-
-const isOwner = computed(() =>
-  serversStore.currentServer?.ownerId === authStore.user?.id
-)
 
 const canManageServerSettings = computed(() => {
   if (!serverId.value || serverId.value === '@me') return false
@@ -202,10 +196,12 @@ onBeforeUnmount(destroySortables)
     ]"
   >
     <!-- Header -->
-    <div :class="[
-      'flex h-12 items-center border-b border-border/50 px-4',
-      isSheet ? 'pr-12' : ''
-    ]">
+    <div
+      :class="[
+        'flex h-12 items-center border-b border-border/50 px-4',
+        isSheet ? 'pr-12' : ''
+      ]"
+    >
       <template v-if="isHome">
         <h2 class="font-semibold text-foreground">Direct Messages</h2>
       </template>
@@ -217,8 +213,8 @@ onBeforeUnmount(destroySortables)
           <Tooltip>
             <TooltipTrigger as-child>
               <button
-                @click="uiStore.openModal('invite', serversStore.currentServer?.id)"
                 class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+                @click="uiStore.openModal('invite', serversStore.currentServer?.id)"
               >
                 <UserPlus class="h-4 w-4" />
               </button>
@@ -228,8 +224,8 @@ onBeforeUnmount(destroySortables)
         </TooltipProvider>
         <button
           v-if="canManageServerSettings"
-          @click="uiStore.openModal('serverSettings')"
           class="flex h-6 w-6 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+          @click="uiStore.openModal('serverSettings')"
         >
           <Settings class="h-4 w-4" />
         </button>
@@ -245,13 +241,13 @@ onBeforeUnmount(destroySortables)
         <!-- Home / DM view -->
         <div v-show="isHome">
           <button
-            @click="navigateAndClose('/channels/@me')"
             :class="[
               'mb-1 flex w-full items-center gap-3 rounded-lg px-2 py-1.5 transition-colors',
               route.path === '/channels/@me'
                 ? 'border-l-2 border-primary bg-accent text-foreground'
                 : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
             ]"
+            @click="navigateAndClose('/channels/@me')"
           >
             <Users class="h-5 w-5" />
             <span class="text-sm font-medium">Friends</span>
@@ -273,8 +269,8 @@ onBeforeUnmount(destroySortables)
               <Tooltip>
                 <TooltipTrigger as-child>
                   <button
-                    @click="uiStore.openModal('createChannel')"
                     class="flex h-5 w-5 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+                    @click="uiStore.openModal('createChannel')"
                   >
                     <Plus class="h-4 w-4" />
                   </button>
@@ -305,8 +301,8 @@ onBeforeUnmount(destroySortables)
           <!-- Create category button -->
           <button
             v-if="canCreateChannels"
-            @click="uiStore.openModal('createCategory')"
             class="mt-3 flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            @click="uiStore.openModal('createCategory')"
           >
             <FolderPlus class="h-4 w-4" />
             <span>Create Category</span>

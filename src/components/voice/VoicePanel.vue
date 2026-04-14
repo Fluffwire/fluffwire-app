@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useVoiceStore } from '@/stores/voice'
 import { useChannelsStore } from '@/stores/channels'
 import VoiceControls from './VoiceControls.vue'
 import { Badge } from '@/components/ui/badge'
 
-const { t } = useI18n()
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
 

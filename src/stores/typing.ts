@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { wsService } from '@/services/websocket'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 

@@ -29,7 +29,6 @@ function getInitials(name: string): string {
       ]"
     />
     <button
-      @click="$emit('click')"
       :class="[
         'group flex h-12 w-12 items-center justify-center overflow-hidden transition-all duration-200',
         active
@@ -39,13 +38,14 @@ function getInitials(name: string): string {
           ? active ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''
           : active ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground hover:bg-primary hover:text-primary-foreground',
       ]"
+      @click="$emit('click')"
     >
       <img
         v-if="server.icon"
         :src="server.icon"
         :alt="server.name"
         class="h-full w-full object-cover"
-      />
+      >
       <span v-else class="text-xs font-semibold">
         {{ getInitials(server.name) }}
       </span>

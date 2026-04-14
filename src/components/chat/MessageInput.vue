@@ -12,7 +12,6 @@ import { useCommandsStore } from '@/stores/commands'
 import { useTypingStore } from '@/stores/typing'
 import { canBypassChannelRestrictions } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
-import { messageApi } from '@/services/messageApi'
 import { uploadFile } from '@/services/api'
 import { wsService } from '@/services/websocket'
 import { searchEmojis, shortcodeToEmoji } from '@/data/emojiShortcodes'
@@ -39,7 +38,6 @@ const channelsStore = useChannelsStore()
 const labelsStore = useLabelsStore()
 const authStore = useAuthStore()
 const draftsStore = useDraftsStore()
-const commandsStore = useCommandsStore()
 const typingStore = useTypingStore()
 
 const replyingTo = computed(() => messagesStore.getReplyTo(props.channelId))
@@ -72,16 +70,18 @@ const canWrite = computed(() => {
       return true
     case 'read_only':
       return false
-    case 'private':
+    case 'private': {
       // Must be in allowed users or have allowed label
       const allowedUserIds = channel.allowedUserIds || []
       const allowedLabelIds = channel.allowedLabelIds || []
       return allowedUserIds.includes(member.userId) || userLabelIds.some(id => allowedLabelIds.includes(id))
-    case 'restricted_write':
+    }
+    case 'restricted_write': {
       // Can read but only write if whitelisted
       const allowedWriteUsers = channel.allowedUserIds || []
       const allowedWriteLabels = channel.allowedLabelIds || []
       return allowedWriteUsers.includes(member.userId) || userLabelIds.some(id => allowedWriteLabels.includes(id))
+    }
     default:
       return true
   }
@@ -694,11 +694,11 @@ defineExpose({ insertAtCursor })
       <button
         v-for="(result, i) in emojiResults"
         :key="result.shortcodes[0] || result.emoji"
-        @mousedown.prevent="result.shortcodes[0] && selectEmoji(result.shortcodes[0])"
         :class="[
           'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
           i === emojiIndex ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50',
         ]"
+        @mousedown.prevent="result.shortcodes[0] && selectEmoji(result.shortcodes[0])"
       >
         <span class="text-2xl">{{ result.emoji }}</span>
         <div class="min-w-0 flex-1">
@@ -727,11 +727,11 @@ defineExpose({ insertAtCursor })
       <button
         v-for="(result, i) in mentionResults"
         :key="result.id"
-        @mousedown.prevent="selectMention(result.name)"
         :class="[
           'flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm transition-colors',
           i === mentionIndex ? 'bg-accent text-accent-foreground' : 'text-foreground hover:bg-accent/50',
         ]"
+        @mousedown.prevent="selectMention(result.name)"
       >
         <!-- User avatar -->
         <template v-if="result.type === 'user'">
@@ -739,7 +739,7 @@ defineExpose({ insertAtCursor })
             v-if="result.avatar"
             :src="result.avatar"
             class="h-6 w-6 rounded-full object-cover"
-          />
+          >
           <div v-else class="flex h-6 w-6 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
             {{ result.displayName.charAt(0) }}
           </div>
@@ -806,7 +806,7 @@ defineExpose({ insertAtCursor })
         multiple
         class="hidden"
         @change="handleFileSelect"
-      />
+      >
 
       <!-- Paperclip button -->
       <Button
@@ -822,14 +822,14 @@ defineExpose({ insertAtCursor })
       <textarea
         ref="textareaRef"
         v-model="content"
-        @keydown="handleKeydown"
-        @input="emitTyping(); checkForMention(); autoResizeTextarea()"
-        @blur="content.trim() === '' && emitStopTyping()"
-        @paste="handlePaste"
         :placeholder="!canWrite ? t('chat.noWritePermission') : (wsConnected ? t('chat.messagePlaceholder', { channel: channelName }) : t('chat.reconnecting'))"
         :disabled="!wsConnected || !canWrite"
         rows="1"
         class="min-h-[44px] max-h-[150px] flex-1 resize-none overflow-y-auto bg-transparent px-2 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none disabled:cursor-not-allowed disabled:opacity-50"
+        @keydown="handleKeydown"
+        @input="emitTyping(); checkForMention(); autoResizeTextarea()"
+        @blur="content.trim() === '' && emitStopTyping()"
+        @paste="handlePaste"
       />
 
       <!-- Emoji picker -->

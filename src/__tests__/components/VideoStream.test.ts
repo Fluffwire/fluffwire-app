@@ -219,7 +219,7 @@ describe('VideoStream', () => {
     const mutedTrack = {
       ...mockVideoTrack,
       muted: true,
-      addEventListener: vi.fn((event, callback, options) => {
+      addEventListener: vi.fn((event, callback, _options) => {
         if (event === 'unmute') {
           unmuteCallback = callback as () => void
         }

@@ -1,6 +1,6 @@
 import api from './api'
 import { API } from '@/constants/endpoints'
-import type { Message, MessagePage, EditMessagePayload, Attachment } from '@/types'
+import type { Message, MessagePage, EditMessagePayload } from '@/types'
 
 export const messageApi = {
   getMessages(channelId: string, cursor?: string, limit = 50): Promise<{ data: MessagePage }> {

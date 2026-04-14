@@ -5,7 +5,6 @@ import { useAuthStore } from '@/stores/auth'
 import { useReadStateStore } from '@/stores/readState'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import MessageItem from './MessageItem.vue'
-import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import { Card } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Hash, ArrowDown } from 'lucide-vue-next'
@@ -264,8 +263,8 @@ defineExpose({ scrollToMessage })
     <!-- Jump to Latest button -->
     <button
       v-if="showJumpButton"
-      @click="scrollToBottom"
       class="absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground shadow-lg transition-colors hover:bg-primary/90"
+      @click="scrollToBottom"
     >
       <ArrowDown class="size-4" />
       <span v-if="newMessageCount > 0">{{ newMessageCount }} New Message{{ newMessageCount > 1 ? 's' : '' }}</span>

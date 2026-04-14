@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useFriendsStore } from '@/stores/friends'
 import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
@@ -12,7 +11,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, Menu } from 'lucide-vue-next'
 
-const { t } = useI18n()
 const friendsStore = useFriendsStore()
 const uiStore = useUiStore()
 const { isMobile, isTablet } = useResponsive()

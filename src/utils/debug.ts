@@ -8,7 +8,7 @@ export interface DebugLog {
   level: 'info' | 'warn' | 'error' | 'success'
   category: string
   message: string
-  data?: any
+  data?: unknown
 }
 
 class DebugLogger {
@@ -17,7 +17,7 @@ class DebugLogger {
   private listeners: Set<(logs: DebugLog[]) => void> = new Set()
   public enabled = true
 
-  log(level: DebugLog['level'], category: string, message: string, data?: any) {
+  log(level: DebugLog['level'], category: string, message: string, data?: unknown) {
     if (!this.enabled) return
 
     const log: DebugLog = {
@@ -49,19 +49,19 @@ class DebugLogger {
     this.notifyListeners()
   }
 
-  info(category: string, message: string, data?: any) {
+  info(category: string, message: string, data?: unknown) {
     this.log('info', category, message, data)
   }
 
-  warn(category: string, message: string, data?: any) {
+  warn(category: string, message: string, data?: unknown) {
     this.log('warn', category, message, data)
   }
 
-  error(category: string, message: string, data?: any) {
+  error(category: string, message: string, data?: unknown) {
     this.log('error', category, message, data)
   }
 
-  success(category: string, message: string, data?: any) {
+  success(category: string, message: string, data?: unknown) {
     this.log('success', category, message, data)
   }
 

@@ -15,11 +15,11 @@ function handleClick(e: MouseEvent) {
 </script>
 
 <template>
-  <div @click="handleClick" class="cursor-pointer">
+  <div class="cursor-pointer" @click="handleClick">
     <img
       :src="url"
       :alt="filename"
       class="max-h-[300px] max-w-full rounded-lg border border-border/50 object-contain transition-opacity hover:opacity-80 sm:max-w-[400px]"
-    />
+    >
   </div>
 </template>

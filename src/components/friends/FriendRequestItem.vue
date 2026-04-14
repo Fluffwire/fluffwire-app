@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import type { FriendRequest } from '@/types'
 import { useFriendsStore } from '@/stores/friends'
 import { useAuthStore } from '@/stores/auth'
@@ -13,7 +12,6 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-const { t } = useI18n()
 const friendsStore = useFriendsStore()
 const authStore = useAuthStore()
 

@@ -11,7 +11,7 @@ interface Props {
   isBot?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   alt: '',
   size: 'md',
   status: null,

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useServersStore } from '@/stores/servers'
 import { useUiStore } from '@/stores/ui'
@@ -12,7 +11,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2 } from 'lucide-vue-next'
 
-const { t } = useI18n()
 const serversStore = useServersStore()
 const uiStore = useUiStore()
 const router = useRouter()
@@ -50,7 +48,7 @@ async function handleJoin() {
         <DialogTitle>{{ $t('server.joinServer') }}</DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleJoin" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleJoin">
         <p class="text-sm text-muted-foreground">
           Enter an invite code to join an existing server.
         </p>

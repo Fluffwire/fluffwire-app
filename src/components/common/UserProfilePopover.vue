@@ -189,16 +189,16 @@ function copyUserId() {
     </Popover>
 
     <ContextMenuContent class="w-48">
-      <ContextMenuItem v-if="!isOwnProfile" @click="sendMessage" class="gap-2">
+      <ContextMenuItem v-if="!isOwnProfile" class="gap-2" @click="sendMessage">
         <MessageSquare class="h-4 w-4" />
         {{ $t('friends.message') }}
       </ContextMenuItem>
-      <ContextMenuItem v-if="!isOwnProfile && !isFriend" @click="addFriend" class="gap-2">
+      <ContextMenuItem v-if="!isOwnProfile && !isFriend" class="gap-2" @click="addFriend">
         <UserPlus class="h-4 w-4" />
         {{ $t('friends.addFriend') }}
       </ContextMenuItem>
       <ContextMenuSeparator v-if="!isOwnProfile" />
-      <ContextMenuItem @click="copyUserId" class="gap-2">
+      <ContextMenuItem class="gap-2" @click="copyUserId">
         <Copy class="h-4 w-4" />
         {{ $t('members.copyUserId') }}
       </ContextMenuItem>

@@ -7,7 +7,6 @@ import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger, ContextMenuLabel, ContextMenuSeparator,
 } from '@/components/ui/context-menu'
 import { MicOff, HeadphoneOff, UserPlus, Volume2, Monitor } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
 
 interface Props {
   peer: VoicePeer
@@ -74,15 +73,15 @@ function onVolumeChange(e: Event) {
       <ContextMenuLabel>{{ peer.displayName }}</ContextMenuLabel>
       <ContextMenuSeparator />
 
-      <ContextMenuItem @click="emit('addFriend', peer.userId)" class="gap-2">
+      <ContextMenuItem class="gap-2" @click="emit('addFriend', peer.userId)">
         <UserPlus class="h-4 w-4" />
         Add Friend
       </ContextMenuItem>
 
       <ContextMenuItem
         v-if="peer.streaming"
-        @click="emit('watchStream', peer.userId)"
         class="gap-2"
+        @click="emit('watchStream', peer.userId)"
       >
         <Monitor class="h-4 w-4" />
         Watch Stream
@@ -100,9 +99,9 @@ function onVolumeChange(e: Event) {
           min="0"
           max="200"
           :value="peerVolume"
-          @input="onVolumeChange"
           class="w-full accent-primary"
-        />
+          @input="onVolumeChange"
+        >
       </div>
     </ContextMenuContent>
   </ContextMenu>

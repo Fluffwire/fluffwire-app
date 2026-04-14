@@ -109,6 +109,7 @@ async function handleUnpin(messageId: string) {
                 <span class="text-xs font-medium text-foreground">{{ msg.author.displayName }}</span>
                 <span class="text-[10px] text-muted-foreground">{{ formatDate(msg.timestamp) }}</span>
               </div>
+              <!-- eslint-disable-next-line vue/no-v-html -->
               <div class="mt-0.5 text-xs text-foreground/80 line-clamp-4 message-content" v-html="renderMarkdown(msg.content)" />
             </div>
           </div>

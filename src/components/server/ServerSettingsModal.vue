@@ -15,7 +15,6 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -24,7 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useLabelsStore } from '@/stores/labels'
-import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link, ScrollText, Bot } from 'lucide-vue-next'
+import { Loader2, Camera, ShieldX, Webhook as WebhookIcon, Copy, Trash2, Plus, Pencil, Link } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import ServerBotSettings from './ServerBotSettings.vue'
 
@@ -292,7 +291,7 @@ async function exportServerData() {
 }
 
 // Audit log
-const auditEntries = ref<any[]>([])
+const auditEntries = ref<{ id: string; action: string; targetType?: string; targetId?: string; createdAt: string }[]>([])
 const auditLoading = ref(false)
 const auditHasMore = ref(false)
 
@@ -419,9 +418,11 @@ async function handleSave() {
 
 <template>
   <Dialog v-model:open="isOpen">
-    <DialogContent :class="[
-      isMobile ? 'max-w-[95vw] max-h-[90vh] p-4' : 'sm:max-w-3xl max-h-[85vh]'
-    ]">
+    <DialogContent
+      :class="[
+        isMobile ? 'max-w-[95vw] max-h-[90vh] p-4' : 'sm:max-w-3xl max-h-[85vh]'
+      ]"
+    >
       <div class="absolute top-0 left-0 right-0 h-1 rounded-t-lg bg-gradient-to-r from-primary via-primary/60 to-transparent" />
 
       <DialogHeader>
@@ -429,379 +430,396 @@ async function handleSave() {
       </DialogHeader>
 
       <!-- Tabs (scrollable on mobile) -->
-      <div v-if="isOwner" :class="[
-        'flex gap-2 border-b border-border/50 pb-2',
-        isMobile ? 'overflow-x-auto scrollbar-thin' : ''
-      ]">
+      <div
+        v-if="isOwner" :class="[
+          'flex gap-2 border-b border-border/50 pb-2',
+          isMobile ? 'overflow-x-auto scrollbar-thin' : ''
+        ]"
+      >
         <button
-          @click="activeTab = 'general'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'general' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.general') }}</button>
+          @click="activeTab = 'general'"
+        >
+          {{ $t('server.general') }}
+        </button>
         <button
-          @click="activeTab = 'bans'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'bans' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.bans') }}</button>
+          @click="activeTab = 'bans'"
+        >
+          {{ $t('server.bans') }}
+        </button>
         <button
-          @click="activeTab = 'webhooks'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'webhooks' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.webhooks') }}</button>
+          @click="activeTab = 'webhooks'"
+        >
+          {{ $t('server.webhooks') }}
+        </button>
         <button
-          @click="activeTab = 'bots'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'bots' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.bots') }}</button>
+          @click="activeTab = 'bots'"
+        >
+          {{ $t('server.bots') }}
+        </button>
         <button
-          @click="activeTab = 'invites'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'invites' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.invites') }}</button>
+          @click="activeTab = 'invites'"
+        >
+          {{ $t('server.invites') }}
+        </button>
         <button
-          @click="activeTab = 'labels'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'labels' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.labels') }}</button>
+          @click="activeTab = 'labels'"
+        >
+          {{ $t('server.labels') }}
+        </button>
         <button
-          @click="activeTab = 'audit'"
           :class="['rounded-lg px-3 py-1 text-sm transition-colors whitespace-nowrap', activeTab === 'audit' ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:text-foreground']"
-        >{{ $t('server.auditLog') }}</button>
+          @click="activeTab = 'audit'"
+        >
+          {{ $t('server.auditLog') }}
+        </button>
       </div>
 
       <!-- Scrollable content container -->
-      <div :class="[
-        'overflow-y-auto',
-        isMobile ? 'max-h-[calc(90vh-12rem)]' : 'max-h-[calc(85vh-12rem)]'
-      ]">
+      <div
+        :class="[
+          'overflow-y-auto',
+          isMobile ? 'max-h-[calc(90vh-12rem)]' : 'max-h-[calc(85vh-12rem)]'
+        ]"
+      >
         <!-- Bans tab -->
         <div v-if="activeTab === 'bans'" class="space-y-2">
-        <p v-if="bansLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
-        <p v-else-if="bans.length === 0" class="text-sm text-muted-foreground">{{ $t('server.noBans') }}</p>
-        <div
-          v-for="ban in bans"
-          :key="ban.userId"
-          class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
-        >
-          <div>
-            <p class="text-sm font-medium text-foreground">{{ ban.username }}</p>
-            <p v-if="ban.reason" class="text-xs text-muted-foreground">{{ ban.reason }}</p>
-          </div>
-          <Button size="sm" variant="outline" class="gap-1.5 text-destructive" @click="handleUnban(ban.userId)">
-            <ShieldX class="h-3.5 w-3.5" />
-            {{ $t('server.unban') }}
-          </Button>
-        </div>
-      </div>
-
-      <!-- Webhooks tab -->
-      <div v-if="activeTab === 'webhooks'" class="space-y-3">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">{{ $t('server.manageWebhooks') }}</p>
-          <Button size="sm" variant="outline" class="gap-1.5" @click="showCreateWebhook = !showCreateWebhook">
-            <Plus class="h-3.5 w-3.5" />
-            {{ $t('server.new') }}
-          </Button>
-        </div>
-
-        <!-- Create form -->
-        <div v-if="showCreateWebhook" class="space-y-2 rounded-lg border border-border/50 p-3">
-          <div class="space-y-1">
-            <Label for="webhook-name">{{ $t('server.name') }}</Label>
-            <Input id="webhook-name" v-model="newWebhookName" :placeholder="$t('server.webhookNamePlaceholder')" />
-          </div>
-          <div class="space-y-1">
-            <Label for="webhook-channel">{{ $t('server.channel') }}</Label>
-            <select
-              id="webhook-channel"
-              v-model="newWebhookChannelId"
-              class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
-            >
-              <option value="" disabled>{{ $t('server.selectChannel') }}</option>
-              <option v-for="ch in textChannels" :key="ch.id" :value="ch.id">
-                #{{ ch.name }}
-              </option>
-            </select>
-          </div>
-          <div class="flex justify-end gap-2">
-            <Button size="sm" variant="ghost" @click="showCreateWebhook = false">{{ $t('common.cancel') }}</Button>
-            <Button size="sm" @click="createWebhook" :disabled="!newWebhookName.trim() || !newWebhookChannelId">{{ $t('common.create') }}</Button>
+          <p v-if="bansLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
+          <p v-else-if="bans.length === 0" class="text-sm text-muted-foreground">{{ $t('server.noBans') }}</p>
+          <div
+            v-for="ban in bans"
+            :key="ban.userId"
+            class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
+          >
+            <div>
+              <p class="text-sm font-medium text-foreground">{{ ban.username }}</p>
+              <p v-if="ban.reason" class="text-xs text-muted-foreground">{{ ban.reason }}</p>
+            </div>
+            <Button size="sm" variant="outline" class="gap-1.5 text-destructive" @click="handleUnban(ban.userId)">
+              <ShieldX class="h-3.5 w-3.5" />
+              {{ $t('server.unban') }}
+            </Button>
           </div>
         </div>
 
-        <p v-if="webhooksLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
-        <p v-else-if="webhooks.length === 0 && !showCreateWebhook" class="text-sm text-muted-foreground">{{ $t('server.noWebhooks') }}</p>
-        <div
-          v-for="wh in webhooks"
-          :key="wh.id"
-          class="rounded-lg border border-border/50 px-3 py-2"
-        >
-          <!-- Editing mode -->
-          <div v-if="editingWebhookId === wh.id" class="space-y-2">
+        <!-- Webhooks tab -->
+        <div v-if="activeTab === 'webhooks'" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-muted-foreground">{{ $t('server.manageWebhooks') }}</p>
+            <Button size="sm" variant="outline" class="gap-1.5" @click="showCreateWebhook = !showCreateWebhook">
+              <Plus class="h-3.5 w-3.5" />
+              {{ $t('server.new') }}
+            </Button>
+          </div>
+
+          <!-- Create form -->
+          <div v-if="showCreateWebhook" class="space-y-2 rounded-lg border border-border/50 p-3">
             <div class="space-y-1">
-              <Label>{{ $t('server.name') }}</Label>
-              <Input v-model="editWebhookName" :placeholder="$t('server.webhookNamePlaceholder')" />
+              <Label for="webhook-name">{{ $t('server.name') }}</Label>
+              <Input id="webhook-name" v-model="newWebhookName" :placeholder="$t('server.webhookNamePlaceholder')" />
             </div>
             <div class="space-y-1">
-              <Label>{{ $t('server.channel') }}</Label>
+              <Label for="webhook-channel">{{ $t('server.channel') }}</Label>
               <select
-                v-model="editWebhookChannelId"
+                id="webhook-channel"
+                v-model="newWebhookChannelId"
                 class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
               >
+                <option value="" disabled>{{ $t('server.selectChannel') }}</option>
                 <option v-for="ch in textChannels" :key="ch.id" :value="ch.id">
                   #{{ ch.name }}
                 </option>
               </select>
             </div>
             <div class="flex justify-end gap-2">
-              <Button size="sm" variant="ghost" @click="cancelEditWebhook">{{ $t('common.cancel') }}</Button>
-              <Button size="sm" @click="saveWebhook" :disabled="!editWebhookName.trim() || !editWebhookChannelId">{{ $t('common.save') }}</Button>
+              <Button size="sm" variant="ghost" @click="showCreateWebhook = false">{{ $t('common.cancel') }}</Button>
+              <Button size="sm" :disabled="!newWebhookName.trim() || !newWebhookChannelId" @click="createWebhook">{{ $t('common.create') }}</Button>
             </div>
           </div>
-          <!-- Read-only mode -->
-          <div v-else class="flex items-center justify-between">
+
+          <p v-if="webhooksLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
+          <p v-else-if="webhooks.length === 0 && !showCreateWebhook" class="text-sm text-muted-foreground">{{ $t('server.noWebhooks') }}</p>
+          <div
+            v-for="wh in webhooks"
+            :key="wh.id"
+            class="rounded-lg border border-border/50 px-3 py-2"
+          >
+            <!-- Editing mode -->
+            <div v-if="editingWebhookId === wh.id" class="space-y-2">
+              <div class="space-y-1">
+                <Label>{{ $t('server.name') }}</Label>
+                <Input v-model="editWebhookName" :placeholder="$t('server.webhookNamePlaceholder')" />
+              </div>
+              <div class="space-y-1">
+                <Label>{{ $t('server.channel') }}</Label>
+                <select
+                  v-model="editWebhookChannelId"
+                  class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                >
+                  <option v-for="ch in textChannels" :key="ch.id" :value="ch.id">
+                    #{{ ch.name }}
+                  </option>
+                </select>
+              </div>
+              <div class="flex justify-end gap-2">
+                <Button size="sm" variant="ghost" @click="cancelEditWebhook">{{ $t('common.cancel') }}</Button>
+                <Button size="sm" :disabled="!editWebhookName.trim() || !editWebhookChannelId" @click="saveWebhook">{{ $t('common.save') }}</Button>
+              </div>
+            </div>
+            <!-- Read-only mode -->
+            <div v-else class="flex items-center justify-between">
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <WebhookIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <p class="truncate text-sm font-medium text-foreground">{{ wh.name }}</p>
+                </div>
+                <p class="text-xs text-muted-foreground">
+                  #{{ textChannels.find((c) => c.id === wh.channelId)?.name ?? 'unknown' }}
+                </p>
+              </div>
+              <div class="flex shrink-0 gap-1">
+                <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="startEditWebhook(wh)">
+                  <Pencil class="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyWebhookUrl(wh)">
+                  <Copy class="h-3.5 w-3.5" />
+                </Button>
+                <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="deleteWebhook(wh.id)">
+                  <Trash2 class="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bots tab -->
+        <div v-if="activeTab === 'bots'">
+          <ServerBotSettings v-if="serversStore.currentServer" :server-id="serversStore.currentServer.id" />
+        </div>
+
+        <!-- Invites tab -->
+        <div v-if="activeTab === 'invites'" class="space-y-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm text-muted-foreground">{{ $t('server.manageInvites') }}</p>
+            <Button size="sm" variant="outline" class="gap-1.5" @click="handleCreateInvite">
+              <Plus class="h-3.5 w-3.5" />
+              {{ $t('common.create') }}
+            </Button>
+          </div>
+
+          <p v-if="invitesLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
+          <p v-else-if="invites.length === 0" class="text-sm text-muted-foreground">{{ $t('server.noInvites') }}</p>
+          <div
+            v-for="inv in invites"
+            :key="inv.code"
+            class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
+          >
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
-                <WebhookIcon class="h-4 w-4 shrink-0 text-muted-foreground" />
-                <p class="truncate text-sm font-medium text-foreground">{{ wh.name }}</p>
+                <Link class="h-4 w-4 shrink-0 text-muted-foreground" />
+                <p class="truncate text-sm font-medium font-mono text-foreground">{{ inv.code }}</p>
               </div>
               <p class="text-xs text-muted-foreground">
-                #{{ textChannels.find((c) => c.id === wh.channelId)?.name ?? 'unknown' }}
+                {{ inv.creatorName || $t('server.unknown') }} &middot; {{ inv.uses }} uses
+                <template v-if="inv.createdAt"> &middot; {{ new Date(inv.createdAt).toLocaleDateString() }}</template>
               </p>
             </div>
             <div class="flex shrink-0 gap-1">
-              <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="startEditWebhook(wh)">
-                <Pencil class="h-3.5 w-3.5" />
-              </Button>
-              <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyWebhookUrl(wh)">
+              <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyInviteCode(inv.code)">
                 <Copy class="h-3.5 w-3.5" />
               </Button>
-              <Button size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="deleteWebhook(wh.id)">
+              <Button v-if="isOwner" size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="handleDeleteInvite(inv.code)">
                 <Trash2 class="h-3.5 w-3.5" />
               </Button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Bots tab -->
-      <div v-if="activeTab === 'bots'">
-        <ServerBotSettings v-if="serversStore.currentServer" :server-id="serversStore.currentServer.id" />
-      </div>
-
-      <!-- Invites tab -->
-      <div v-if="activeTab === 'invites'" class="space-y-3">
-        <div class="flex items-center justify-between">
-          <p class="text-sm text-muted-foreground">{{ $t('server.manageInvites') }}</p>
-          <Button size="sm" variant="outline" class="gap-1.5" @click="handleCreateInvite">
-            <Plus class="h-3.5 w-3.5" />
-            {{ $t('common.create') }}
-          </Button>
-        </div>
-
-        <p v-if="invitesLoading" class="text-sm text-muted-foreground">{{ $t('server.loading') }}</p>
-        <p v-else-if="invites.length === 0" class="text-sm text-muted-foreground">{{ $t('server.noInvites') }}</p>
-        <div
-          v-for="inv in invites"
-          :key="inv.code"
-          class="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
-        >
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <Link class="h-4 w-4 shrink-0 text-muted-foreground" />
-              <p class="truncate text-sm font-medium font-mono text-foreground">{{ inv.code }}</p>
+        <!-- Labels tab (cosmetic roles, no permissions) -->
+        <div v-if="activeTab === 'labels'" class="space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="text-lg font-semibold text-foreground">{{ $t('server.labels') }}</h3>
+              <p class="text-xs text-muted-foreground">{{ $t('server.labelsDesc') }}</p>
             </div>
-            <p class="text-xs text-muted-foreground">
-              {{ inv.creatorName || $t('server.unknown') }} &middot; {{ inv.uses }} uses
-              <template v-if="inv.createdAt"> &middot; {{ new Date(inv.createdAt).toLocaleDateString() }}</template>
-            </p>
-          </div>
-          <div class="flex shrink-0 gap-1">
-            <Button size="sm" variant="ghost" class="h-7 w-7 p-0" @click="copyInviteCode(inv.code)">
-              <Copy class="h-3.5 w-3.5" />
-            </Button>
-            <Button v-if="isOwner" size="sm" variant="ghost" class="h-7 w-7 p-0 text-destructive hover:text-destructive" @click="handleDeleteInvite(inv.code)">
-              <Trash2 class="h-3.5 w-3.5" />
+            <Button size="sm" @click="createNewLabel">
+              {{ $t('server.createLabel') }}
             </Button>
           </div>
-        </div>
-      </div>
 
-      <!-- Labels tab (cosmetic roles, no permissions) -->
-      <div v-if="activeTab === 'labels'" class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-lg font-semibold text-foreground">{{ $t('server.labels') }}</h3>
-            <p class="text-xs text-muted-foreground">{{ $t('server.labelsDesc') }}</p>
-          </div>
-          <Button size="sm" @click="createNewLabel">
-            {{ $t('server.createLabel') }}
-          </Button>
-        </div>
-
-        <!-- Label list -->
-        <div class="space-y-1">
-          <button
-            v-for="label in labels"
-            :key="label.id"
-            @click="selectLabel(label)"
-            :class="[
-              'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
-              selectedLabel?.id === label.id ? 'bg-accent' : 'hover:bg-accent/50'
-            ]"
-          >
-            <div
-              class="h-3 w-3 rounded-full"
-              :style="{ backgroundColor: label.color || '#99aab5' }"
-            />
-            <span class="text-foreground">{{ label.name }}</span>
-            <span v-if="label.isEveryone" class="ml-auto text-xs text-muted-foreground">@everyone</span>
-          </button>
-        </div>
-
-        <!-- Label editor (name and color only) -->
-        <div v-if="selectedLabel" class="space-y-4 rounded-lg border border-border p-4">
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ $t('server.labelName') }}</label>
-            <Input v-model="editLabelName" :disabled="selectedLabel.isEveryone" />
-          </div>
-          <div class="space-y-2">
-            <label class="text-sm font-medium text-foreground">{{ $t('server.labelColor') }}</label>
-            <div class="flex gap-2">
-              <button
-                v-for="c in labelColors"
-                :key="c"
-                @click="editLabelColor = c"
-                :class="['h-8 w-8 rounded-full border-2', editLabelColor === c ? 'border-foreground' : 'border-transparent']"
-                :style="{ backgroundColor: c }"
+          <!-- Label list -->
+          <div class="space-y-1">
+            <button
+              v-for="label in labels"
+              :key="label.id"
+              :class="[
+                'flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors',
+                selectedLabel?.id === label.id ? 'bg-accent' : 'hover:bg-accent/50'
+              ]"
+              @click="selectLabel(label)"
+            >
+              <div
+                class="h-3 w-3 rounded-full"
+                :style="{ backgroundColor: label.color || '#99aab5' }"
               />
+              <span class="text-foreground">{{ label.name }}</span>
+              <span v-if="label.isEveryone" class="ml-auto text-xs text-muted-foreground">@everyone</span>
+            </button>
+          </div>
+
+          <!-- Label editor (name and color only) -->
+          <div v-if="selectedLabel" class="space-y-4 rounded-lg border border-border p-4">
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-foreground">{{ $t('server.labelName') }}</label>
+              <Input v-model="editLabelName" :disabled="selectedLabel.isEveryone" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium text-foreground">{{ $t('server.labelColor') }}</label>
+              <div class="flex gap-2">
+                <button
+                  v-for="c in labelColors"
+                  :key="c"
+                  :class="['h-8 w-8 rounded-full border-2', editLabelColor === c ? 'border-foreground' : 'border-transparent']"
+                  :style="{ backgroundColor: c }"
+                  @click="editLabelColor = c"
+                />
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <Button size="sm" @click="saveLabel">{{ $t('common.save') }}</Button>
+              <Button v-if="!selectedLabel.isEveryone" size="sm" variant="destructive" @click="deleteSelectedLabel">
+                {{ $t('common.delete') }}
+              </Button>
             </div>
           </div>
-          <div class="flex gap-2">
-            <Button size="sm" @click="saveLabel">{{ $t('common.save') }}</Button>
-            <Button v-if="!selectedLabel.isEveryone" size="sm" variant="destructive" @click="deleteSelectedLabel">
-              {{ $t('common.delete') }}
+        </div>
+
+        <!-- Audit Log tab -->
+        <div v-if="activeTab === 'audit'" class="space-y-4">
+          <p class="text-sm text-muted-foreground">{{ $t('server.auditLogDesc') }}</p>
+
+          <div v-if="auditLoading" class="text-center text-muted-foreground">
+            {{ $t('server.loading') }}
+          </div>
+
+          <div v-else-if="auditEntries.length === 0" class="text-center text-muted-foreground">
+            {{ $t('server.noAuditEntries') }}
+          </div>
+
+          <div v-else class="space-y-2">
+            <div
+              v-for="entry in auditEntries"
+              :key="entry.id"
+              class="flex items-start gap-3 rounded-lg border border-border p-3"
+            >
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium text-foreground">{{ entry.action }}</div>
+                <div v-if="entry.targetType" class="text-xs text-muted-foreground">
+                  {{ entry.targetType }}: {{ entry.targetId }}
+                </div>
+                <div class="text-xs text-muted-foreground">
+                  {{ new Date(entry.createdAt).toLocaleString() }}
+                </div>
+              </div>
+            </div>
+
+            <Button
+              v-if="auditHasMore"
+              variant="outline"
+              class="w-full"
+              @click="loadMoreAudit"
+            >
+              {{ $t('chat.loadMore') }}
             </Button>
           </div>
         </div>
-      </div>
 
-      <!-- Audit Log tab -->
-      <div v-if="activeTab === 'audit'" class="space-y-4">
-        <p class="text-sm text-muted-foreground">{{ $t('server.auditLogDesc') }}</p>
-
-        <div v-if="auditLoading" class="text-center text-muted-foreground">
-          {{ $t('server.loading') }}
-        </div>
-
-        <div v-else-if="auditEntries.length === 0" class="text-center text-muted-foreground">
-          {{ $t('server.noAuditEntries') }}
-        </div>
-
-        <div v-else class="space-y-2">
-          <div
-            v-for="entry in auditEntries"
-            :key="entry.id"
-            class="flex items-start gap-3 rounded-lg border border-border p-3"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="text-sm font-medium text-foreground">{{ entry.action }}</div>
-              <div v-if="entry.targetType" class="text-xs text-muted-foreground">
-                {{ entry.targetType }}: {{ entry.targetId }}
-              </div>
-              <div class="text-xs text-muted-foreground">
-                {{ new Date(entry.createdAt).toLocaleString() }}
-              </div>
-            </div>
+        <form v-if="activeTab === 'general'" class="space-y-4" @submit.prevent="handleSave">
+          <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
+            {{ error }}
           </div>
 
-          <Button
-            v-if="auditHasMore"
-            variant="outline"
-            class="w-full"
-            @click="loadMoreAudit"
-          >
-            {{ $t('chat.loadMore') }}
-          </Button>
-        </div>
-      </div>
-
-      <form v-if="activeTab === 'general'" @submit.prevent="handleSave" class="space-y-4">
-        <div v-if="error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          {{ error }}
-        </div>
-
-        <!-- Icon Upload -->
-        <div class="flex flex-col items-center gap-3">
-          <button
-            type="button"
-            @click="fileInput?.click()"
-            class="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-secondary transition-all hover:opacity-80"
-          >
-            <img
-              v-if="displayIcon"
-              :src="displayIcon"
-              alt="Server icon"
-              class="h-full w-full object-cover"
-            />
-            <span v-else class="text-lg font-semibold text-muted-foreground">
-              {{ getInitials(serverName || 'S') }}
-            </span>
-            <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
-              <Camera class="h-6 w-6 text-white" />
-            </div>
-          </button>
-          <input
-            ref="fileInput"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="handleFileSelect"
-          />
-          <span class="text-xs text-muted-foreground">{{ $t('server.clickToUpload') }}</span>
-        </div>
-
-        <div class="space-y-2">
-          <Label for="settings-server-name">{{ $t('server.serverName') }}</Label>
-          <Input
-            id="settings-server-name"
-            v-model="serverName"
-            :placeholder="$t('server.serverNamePlaceholder')"
-            required
-          />
-        </div>
-
-        <!-- Export Server Data (owner only) -->
-        <div v-if="isOwner" class="rounded-lg border border-border/50 p-4 space-y-3">
-          <h3 class="text-sm font-medium text-foreground">Export Server</h3>
-          <p class="text-sm text-muted-foreground">Download server data including settings, channels, and members.</p>
+          <!-- Icon Upload -->
+          <div class="flex flex-col items-center gap-3">
+            <button
+              type="button"
+              class="group relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl bg-secondary transition-all hover:opacity-80"
+              @click="fileInput?.click()"
+            >
+              <img
+                v-if="displayIcon"
+                :src="displayIcon"
+                alt="Server icon"
+                class="h-full w-full object-cover"
+              >
+              <span v-else class="text-lg font-semibold text-muted-foreground">
+                {{ getInitials(serverName || 'S') }}
+              </span>
+              <div class="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                <Camera class="h-6 w-6 text-white" />
+              </div>
+            </button>
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="handleFileSelect"
+            >
+            <span class="text-xs text-muted-foreground">{{ $t('server.clickToUpload') }}</span>
+          </div>
 
           <div class="space-y-2">
-            <Label for="exportMessages">Messages</Label>
-            <Select v-model="exportMessageOption" id="exportMessages">
-              <SelectTrigger>
-                <SelectValue placeholder="Select option" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="0">Don't include messages</SelectItem>
-                <SelectItem value="10000">Include last 10,000 messages (recommended)</SelectItem>
-                <SelectItem value="25000">Include last 25,000 messages</SelectItem>
-                <SelectItem value="50000">Include last 50,000 messages (maximum)</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label for="settings-server-name">{{ $t('server.serverName') }}</Label>
+            <Input
+              id="settings-server-name"
+              v-model="serverName"
+              :placeholder="$t('server.serverNamePlaceholder')"
+              required
+            />
           </div>
 
-          <Button variant="outline" type="button" @click="exportServerData" :disabled="exportIsLoading">
-            <Loader2 v-if="exportIsLoading" class="mr-2 h-4 w-4 animate-spin" />
-            Export Server
-          </Button>
-        </div>
+          <!-- Export Server Data (owner only) -->
+          <div v-if="isOwner" class="rounded-lg border border-border/50 p-4 space-y-3">
+            <h3 class="text-sm font-medium text-foreground">Export Server</h3>
+            <p class="text-sm text-muted-foreground">Download server data including settings, channels, and members.</p>
 
-        <DialogFooter class="gap-2">
-          <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
-          <Button type="submit" :disabled="isLoading">
-            <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
-            {{ $t('common.save') }}
-          </Button>
-        </DialogFooter>
-      </form>
+            <div class="space-y-2">
+              <Label for="exportMessages">Messages</Label>
+              <Select id="exportMessages" v-model="exportMessageOption">
+                <SelectTrigger>
+                  <SelectValue placeholder="Select option" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Don't include messages</SelectItem>
+                  <SelectItem value="10000">Include last 10,000 messages (recommended)</SelectItem>
+                  <SelectItem value="25000">Include last 25,000 messages</SelectItem>
+                  <SelectItem value="50000">Include last 50,000 messages (maximum)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button variant="outline" type="button" :disabled="exportIsLoading" @click="exportServerData">
+              <Loader2 v-if="exportIsLoading" class="mr-2 h-4 w-4 animate-spin" />
+              Export Server
+            </Button>
+          </div>
+
+          <DialogFooter class="gap-2">
+            <Button variant="ghost" type="button" @click="uiStore.closeModal()">{{ $t('common.cancel') }}</Button>
+            <Button type="submit" :disabled="isLoading">
+              <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+              {{ $t('common.save') }}
+            </Button>
+          </DialogFooter>
+        </form>
       </div>
       <!-- End scrollable content container -->
-
     </DialogContent>
   </Dialog>
 </template>

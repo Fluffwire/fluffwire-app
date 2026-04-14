@@ -16,10 +16,10 @@ const commandsStore = useCommandsStore()
 
 const channelId = computed(() => route.params.channelId as string)
 const serverId = computed(() => route.params.serverId as string)
-const channel = computed(() => {
-  channelsStore.currentChannelId = channelId.value
-  return channelsStore.currentChannel
-})
+watch(channelId, (id) => {
+  channelsStore.currentChannelId = id
+}, { immediate: true })
+const channel = computed(() => channelsStore.currentChannel)
 const isServerOwner = computed(() =>
   serversStore.currentServer?.ownerId === authStore.user?.id
 )
