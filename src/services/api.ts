@@ -41,11 +41,20 @@ const tauriAdapter: AxiosAdapter = async (config) => {
     if (config.headers) {
       // Handle both plain objects and AxiosHeaders
       if (config.headers instanceof AxiosHeaders) {
-        // AxiosHeaders with entries() method
-        for (const [key, value] of config.headers.entries()) {
-          if (value !== undefined && value !== null) {
-            headers[key] = String(value)
+        // AxiosHeaders - check if entries() method exists
+        if (typeof config.headers.entries === 'function') {
+          for (const [key, value] of config.headers.entries()) {
+            if (value !== undefined && value !== null) {
+              headers[key] = String(value)
+            }
           }
+        } else {
+          // Fallback: iterate over object properties
+          Object.entries(config.headers).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              headers[key] = String(value)
+            }
+          })
         }
       } else {
         // Plain object
