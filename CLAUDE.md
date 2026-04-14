@@ -84,6 +84,19 @@ describe('myFeature', () => {
 3. Ensure type checking passes: `npm run build`
 4. Only then commit and push
 
+## Internationalization (i18n) Requirements ⚠️
+
+**IMPORTANT**: All user-facing text in UI components MUST use the translation system. Never hardcode English strings in templates or component logic.
+
+### Rules
+- Use `$t('namespace.key')` in templates
+- Use `const { t } = useI18n()` and call `t('namespace.key')` in `<script setup>`
+- Add new keys to **both** `src/i18n/locales/en.json` and `src/i18n/locales/sv.json`
+- Follow the existing namespace structure: `auth`, `nav`, `chat`, `settings`, `server`, `channel`, `voice`, `friends`, `members`, `bugs`, `common`
+- Use `common` for generic strings (loading, error, cancel, etc.) that appear across multiple components
+- For pluralization, use vue-i18n's plural syntax: `"key": "singular | plural"` and call `$t('key', count, { count })`
+- Never hardcode locale strings for date formatting — use `locale.value` from `useI18n()`
+
 ## Project Structure
 
 ```

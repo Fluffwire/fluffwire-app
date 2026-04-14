@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, onBeforeUnmount } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { usePresenceStore } from '@/stores/presence'
 import { useUiStore } from '@/stores/ui'
@@ -10,6 +11,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Settings, Check, Circle, MinusCircle, EyeOff } from 'lucide-vue-next'
 import type { UserStatus } from '@/types'
+
+const { t } = useI18n()
 
 const authStore = useAuthStore()
 const presenceStore = usePresenceStore()
@@ -26,10 +29,10 @@ const myStatus = computed(() =>
   authStore.user ? presenceStore.getStatus(authStore.user.id) : 'offline'
 )
 
-const statusOptions: { value: UserStatus; label: string; color: string; icon: typeof Circle }[] = [
-  { value: 'online', label: 'Online', color: 'bg-emerald-500', icon: Circle },
-  { value: 'dnd', label: 'Do Not Disturb', color: 'bg-red-500', icon: MinusCircle },
-  { value: 'offline', label: 'Invisible', color: 'bg-gray-500', icon: EyeOff },
+const statusOptions: { value: UserStatus; labelKey: string; color: string; icon: typeof Circle }[] = [
+  { value: 'online', labelKey: 'common.statusOnline', color: 'bg-emerald-500', icon: Circle },
+  { value: 'dnd', labelKey: 'common.statusDnd', color: 'bg-red-500', icon: MinusCircle },
+  { value: 'offline', labelKey: 'common.statusInvisible', color: 'bg-gray-500', icon: EyeOff },
 ]
 
 const displayStatus = computed(() => {
@@ -38,9 +41,9 @@ const displayStatus = computed(() => {
 })
 
 const statusLabel = computed(() => {
-  if (!wsConnected.value) return 'Disconnected'
+  if (!wsConnected.value) return t('common.statusDisconnected')
   const opt = statusOptions.find((o) => o.value === myStatus.value)
-  return opt?.label ?? 'Online'
+  return opt ? t(opt.labelKey) : t('common.statusOnline')
 })
 
 function setStatus(status: UserStatus) {
@@ -83,7 +86,7 @@ function openSettings() {
         </button>
       </PopoverTrigger>
       <PopoverContent v-if="wsConnected" side="top" align="start" class="w-56 p-1">
-        <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">Set Status</div>
+        <div class="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{{ $t('common.setStatus') }}</div>
         <button
           v-for="opt in statusOptions"
           :key="opt.value"
@@ -91,7 +94,7 @@ function openSettings() {
           class="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
         >
           <span :class="['h-2.5 w-2.5 rounded-full shrink-0', opt.color]" />
-          <span class="flex-1">{{ opt.label }}</span>
+          <span class="flex-1">{{ $t(opt.labelKey) }}</span>
           <Check v-if="myStatus === opt.value" class="h-4 w-4 text-primary shrink-0" />
         </button>
       </PopoverContent>
@@ -108,7 +111,7 @@ function openSettings() {
               <Settings class="h-4 w-4" />
             </button>
           </TooltipTrigger>
-          <TooltipContent>Settings</TooltipContent>
+          <TooltipContent>{{ $t('nav.settings') }}</TooltipContent>
         </Tooltip>
       </div>
     </TooltipProvider>

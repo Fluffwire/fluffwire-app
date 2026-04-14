@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { useUiStore } from '@/stores/ui'
 import { useResponsive } from '@/composables/useResponsive'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Hash, AtSign, Menu, Users, Pin, Search } from 'lucide-vue-next'
+
+const { t } = useI18n()
 
 interface Props {
   channelName: string
@@ -54,7 +56,7 @@ const { isMobile, isTablet } = useResponsive()
               <Search class="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Search</TooltipContent>
+          <TooltipContent>{{ t('common.search') }}</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger as-child>
@@ -67,7 +69,7 @@ const { isMobile, isTablet } = useResponsive()
               <Pin class="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Pinned Messages</TooltipContent>
+          <TooltipContent>{{ t('chat.pinnedMessages') }}</TooltipContent>
         </Tooltip>
         <Tooltip v-if="!isDm">
           <TooltipTrigger as-child>
@@ -81,7 +83,7 @@ const { isMobile, isTablet } = useResponsive()
               <Users class="h-5 w-5" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Toggle Member List</TooltipContent>
+          <TooltipContent>{{ t('voice.toggleMemberList') }}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>

@@ -18,7 +18,16 @@
     "useBackupCode": "Use a backup code",
     "enterBackupCode": "Enter backup code",
     "verify": "Verify",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "emailVerificationRequired": "Email verification required",
+    "verifyEmailSubtitle": "Please verify your email address to unlock all features.",
+    "verificationEmailSent": "Verification email sent! Please check your inbox.",
+    "pleaseWaitBeforeResend": "Please wait before requesting another email.",
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "failedSendVerification": "Failed to send verification email. Please try again.",
+    "sending": "Sending...",
+    "waitCooldown": "Wait {time}",
+    "resendEmail": "Resend Email"
   },
   "nav": {
     "settings": "Settings",
@@ -64,7 +73,14 @@
     "failedUnpin": "Failed to unpin message",
     "addReaction": "Add Reaction",
     "channelNotFound": "Channel not found",
-    "userMentionClicked": "User: {username}"
+    "userMentionClicked": "User: {username}",
+    "searchMessagesTitle": "Search Messages",
+    "searchPlaceholder": "Search messages...",
+    "searching": "Searching...",
+    "resultCount": "{count} result | {count} results",
+    "pinHint": "Pin important messages to find them later",
+    "jump": "Jump",
+    "unpin": "Unpin"
   },
   "settings": {
     "myAccount": "My Account",
@@ -435,6 +451,15 @@
     "yes": "Yes",
     "no": "No",
     "or": "or",
-    "and": "and"
+    "and": "and",
+    "connectionLost": "Connection lost",
+    "statusOnline": "Online",
+    "statusDnd": "Do Not Disturb",
+    "statusInvisible": "Invisible",
+    "statusDisconnected": "Disconnected",
+    "setStatus": "Set Status",
+    "file": "File",
+    "image": "Image",
+    "link": "Link"
   }
 }

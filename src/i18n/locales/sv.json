@@ -18,7 +18,16 @@
     "useBackupCode": "Använd en reservkod",
     "enterBackupCode": "Ange reservkod",
     "verify": "Verifiera",
-    "backToLogin": "Tillbaka till inloggning"
+    "backToLogin": "Tillbaka till inloggning",
+    "emailVerificationRequired": "E-postverifiering krävs",
+    "verifyEmailSubtitle": "Verifiera din e-postadress för att låsa upp alla funktioner.",
+    "verificationEmailSent": "Verifieringsmail skickat! Kolla din inkorg.",
+    "pleaseWaitBeforeResend": "Vänta innan du begär ett nytt mail.",
+    "tooManyRequests": "För många förfrågningar. Försök igen senare.",
+    "failedSendVerification": "Kunde inte skicka verifieringsmail. Försök igen.",
+    "sending": "Skickar...",
+    "waitCooldown": "Vänta {time}",
+    "resendEmail": "Skicka om mail"
   },
   "nav": {
     "settings": "Inställningar",
@@ -64,7 +73,14 @@
     "failedUnpin": "Kunde inte lossa meddelande",
     "addReaction": "Lägg till reaktion",
     "channelNotFound": "Kanal hittades inte",
-    "userMentionClicked": "Användare: {username}"
+    "userMentionClicked": "Användare: {username}",
+    "searchMessagesTitle": "Sök meddelanden",
+    "searchPlaceholder": "Sök meddelanden...",
+    "searching": "Söker...",
+    "resultCount": "{count} resultat | {count} resultat",
+    "pinHint": "Fäst viktiga meddelanden för att hitta dem senare",
+    "jump": "Hoppa till",
+    "unpin": "Lossa"
   },
   "settings": {
     "myAccount": "Mitt konto",
@@ -418,6 +434,15 @@
     "yes": "Ja",
     "no": "Nej",
     "or": "eller",
-    "and": "och"
+    "and": "och",
+    "connectionLost": "Anslutning förlorad",
+    "statusOnline": "Online",
+    "statusDnd": "Stör ej",
+    "statusInvisible": "Osynlig",
+    "statusDisconnected": "Frånkopplad",
+    "setStatus": "Ange status",
+    "file": "Fil",
+    "image": "Bild",
+    "link": "Länk"
   }
 }

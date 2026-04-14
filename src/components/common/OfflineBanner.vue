@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { wsService } from '@/services/websocket'
 import { Button } from '@/components/ui/button'
 import { WifiOff, X } from 'lucide-vue-next'
 
+const { t } = useI18n()
 const emit = defineEmits<{
   dismiss: []
 }>()
@@ -25,14 +27,14 @@ function retry() {
   >
     <div class="fixed inset-x-0 top-0 z-50 flex items-center justify-center gap-3 bg-destructive px-4 py-2 text-sm text-destructive-foreground shadow-lg">
       <WifiOff class="h-4 w-4 shrink-0" />
-      <span class="font-medium">Connection lost</span>
+      <span class="font-medium">{{ t('common.connectionLost') }}</span>
       <Button
         variant="outline"
         size="sm"
         class="h-7 border-destructive-foreground/30 bg-transparent text-destructive-foreground hover:bg-destructive-foreground/10"
         @click="retry"
       >
-        Retry
+        {{ t('common.retry') }}
       </Button>
       <button
         class="ml-1 rounded p-0.5 hover:bg-destructive-foreground/10"
