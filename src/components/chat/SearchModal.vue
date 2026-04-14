@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { Message } from '@/types'
 import { messageApi } from '@/services/messageApi'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -11,6 +12,8 @@ import {
 } from '@/components/ui/dialog'
 import { Search, X, File, Image, Link } from 'lucide-vue-next'
 import { renderMarkdown } from '@/composables/useMarkdown'
+
+const { t } = useI18n()
 
 interface Props {
   channelId: string
@@ -31,9 +34,9 @@ const hasSearched = ref(false)
 const activeFilter = ref<string | null>(null)
 
 const filterOptions = [
-  { key: 'file', label: 'File', icon: File },
-  { key: 'image', label: 'Image', icon: Image },
-  { key: 'link', label: 'Link', icon: Link },
+  { key: 'file', labelKey: 'common.file', icon: File },
+  { key: 'image', labelKey: 'common.image', icon: Image },
+  { key: 'link', labelKey: 'common.link', icon: Link },
 ]
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -105,7 +108,7 @@ function handleJump(messageId: string) {
   <Dialog :open="open" @update:open="emit('update:open', $event)">
     <DialogContent class="sm:max-w-xl max-h-[80vh] flex flex-col">
       <DialogHeader>
-        <DialogTitle>Search Messages</DialogTitle>
+        <DialogTitle>{{ $t('chat.searchMessages') }}</DialogTitle>
       </DialogHeader>
 
       <div class="space-y-3">
@@ -114,7 +117,7 @@ function handleJump(messageId: string) {
           <Search class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             v-model="query"
-            placeholder="Search messages..."
+            :placeholder="$t('chat.searchPlaceholder')"
             class="pl-10"
             autofocus
           />
@@ -134,7 +137,7 @@ function handleJump(messageId: string) {
             ]"
           >
             <component :is="f.icon" class="h-3 w-3" />
-            {{ f.label }}
+            {{ $t(f.labelKey) }}
           </button>
         </div>
       </div>
@@ -143,17 +146,17 @@ function handleJump(messageId: string) {
       <ScrollArea class="flex-1 min-h-0 mt-3">
         <div class="space-y-2 pr-2">
           <div v-if="isSearching" class="flex items-center justify-center py-8">
-            <span class="text-sm text-muted-foreground">Searching...</span>
+            <span class="text-sm text-muted-foreground">{{ $t('common.searching') }}</span>
           </div>
 
           <div v-else-if="hasSearched && results.length === 0" class="flex flex-col items-center justify-center py-8">
             <Search class="mb-2 h-8 w-8 text-muted-foreground/30" />
-            <p class="text-sm text-muted-foreground">No results found</p>
+            <p class="text-sm text-muted-foreground">{{ $t('common.noResultsFound') }}</p>
           </div>
 
           <template v-else>
             <div v-if="hasSearched && total > 0" class="mb-2 text-xs text-muted-foreground">
-              {{ total }} result{{ total !== 1 ? 's' : '' }}
+              {{ total }} {{ total !== 1 ? $t('common.results') : $t('common.result') }}
             </div>
 
             <button

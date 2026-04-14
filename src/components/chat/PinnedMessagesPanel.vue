@@ -79,7 +79,7 @@ async function handleUnpin(messageId: string) {
     <ScrollArea class="flex-1">
       <div class="p-3 space-y-2">
         <div v-if="isLoading" class="flex items-center justify-center py-8">
-          <span class="text-sm text-muted-foreground">Loading...</span>
+          <span class="text-sm text-muted-foreground">{{ $t('common.loading') }}</span>
         </div>
 
         <div
@@ -89,7 +89,7 @@ async function handleUnpin(messageId: string) {
           <Pin class="mb-3 h-10 w-10 text-muted-foreground/30" />
           <p class="text-sm text-muted-foreground">{{ $t('chat.noPinnedMessages') }}</p>
           <p class="mt-1 text-xs text-muted-foreground/60">
-            Pin important messages to find them later
+            {{ $t('chat.pinImportantMessage') }}
           </p>
         </div>
 
@@ -119,7 +119,7 @@ async function handleUnpin(messageId: string) {
               class="h-6 px-2 text-xs"
               @click="emit('jumpTo', msg.id)"
             >
-              Jump
+              {{ $t('common.jump') }}
             </Button>
             <Button
               v-if="isOwner || msg.author.id === authStore.user?.id"
@@ -128,7 +128,7 @@ async function handleUnpin(messageId: string) {
               class="h-6 px-2 text-xs text-destructive hover:text-destructive"
               @click="handleUnpin(msg.id)"
             >
-              Unpin
+              {{ $t('common.unpin') }}
             </Button>
           </div>
         </div>

@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { resendVerification } from '@/services/emailApi'
 import { Button } from '@/components/ui/button'
 import { AlertCircle } from 'lucide-vue-next'
+
+const { t } = useI18n()
 
 const authStore = useAuthStore()
 const loading = ref(false)
@@ -23,7 +26,7 @@ async function handleResend() {
 
   try {
     await resendVerification()
-    message.value = 'Verification email sent! Please check your inbox.'
+    message.value = t('auth.verificationEmailSent')
     startCooldown(300) // 5 minutes
   } catch (error: any) {
     if (error.response?.status === 429) {
@@ -32,12 +35,12 @@ async function handleResend() {
       if (match) {
         const seconds = parseInt(match[1])
         startCooldown(seconds)
-        message.value = `Please wait before requesting another email.`
+        message.value = t('auth.pleaseWaitResend')
       } else {
-        message.value = 'Too many requests. Please try again later.'
+        message.value = t('auth.tooManyRequests')
       }
     } else {
-      message.value = 'Failed to send verification email. Please try again.'
+      message.value = t('auth.failedSendVerification')
     }
   } finally {
     loading.value = false
@@ -79,8 +82,8 @@ function formatCooldown(seconds: number): string {
       <div class="flex items-center gap-3">
         <AlertCircle :size="20" />
         <div>
-          <p class="font-medium">Email verification required</p>
-          <p class="text-sm opacity-90">Please verify your email address to unlock all features.</p>
+          <p class="font-medium">{{ $t('auth.emailVerificationRequired') }}</p>
+          <p class="text-sm opacity-90">{{ $t('auth.verifyEmailDesc') }}</p>
         </div>
       </div>
 
@@ -93,9 +96,9 @@ function formatCooldown(seconds: number): string {
           variant="secondary"
           size="sm"
         >
-          <span v-if="loading">Sending...</span>
-          <span v-else-if="cooldownSeconds > 0">Wait {{ formatCooldown(cooldownSeconds) }}</span>
-          <span v-else>Resend Email</span>
+          <span v-if="loading">{{ $t('auth.sending') }}</span>
+          <span v-else-if="cooldownSeconds > 0">{{ $t('auth.wait') }} {{ formatCooldown(cooldownSeconds) }}</span>
+          <span v-else>{{ $t('auth.resendEmail') }}</span>
         </Button>
       </div>
     </div>

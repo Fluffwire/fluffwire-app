@@ -84,6 +84,56 @@ describe('myFeature', () => {
 3. Ensure type checking passes: `npm run build`
 4. Only then commit and push
 
+## Internationalization (i18n) Requirements ⚠️
+
+**IMPORTANT**: All user-facing text MUST be internationalized. Never hardcode English strings in components.
+
+### How to Add Translations
+1. **Add keys to translation files**:
+   - English: `src/i18n/locales/en.json`
+   - Swedish: `src/i18n/locales/sv.json`
+   - Organize by namespace: `auth`, `chat`, `server`, `settings`, `voice`, `common`, etc.
+
+2. **Use in components**:
+   ```vue
+   <script setup>
+   import { useI18n } from 'vue-i18n'
+   const { t } = useI18n()
+   </script>
+
+   <template>
+     <!-- In template: -->
+     <p>{{ $t('auth.welcomeBack') }}</p>
+
+     <!-- In script: -->
+     <p>{{ t('common.loading') }}</p>
+   </template>
+   ```
+
+3. **Translation key structure**:
+   - `auth.*` — Login, registration, verification
+   - `chat.*` — Messages, channels, search
+   - `server.*` — Server management, invites
+   - `settings.*` — User settings, preferences, status
+   - `voice.*` — Voice chat, screen share
+   - `common.*` — Reusable UI text (loading, retry, save, cancel, etc.)
+
+### Current Support
+- English (`en`) - Complete
+- Swedish (`sv`) - Complete
+
+### Never Do This ❌
+```vue
+<p>Email verification required</p>  <!-- WRONG -->
+<Button>Retry</Button>               <!-- WRONG -->
+```
+
+### Always Do This ✅
+```vue
+<p>{{ $t('auth.emailVerificationRequired') }}</p>  <!-- CORRECT -->
+<Button>{{ $t('common.retry') }}</Button>          <!-- CORRECT -->
+```
+
 ## Project Structure
 
 ```

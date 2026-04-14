@@ -18,7 +18,16 @@
     "useBackupCode": "Use a backup code",
     "enterBackupCode": "Enter backup code",
     "verify": "Verify",
-    "backToLogin": "Back to login"
+    "backToLogin": "Back to login",
+    "emailVerificationRequired": "Email verification required",
+    "verifyEmailDesc": "Please verify your email address to unlock all features.",
+    "sending": "Sending...",
+    "resendEmail": "Resend Email",
+    "wait": "Wait",
+    "verificationEmailSent": "Verification email sent! Please check your inbox.",
+    "pleaseWaitResend": "Please wait before requesting another email.",
+    "tooManyRequests": "Too many requests. Please try again later.",
+    "failedSendVerification": "Failed to send verification email. Please try again."
   },
   "nav": {
     "settings": "Settings",
@@ -64,7 +73,10 @@
     "failedUnpin": "Failed to unpin message",
     "addReaction": "Add Reaction",
     "channelNotFound": "Channel not found",
-    "userMentionClicked": "User: {username}"
+    "userMentionClicked": "User: {username}",
+    "searchPlaceholder": "Search messages...",
+    "toggleMemberList": "Toggle Member List",
+    "pinImportantMessage": "Pin important messages to find them later"
   },
   "settings": {
     "myAccount": "My Account",
@@ -205,7 +217,10 @@
     "updateCheckComplete": "Update check complete",
     "updateCheckFailed": "Update check failed",
     "autoUpdateEnabled": "Automatic updates enabled",
-    "autoUpdateDisabled": "Automatic updates disabled"
+    "autoUpdateDisabled": "Automatic updates disabled",
+    "doNotDisturb": "Do Not Disturb",
+    "invisible": "Invisible",
+    "setStatus": "Set Status"
   },
   "server": {
     "createServer": "Create a Server",
@@ -435,6 +450,17 @@
     "yes": "Yes",
     "no": "No",
     "or": "or",
-    "and": "and"
+    "and": "and",
+    "connectionLost": "Connection lost",
+    "disconnected": "Disconnected",
+    "noResultsFound": "No results found",
+    "file": "File",
+    "image": "Image",
+    "link": "Link",
+    "searching": "Searching...",
+    "jump": "Jump",
+    "unpin": "Unpin",
+    "results": "results",
+    "result": "result"
   }
 }
