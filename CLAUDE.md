@@ -83,7 +83,8 @@ describe('myFeature', () => {
 2. Run `npm run lint` — **zero errors required** (warnings are okay)
 3. Run `npm run test` — **zero failures required**
 4. Ensure type checking passes: `npm run build`
-5. Only then commit and push
+5. If the change adds or modifies user-facing features, update the docs at `/home/cryo/fluffwire-web/docs/guide/`
+6. Only then commit and push
 
 ## Internationalization (i18n) Requirements ⚠️
 
