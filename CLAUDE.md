@@ -83,7 +83,10 @@ describe('myFeature', () => {
 2. Run `npm run lint` — **zero errors required** (warnings are okay)
 3. Run `npm run test` — **zero failures required**
 4. Ensure type checking passes: `npm run build`
-5. If the change adds or modifies user-facing features, update the docs at `/home/cryo/fluffwire-web/docs/guide/`
+5. If the change adds or modifies **user-facing features**: update `/home/cryo/fluffwire-web/docs/guide/`
+   - New feature → add a new `.md` page and a sidebar entry in `docs/.vitepress/config.ts`
+   - Changed feature → update the relevant existing page
+   - After editing docs: `cd /home/cryo/fluffwire-web && ./deploy.sh`
 6. Only then commit and push
 
 ## Internationalization (i18n) Requirements ⚠️
