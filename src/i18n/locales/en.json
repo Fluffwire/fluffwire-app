@@ -220,6 +220,7 @@
     "autoUpdateDisabled": "Automatic updates disabled",
     "doNotDisturb": "Do Not Disturb",
     "invisible": "Invisible",
+    "online": "Online",
     "setStatus": "Set Status"
   },
   "server": {
@@ -302,7 +303,18 @@
     "dataExported": "Data exported successfully",
     "failedExportData": "Failed to export data",
     "exportMessages": "Export Messages",
-    "exportMessagesDesc": "Download all server messages as JSON"
+    "exportMessagesDesc": "Download all server messages as JSON",
+    "dangerZone": "Danger Zone",
+    "transfer": "Transfer",
+    "transferOwnership": "Transfer Ownership",
+    "transferOwnershipDesc": "Transfer server ownership to another member. You will be demoted to Admin.",
+    "selectNewOwner": "Select new owner",
+    "selectMember": "Select a member...",
+    "transferOwnershipBtn": "Transfer Ownership",
+    "transferOwnershipConfirm": "Are you sure? This cannot be undone. You will become an Admin.",
+    "confirmTransfer": "Yes, transfer ownership",
+    "ownershipTransferred": "Server ownership transferred",
+    "failedTransferOwnership": "Failed to transfer ownership"
   },
   "channel": {
     "createChannel": "Create Channel",
@@ -365,7 +377,10 @@
     "changeSource": "Change Screen/Window",
     "joinError": "Failed to join voice channel",
     "desktopPermissionError": "Microphone access blocked",
-    "desktopPermissionErrorDesc": "Voice channels are not working in the desktop app due to a known Tauri bug. Please use the web app at app.fluffwire.com to join voice channels."
+    "desktopPermissionErrorDesc": "Voice channels are not working in the desktop app due to a known Tauri bug. Please use the web app at app.fluffwire.com to join voice channels.",
+    "hideSelfView": "Hide Self View",
+    "showSelfView": "Show Self View",
+    "inviteRateLimited": "Please wait before sending another invite"
   },
   "friends": {
     "friends": "Friends",

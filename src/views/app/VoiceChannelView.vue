@@ -299,10 +299,10 @@ watch([channelId, serverId], async ([newChannelId, newServerId], [oldChannelId, 
         @watch-stream="handleWatchStream"
       />
 
-      <!-- Other peers (exclude self if showing self-view) -->
+      <!-- Other peers (exclude self if screen sharing, regardless of showSelfStream) -->
       <VoicePeerTile
         v-for="peer in voiceStore.peers.filter(p =>
-          !(voiceStore.isScreenSharing && voiceStore.showSelfStream && p.userId === authStore.user?.id)
+          !(voiceStore.isScreenSharing && p.userId === authStore.user?.id)
         )"
         :key="peer.userId"
         :peer="peer"
