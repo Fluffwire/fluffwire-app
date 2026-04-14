@@ -21,7 +21,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { UserX, Ban, MessageSquare, Copy, User, Shield, PhoneCall } from 'lucide-vue-next'
+import { UserX, Ban, MessageSquare, Copy, User, Shield, PhoneCall, Monitor } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
@@ -189,6 +189,12 @@ const canInviteToVoice = computed(() => {
   return !isInVoice
 })
 
+// Check if member is actively streaming
+const isStreaming = computed(() => {
+  const peer = voiceStore.peers.find(p => p.userId === props.member.userId)
+  return peer?.streaming ?? false
+})
+
 function sendVoiceInvite() {
   if (!voiceStore.currentChannelId || !voiceStore.currentServerId) return
 
@@ -221,6 +227,14 @@ function sendVoiceInvite() {
                 :style="memberLabelColor ? { color: memberLabelColor } : undefined"
               >
                 {{ member.nickname ?? member.user?.displayName ?? 'Unknown' }}
+              </div>
+              <div
+                v-if="isStreaming"
+                class="shrink-0 flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                title="Screen sharing"
+              >
+                <Monitor class="h-2.5 w-2.5" />
+                <span>LIVE</span>
               </div>
               <div
                 v-if="memberLabel"
