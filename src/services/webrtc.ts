@@ -482,7 +482,6 @@ class WebRTCService {
         enabled: videoTrack.enabled,
         muted: videoTrack.muted,
         readyState: videoTrack.readyState,
-        settings: videoTrack.getSettings(),
       })
 
       // Ensure track is enabled
