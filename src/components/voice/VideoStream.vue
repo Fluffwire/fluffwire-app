@@ -42,12 +42,18 @@ async function playVideo() {
     return
   }
 
+  console.log('[VideoStream] playVideo called, readyState:', video.readyState, 'skipMutedCheck:', props.skipMutedCheck)
+
   // Wait for video to have data before playing
+  // Firefox bug: track can unmute but frames haven't arrived yet (readyState: 0)
+  // Always wait for canplay when no data available, regardless of skipMutedCheck
   if (video.readyState < 2) {
+    console.log('[VideoStream] Waiting for canplay event...')
     await new Promise<void>((resolve) => {
       let timeoutId: number | undefined
 
       const onCanPlay = () => {
+        console.log('[VideoStream] canplay event fired!')
         video.removeEventListener('canplay', onCanPlay)
         if (timeoutId) clearTimeout(timeoutId)
         resolve()
@@ -60,10 +66,14 @@ async function playVideo() {
         resolve()
       }, 5000) as unknown as number
     })
+  } else {
+    console.log('[VideoStream] Skipping canplay wait (readyState >= 2, data already available)')
   }
 
   try {
+    console.log('[VideoStream] Calling video.play()...')
     await video.play()
+    console.log('[VideoStream] video.play() succeeded, setting state to playing')
     state.value = 'playing'
     retryCount.value = 0
     lastError.value = null
@@ -120,6 +130,7 @@ async function setupStream(stream: MediaStream | null | undefined) {
     return
   }
 
+  console.log('[VideoStream] Setting up stream, skipMutedCheck:', props.skipMutedCheck)
   state.value = 'loading'
 
   // Wait for video element to mount
@@ -142,6 +153,13 @@ async function setupStream(stream: MediaStream | null | undefined) {
     return
   }
 
+  console.log('[VideoStream] Video track state:', {
+    muted: videoTrack.muted,
+    enabled: videoTrack.enabled,
+    readyState: videoTrack.readyState,
+    label: videoTrack.label,
+  })
+
   // Set up track ended handler
   trackEndedHandler = () => {
     cleanup()
@@ -149,14 +167,27 @@ async function setupStream(stream: MediaStream | null | undefined) {
   }
   videoTrack.addEventListener('ended', trackEndedHandler)
 
-  // If track is muted, wait for unmute before playing (unless skipMutedCheck is true)
-  if (videoTrack.muted && !props.skipMutedCheck) {
+  // Special handling for muted tracks when skipMutedCheck is true
+  // Don't play yet - wait for unmute when frames are actually available
+  if (videoTrack.muted && props.skipMutedCheck) {
+    console.log('[VideoStream] Track is muted but skipMutedCheck is true, waiting for frames...')
+
+    // Keep loading state until frames arrive
     trackUnmuteHandler = async () => {
+      console.log('[VideoStream] Track unmuted - frames available, playing video')
+      await playVideo()
+    }
+    videoTrack.addEventListener('unmute', trackUnmuteHandler, { once: true })
+  } else if (videoTrack.muted && !props.skipMutedCheck) {
+    console.log('[VideoStream] Track is muted, waiting for unmute event')
+    trackUnmuteHandler = async () => {
+      console.log('[VideoStream] Track unmuted, playing video')
       await playVideo()
     }
     videoTrack.addEventListener('unmute', trackUnmuteHandler, { once: true })
   } else {
     // Track is ready (or we're skipping muted check), play immediately
+    console.log('[VideoStream] Playing video immediately (skipMutedCheck or track not muted)')
     await playVideo()
   }
 }

@@ -117,6 +117,7 @@ class WebRTCService {
   }
 
   async joinVoiceChannel(serverId: string, channelId: string): Promise<void> {
+    console.log('[WebRTC] joinVoiceChannel called', { serverId, channelId })
     await this.leaveVoiceChannel()
 
     this._currentChannelId = channelId
@@ -125,6 +126,7 @@ class WebRTCService {
     this.iceCandidateBuffer = []
 
     try {
+      console.log('[WebRTC] Requesting microphone access...')
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -132,6 +134,7 @@ class WebRTCService {
           autoGainControl: true,
         },
       })
+      console.log('[WebRTC] Microphone access granted, stream:', this.localStream)
 
       this.peerConnection = new RTCPeerConnection(ICE_SERVERS)
 
@@ -158,11 +161,20 @@ class WebRTCService {
 
       this.peerConnection.oniceconnectionstatechange = () => {
         const state = this.peerConnection?.iceConnectionState
+        console.log('[WebRTC] ICE connection state changed:', state)
 
         // ICE disconnected or failed - might affect screen sharing
         if (state === 'disconnected' || state === 'failed') {
           console.warn('[WebRTC] ICE connection issues - screen share may be affected')
+        } else if (state === 'connected' || state === 'completed') {
+          console.log('[WebRTC] ICE connection established successfully')
         }
+      }
+
+      // Also log ICE gathering state
+      this.peerConnection.onicegatheringstatechange = () => {
+        const state = this.peerConnection?.iceGatheringState
+        console.log('[WebRTC] ICE gathering state changed:', state)
       }
 
       // Apply persisted mute state to new tracks
@@ -178,6 +190,14 @@ class WebRTCService {
         // Route by stream ID: "screen-stream-{userId}" → video, "stream-{userId}" → audio
         if (stream.id.startsWith('screen-stream-')) {
           const userId = stream.id.slice('screen-stream-'.length)
+          console.log('[WebRTC] Received remote video track for screen share', {
+            userId,
+            streamId: stream.id,
+            trackId: event.track.id,
+            trackState: event.track.readyState,
+            trackMuted: event.track.muted,
+            trackEnabled: event.track.enabled,
+          })
 
           // Skip if we already have this exact track object (prevents duplicate processing during renegotiation)
           // NOTE: Pion uses deterministic track IDs (screen-{userId}), so we must check track object identity, not ID
@@ -186,13 +206,30 @@ class WebRTCService {
             const existingTracks = existingStream.getTracks()
             // Check if this is the exact same track object (not just same ID)
             if (existingTracks.includes(event.track)) {
+              console.log('[WebRTC] Skipping duplicate track (same object reference)')
               return // Don't update Map or call callback - keep existing stream object
             }
+          }
+
+          // WORKAROUND: Remote video tracks from Pion often arrive muted even though frames are being sent
+          // This seems to be a browser/WebRTC quirk. Force enable the track to ensure video displays.
+          if (event.track.muted || !event.track.enabled) {
+            console.log('[WebRTC] Track is muted/disabled, force enabling...')
+            event.track.enabled = true
+            // Try to trigger the track to produce frames by toggling enabled state
+            setTimeout(() => {
+              if (event.track.enabled && event.track.muted) {
+                console.log('[WebRTC] Track still muted after enable, toggling...')
+                event.track.enabled = false
+                event.track.enabled = true
+              }
+            }, 100)
           }
 
           this.remoteStreams.set(stream.id, stream)
 
           // Always notify immediately - VideoStream component will handle track readiness
+          console.log('[WebRTC] Notifying UI of remote video stream')
           this.onRemoteVideoStream?.(userId, stream)
 
           // Clean up when track ends
@@ -322,15 +359,20 @@ class WebRTCService {
       case 'offer': {
         // SFU renegotiation — server is adding/removing tracks.
         // The server always wins (impolite peer in Perfect Negotiation).
+        const renegotiationStart = Date.now()
+        console.log('[WebRTC] Received renegotiation offer from server')
+
         const state = this.peerConnection.signalingState
         if (state === 'have-local-offer') {
           // Glare: we sent an offer and server sent one too. Roll back ours.
+          console.log('[WebRTC] Glare detected, rolling back local offer')
           await this.peerConnection.setLocalDescription({ type: 'rollback' })
         } else if (state !== 'stable') {
           console.warn(`[WebRTC] Cannot handle offer in state ${state}, skipping`)
           return
         }
 
+        console.log('[WebRTC] Setting remote description (server offer)')
         await this.peerConnection.setRemoteDescription(
           new RTCSessionDescription(signal.payload as RTCSessionDescriptionInit)
         )
@@ -338,10 +380,13 @@ class WebRTCService {
 
         // CRITICAL: Drain ICE candidates BEFORE creating answer
         // ICE candidates must be added to the remote description before negotiation
+        console.log('[WebRTC] Draining ICE candidate buffer')
         await this.drainIceCandidateBuffer()
 
+        console.log('[WebRTC] Creating answer to server offer')
         const answer = await this.peerConnection.createAnswer()
         await this.peerConnection.setLocalDescription(answer)
+        console.log('[WebRTC] Renegotiation completed in', Date.now() - renegotiationStart, 'ms, sending answer')
 
         wsService.sendDispatch('VOICE_SIGNAL', {
           type: 'answer',
@@ -411,6 +456,9 @@ class WebRTCService {
   async startScreenShare(): Promise<void> {
     if (!this.peerConnection || !this._currentChannelId) return
 
+    const startTime = Date.now()
+    console.log('[WebRTC] Starting screen share - calling getDisplayMedia()')
+
     this.screenStream = await navigator.mediaDevices.getDisplayMedia({
       video: {
         cursor: 'always',
@@ -419,9 +467,20 @@ class WebRTCService {
       audio: true,
     })
 
+    console.log('[WebRTC] getDisplayMedia() completed in', Date.now() - startTime, 'ms')
+
     // Auto-stop when user clicks browser's "Stop sharing" button
     const videoTrack = this.screenStream.getVideoTracks()[0]
     if (videoTrack) {
+      console.log('[WebRTC] Video track state:', {
+        id: videoTrack.id,
+        label: videoTrack.label,
+        enabled: videoTrack.enabled,
+        muted: videoTrack.muted,
+        readyState: videoTrack.readyState,
+        settings: videoTrack.getSettings(),
+      })
+
       // Ensure track is enabled
       videoTrack.enabled = true
 
@@ -432,11 +491,11 @@ class WebRTCService {
       }
 
       videoTrack.onmute = () => {
-        console.warn('[WebRTC] Screen share video track MUTED')
+        console.warn('[WebRTC] Screen share video track MUTED at', Date.now() - startTime, 'ms')
       }
 
       videoTrack.onunmute = () => {
-        // Track unmuted - video data should flow now
+        console.log('[WebRTC] Screen share video track UNMUTED at', Date.now() - startTime, 'ms - video data should flow now')
       }
 
       // Poll track state every 2 seconds to detect if it stops
@@ -454,17 +513,21 @@ class WebRTCService {
     }
 
     // Add tracks to PeerConnection
+    console.log('[WebRTC] Adding tracks to peer connection')
     for (const track of this.screenStream.getTracks()) {
       // Ensure all tracks are enabled
       track.enabled = true
       this.peerConnection.addTrack(track, this.screenStream)
+      console.log('[WebRTC] Added track:', track.kind, track.id, 'enabled:', track.enabled, 'muted:', track.muted)
     }
 
     this._isScreenSharing = true
 
     // Create offer with new screen tracks to ensure proper SDP negotiation
+    console.log('[WebRTC] Creating offer for screen share')
     const offer = await this.peerConnection.createOffer()
     await this.peerConnection.setLocalDescription(offer)
+    console.log('[WebRTC] Offer created and set as local description at', Date.now() - startTime, 'ms')
 
     // Signal the server with the offer (ensures SDP negotiation before streaming)
     wsService.sendDispatch('VOICE_SIGNAL', {
@@ -472,16 +535,16 @@ class WebRTCService {
       payload: offer,
       channelId: this._currentChannelId,
     })
+    console.log('[WebRTC] Screen share signal sent to server at', Date.now() - startTime, 'ms')
 
-    // Monitor video bytes sent to detect if transmission stops
+    // Monitor stats silently (removed verbose logging)
     const statsInterval = setInterval(async () => {
       if (!this._isScreenSharing || !this.peerConnection) {
         clearInterval(statsInterval)
         return
       }
-
-      // Stats monitoring removed to reduce console spam
-    }, 3000)
+      // Stats monitoring can be re-enabled for debugging if needed
+    }, 5000)
   }
 
   async changeScreenSource(): Promise<void> {

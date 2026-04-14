@@ -70,10 +70,18 @@ function handleClick() {
 }
 
 async function navigateToChannel() {
+  console.log('[ChannelItem] navigateToChannel called', {
+    channelId: props.channel.id,
+    type: props.channel.type,
+    serverId: props.channel.serverId,
+    currentChannelId: voiceStore.currentChannelId,
+  })
   router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
   if (props.channel.type === 'voice' && voiceStore.currentChannelId !== props.channel.id) {
+    console.log('[ChannelItem] Joining voice channel...')
     try {
       await voiceStore.joinChannel(props.channel.serverId, props.channel.id)
+      console.log('[ChannelItem] Successfully joined voice channel')
     } catch (error) {
       console.error('[ChannelItem] Failed to join voice channel:', error)
 
