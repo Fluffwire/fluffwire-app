@@ -118,7 +118,7 @@ const tauriAdapter: AxiosAdapter = async (config) => {
         }
       } else {
         // Fallback: treat as plain object or Map-like structure
-        const headers = response.headers as Record<string, unknown>
+        const headers = response.headers as unknown as Record<string, unknown>
         if (typeof headers.forEach === 'function') {
           (headers.forEach as (callback: (value: string, key: string) => void) => void)((value: string, key: string) => {
             responseHeaders[key] = value
