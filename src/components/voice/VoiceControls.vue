@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useVoiceStore } from '@/stores/voice'
+import { useChannelsStore } from '@/stores/channels'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import {
@@ -8,9 +10,26 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Mic, MicOff, Headphones, HeadphoneOff, PhoneOff, Monitor, MonitorOff, Eye, EyeOff, RefreshCw } from 'lucide-vue-next'
 
+const router = useRouter()
 const voiceStore = useVoiceStore()
+const channelsStore = useChannelsStore()
 
 const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming))
+
+async function handleDisconnect() {
+  const serverId = voiceStore.currentServerId
+  await voiceStore.leaveChannel()
+
+  // Navigate to first text channel in the server
+  if (serverId) {
+    const textChannel = channelsStore.channels.find(
+      (c) => c.serverId === serverId && c.type === 'text'
+    )
+    if (textChannel) {
+      router.push(`/channels/${serverId}/${textChannel.id}`)
+    }
+  }
+}
 </script>
 
 <template>
@@ -99,7 +118,7 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
             variant="ghost"
             size="icon"
             class="h-8 w-8 text-muted-foreground hover:bg-destructive/20 hover:text-destructive"
-            @click="voiceStore.leaveChannel()"
+            @click="handleDisconnect()"
           >
             <PhoneOff class="h-4 w-4" />
           </Button>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useVoiceStore } from '@/stores/voice'
 import { useChannelsStore } from '@/stores/channels'
 import { useAuthStore } from '@/stores/auth'
@@ -23,6 +23,7 @@ import { debugLogger } from '@/utils/debug'
 
 const { t } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const voiceStore = useVoiceStore()
 const channelsStore = useChannelsStore()
 const authStore = useAuthStore()
@@ -105,6 +106,21 @@ function handleAddFriend(userId: string) {
   const peer = voiceStore.peers.find((p) => p.userId === userId)
   if (peer?.username) {
     friendsStore.sendRequest(peer.username)
+  }
+}
+
+async function handleDisconnect() {
+  const currentServerId = voiceStore.currentServerId
+  await voiceStore.leaveChannel()
+
+  // Navigate to first text channel in the server
+  if (currentServerId) {
+    const textChannel = channelsStore.channels.find(
+      (c) => c.serverId === currentServerId && c.type === 'text'
+    )
+    if (textChannel) {
+      router.push(`/channels/${currentServerId}/${textChannel.id}`)
+    }
   }
 }
 
@@ -232,7 +248,7 @@ watch([channelId, serverId], async ([newChannelId, newServerId], [oldChannelId, 
                 variant="ghost"
                 size="icon"
                 class="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                @click="voiceStore.leaveChannel()"
+                @click="handleDisconnect()"
               >
                 <PhoneOff class="h-5 w-5" />
               </Button>
