@@ -99,12 +99,32 @@ const tauriAdapter: AxiosAdapter = async (config) => {
       data = await response.text()
     }
 
+    // Convert headers to plain object (compatible with different Tauri versions)
+    const responseHeaders: Record<string, string> = {}
+    if (response.headers) {
+      // Try entries() method first (older Tauri versions)
+      if (typeof response.headers.entries === 'function') {
+        for (const [key, value] of response.headers.entries()) {
+          responseHeaders[key] = value
+        }
+      } else {
+        // Fallback: treat as plain object or Map-like structure
+        if (typeof (response.headers as any).forEach === 'function') {
+          (response.headers as any).forEach((value: string, key: string) => {
+            responseHeaders[key] = value
+          })
+        } else if (typeof response.headers === 'object') {
+          Object.assign(responseHeaders, response.headers)
+        }
+      }
+    }
+
     // Build axios-compatible response
     const axiosResponse = {
       data,
       status: response.status,
       statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries()),
+      headers: responseHeaders,
       config,
       request: {},
     }
