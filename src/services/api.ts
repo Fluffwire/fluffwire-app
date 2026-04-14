@@ -118,12 +118,13 @@ const tauriAdapter: AxiosAdapter = async (config) => {
         }
       } else {
         // Fallback: treat as plain object or Map-like structure
-        if (typeof (response.headers as any).forEach === 'function') {
-          (response.headers as any).forEach((value: string, key: string) => {
+        const headers = response.headers as Record<string, unknown>
+        if (typeof headers.forEach === 'function') {
+          (headers.forEach as (callback: (value: string, key: string) => void) => void)((value: string, key: string) => {
             responseHeaders[key] = value
           })
-        } else if (typeof response.headers === 'object') {
-          Object.assign(responseHeaders, response.headers)
+        } else if (typeof headers === 'object') {
+          Object.assign(responseHeaders, headers)
         }
       }
     }
