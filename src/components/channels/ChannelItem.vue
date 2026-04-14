@@ -15,6 +15,7 @@ import type { Tier } from '@/constants/tiers'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import { Hash, Headphones, Pencil, Trash2, MicOff, Monitor } from 'lucide-vue-next'
 import { isTauri } from '@/utils/platform'
+import { debugLogger } from '@/utils/debug'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
@@ -62,15 +63,24 @@ const canManage = computed(() => {
 const voiceMembers = computed(() => voiceStore.getVoiceChannelMembers(props.channel.id))
 
 function handleClick() {
+  debugLogger.info('ChannelItem', 'handleClick - START', {
+    channelName: props.channel.name,
+    channelType: props.channel.type,
+    currentVoiceChannel: voiceStore.currentChannelId,
+    willShowSwitchDialog: props.channel.type === 'voice' && voiceStore.currentChannelId && voiceStore.currentChannelId !== props.channel.id
+  })
+
   if (props.channel.type === 'voice' && voiceStore.currentChannelId && voiceStore.currentChannelId !== props.channel.id) {
+    debugLogger.info('ChannelItem', 'Showing switch dialog')
     showSwitchDialog.value = true
     return
   }
+  debugLogger.info('ChannelItem', 'Calling navigateToChannel()')
   navigateToChannel()
 }
 
 async function navigateToChannel() {
-  console.log('[ChannelItem] navigateToChannel called', {
+  debugLogger.info('ChannelItem', 'navigateToChannel called', {
     channelId: props.channel.id,
     type: props.channel.type,
     serverId: props.channel.serverId,
@@ -78,12 +88,12 @@ async function navigateToChannel() {
   })
   router.push(`/channels/${props.channel.serverId}/${props.channel.id}`)
   if (props.channel.type === 'voice' && voiceStore.currentChannelId !== props.channel.id) {
-    console.log('[ChannelItem] Joining voice channel...')
+    debugLogger.info('ChannelItem', 'Joining voice channel...')
     try {
       await voiceStore.joinChannel(props.channel.serverId, props.channel.id)
-      console.log('[ChannelItem] Successfully joined voice channel')
+      debugLogger.success('ChannelItem', 'Successfully joined voice channel')
     } catch (error) {
-      console.error('[ChannelItem] Failed to join voice channel:', error)
+      debugLogger.error('ChannelItem', 'Failed to join voice channel', error)
 
       // Desktop-specific error message (known Tauri webkit bug)
       if (isTauri()) {

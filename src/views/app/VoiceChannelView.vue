@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import { useVoiceStore } from '@/stores/voice'
@@ -19,6 +19,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Headphones, X, PhoneCall, PhoneOff, Users, Menu } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useResponsive } from '@/composables/useResponsive'
+import { debugLogger } from '@/utils/debug'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -106,6 +107,52 @@ function handleAddFriend(userId: string) {
     friendsStore.sendRequest(peer.username)
   }
 }
+
+// AUTO-JOIN: When view loads and we're not connected to THIS channel, auto-join
+// This is especially important for Tauri where click events might not work reliably
+onMounted(async () => {
+  debugLogger.info('VoiceChannelView', 'onMounted', {
+    routeChannelId: channelId.value,
+    routeServerId: serverId.value,
+    currentChannelId: voiceStore.currentChannelId,
+    currentServerId: voiceStore.currentServerId,
+    isConnectedToThisChannel: isConnectedToThisChannel.value,
+    peersCount: voiceStore.peers.length,
+  })
+
+  // If we're viewing a voice channel but not connected to it, auto-join
+  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value) {
+    debugLogger.info('VoiceChannelView', 'Auto-joining voice channel')
+    try {
+      await voiceStore.joinChannel(serverId.value, channelId.value)
+      debugLogger.success('VoiceChannelView', 'Successfully auto-joined')
+    } catch (error) {
+      debugLogger.error('VoiceChannelView', 'Auto-join failed', error)
+      toast.error(t('voice.joinError'))
+    }
+  }
+})
+
+// Watch for route changes (switching between voice channels)
+watch([channelId, serverId], async ([newChannelId, newServerId], [oldChannelId, oldServerId]) => {
+  debugLogger.info('VoiceChannelView', 'Route changed', {
+    from: { channelId: oldChannelId, serverId: oldServerId },
+    to: { channelId: newChannelId, serverId: newServerId },
+    isConnectedToThisChannel: isConnectedToThisChannel.value,
+  })
+
+  // If navigating to a different voice channel and not already connected to it, join
+  if (channel.value?.type === 'voice' && !isConnectedToThisChannel.value) {
+    debugLogger.info('VoiceChannelView', 'Auto-joining on route change')
+    try {
+      await voiceStore.joinChannel(newServerId, newChannelId)
+      debugLogger.success('VoiceChannelView', 'Successfully joined new channel')
+    } catch (error) {
+      debugLogger.error('VoiceChannelView', 'Join failed on route change', error)
+      toast.error(t('voice.joinError'))
+    }
+  }
+})
 </script>
 
 <template>

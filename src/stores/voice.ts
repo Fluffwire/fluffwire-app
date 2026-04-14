@@ -6,6 +6,7 @@ import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { soundManager } from '@/composables/useSounds'
 import { useAuthStore } from '@/stores/auth'
 import { isTauri } from '@/utils/platform'
+import { debugLogger } from '@/utils/debug'
 
 export const useVoiceStore = defineStore('voice', () => {
   const authStore = useAuthStore()
@@ -333,15 +334,15 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   async function joinChannel(serverId: string, channelId: string) {
-    console.log('[Voice] joinChannel called', { serverId, channelId })
+    debugLogger.info('Voice', 'joinChannel called', { serverId, channelId })
     isConnecting.value = true
     try {
       // Clear peers from previous channel to prevent state mixing
       peers.value = []
 
-      console.log('[Voice] Calling webrtcService.joinVoiceChannel...')
+      debugLogger.info('Voice', 'Calling webrtcService.joinVoiceChannel...')
       await webrtcService.joinVoiceChannel(serverId, channelId)
-      console.log('[Voice] Successfully joined voice channel')
+      debugLogger.success('Voice', 'Successfully joined voice channel')
       currentChannelId.value = channelId
       currentServerId.value = serverId
       connectedSince.value = new Date()
@@ -352,8 +353,8 @@ export const useVoiceStore = defineStore('voice', () => {
       currentServerId.value = null
       peers.value = []
 
-      console.error('[Voice] Failed to join channel:', error)
-      console.error('[Voice] Error details:', {
+      debugLogger.error('Voice', 'Failed to join channel', error)
+      debugLogger.error('Voice', 'Error details', {
         name: error instanceof Error ? error.name : 'unknown',
         message: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

@@ -1,5 +1,6 @@
 import { wsService } from './websocket'
 import type { VoiceSignal, MediaDeviceOption } from '@/types'
+import { debugLogger } from '@/utils/debug'
 
 const ICE_SERVERS: RTCConfiguration = {
   iceServers: [
@@ -117,7 +118,7 @@ class WebRTCService {
   }
 
   async joinVoiceChannel(serverId: string, channelId: string): Promise<void> {
-    console.log('[WebRTC] joinVoiceChannel called', { serverId, channelId })
+    debugLogger.info('WebRTC', 'joinVoiceChannel called', { serverId, channelId })
     await this.leaveVoiceChannel()
 
     this._currentChannelId = channelId
@@ -126,7 +127,7 @@ class WebRTCService {
     this.iceCandidateBuffer = []
 
     try {
-      console.log('[WebRTC] Requesting microphone access...')
+      debugLogger.info('WebRTC', 'Requesting microphone access...')
       this.localStream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -134,7 +135,10 @@ class WebRTCService {
           autoGainControl: true,
         },
       })
-      console.log('[WebRTC] Microphone access granted, stream:', this.localStream)
+      debugLogger.success('WebRTC', 'Microphone access granted', {
+        streamId: this.localStream.id,
+        audioTracks: this.localStream.getAudioTracks().length
+      })
 
       this.peerConnection = new RTCPeerConnection(ICE_SERVERS)
 
@@ -304,7 +308,7 @@ class WebRTCService {
         }
       }
     } catch (error) {
-      console.error('[WebRTC] Failed to join voice channel:', error)
+      debugLogger.error('WebRTC', 'Failed to join voice channel', error)
       await this.leaveVoiceChannel()
       throw error
     }
