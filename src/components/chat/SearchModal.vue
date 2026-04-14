@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { Message } from '@/types'
 import { messageApi } from '@/services/messageApi'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -11,8 +10,6 @@ import {
 } from '@/components/ui/dialog'
 import { Search, File, Image, Link } from 'lucide-vue-next'
 import { renderMarkdown } from '@/composables/useMarkdown'
-
-const { t } = useI18n()
 
 interface Props {
   channelId: string
