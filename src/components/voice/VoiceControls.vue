@@ -81,16 +81,16 @@ const anyoneStreaming = computed(() => voiceStore.peers.some((p) => p.streaming)
           <TooltipContent>{{ $t('voice.screenOptions') }}</TooltipContent>
         </Tooltip>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem @click="voiceStore.stopScreenShare()" class="gap-2 text-destructive">
+          <DropdownMenuItem class="gap-2 text-destructive" @click="voiceStore.stopScreenShare()">
             <MonitorOff class="h-4 w-4" />
             {{ $t('voice.stopSharing') }}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem @click="voiceStore.changeScreenSource()" class="gap-2">
+          <DropdownMenuItem class="gap-2" @click="voiceStore.changeScreenSource()">
             <RefreshCw class="h-4 w-4" />
             {{ $t('voice.changeSource') }}
           </DropdownMenuItem>
-          <DropdownMenuItem @click="voiceStore.toggleSelfView()" class="gap-2">
+          <DropdownMenuItem class="gap-2" @click="voiceStore.toggleSelfView()">
             <component :is="voiceStore.showSelfStream ? EyeOff : Eye" class="h-4 w-4" />
             {{ voiceStore.showSelfStream ? $t('voice.hideSelfView') : $t('voice.showSelfView') }}
           </DropdownMenuItem>
