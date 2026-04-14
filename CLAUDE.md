@@ -11,6 +11,26 @@ This is the **CHAT APPLICATION** repository (app.fluffwire.com), NOT the marketi
 - **Backend** (`fluffwire-server`): `/home/cryo/fluffwire-server` → API + WebSocket server
 - **Bot SDK** (`fluffwire-sdk`): `/home/cryo/fluffwire-sdk` → `@fluffwire/bot-sdk` npm package
 
+## Development Principles ⚠️
+
+**CRITICAL: Production-Quality Code Only**
+
+- ✅ **Always build production-ready, complete implementations**
+- ❌ **NEVER create MVPs, partial implementations, mocks, or placeholders**
+- ✅ **Every feature must be fully functional and tested**
+- ❌ **NO "TODO", "FIXME", or "coming soon" comments in committed code**
+- ✅ **Code must work correctly on first deployment**
+
+**Why:** This is a live application with active users. Incomplete features, mocks, or partial implementations can break production, confuse users, and create technical debt. If a feature isn't ready to be complete, don't start it yet.
+
+**Examples:**
+- ✅ GOOD: Implement full voice channel with all controls, error handling, and edge cases
+- ❌ BAD: Add voice channel UI but leave WebRTC connection as "TODO"
+- ✅ GOOD: Add complete bot management with create/edit/delete/permissions
+- ❌ BAD: Add bot list view with "Create bot coming soon" placeholder
+
+**When unsure:** Ask the user if a feature can be simplified or scoped down to deliver a complete, working implementation instead of a partial one.
+
 ## Tech Stack
 
 - **Framework**: Vue 3.5 (Composition API + `<script setup>`) with TypeScript 5.9
