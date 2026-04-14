@@ -28,9 +28,10 @@ async function handleResend() {
     await resendVerification()
     message.value = t('auth.verificationEmailSent')
     startCooldown(300) // 5 minutes
-  } catch (error: any) {
-    if (error.response?.status === 429) {
-      const errorMsg = error.response?.data?.error || ''
+  } catch (error: unknown) {
+    const err = error as { response?: { status?: number; data?: { error?: string } } }
+    if (err.response?.status === 429) {
+      const errorMsg = err.response?.data?.error || ''
       const match = errorMsg.match(/wait (\d+) seconds/)
       if (match) {
         const seconds = parseInt(match[1])
@@ -91,10 +92,10 @@ function formatCooldown(seconds: number): string {
         <p v-if="message" class="text-sm">{{ message }}</p>
 
         <Button
-          @click="handleResend"
           :disabled="!canResend"
           variant="secondary"
           size="sm"
+          @click="handleResend"
         >
           <span v-if="loading">{{ $t('auth.sending') }}</span>
           <span v-else-if="cooldownSeconds > 0">{{ $t('auth.wait') }} {{ formatCooldown(cooldownSeconds) }}</span>

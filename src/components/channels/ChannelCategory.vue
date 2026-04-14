@@ -95,8 +95,8 @@ async function handleDeleteCategory() {
       <ContextMenuTrigger as-child>
         <div class="flex items-center justify-between px-1">
           <button
-            @click="isCollapsed = !isCollapsed"
             class="flex flex-1 items-center gap-0.5 text-xs font-semibold uppercase text-muted-foreground transition-colors hover:text-foreground"
+            @click="isCollapsed = !isCollapsed"
           >
             <ChevronDown
               :class="['h-3 w-3 transition-transform', isCollapsed ? '-rotate-90' : '']"
@@ -106,8 +106,8 @@ async function handleDeleteCategory() {
 
           <button
             v-if="isOwner"
-            @click.stop="handleCreateChannel"
             class="flex h-4 w-4 items-center justify-center rounded text-muted-foreground transition-colors hover:text-foreground"
+            @click.stop="handleCreateChannel"
           >
             <Plus class="h-3.5 w-3.5" />
           </button>
@@ -115,16 +115,16 @@ async function handleDeleteCategory() {
       </ContextMenuTrigger>
 
       <ContextMenuContent v-if="isOwner" class="w-52">
-        <ContextMenuItem @click="handleCreateChannel" class="gap-2">
+        <ContextMenuItem class="gap-2" @click="handleCreateChannel">
           <Plus class="h-4 w-4" />
           {{ $t('channel.createChannel') }}
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem @click="handleEditCategory" class="gap-2">
+        <ContextMenuItem class="gap-2" @click="handleEditCategory">
           <Pencil class="h-4 w-4" />
           {{ $t('channel.editCategory') }}
         </ContextMenuItem>
-        <ContextMenuItem @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+        <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @click="showDeleteDialog = true">
           <Trash2 class="h-4 w-4" />
           {{ $t('channel.deleteCategory') }}
         </ContextMenuItem>

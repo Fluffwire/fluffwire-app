@@ -242,8 +242,8 @@ function handleAddFriend(userId: string) {
           streaming: true,
         }"
         :is-local="true"
-        @watch-stream="handleWatchStream"
         class="opacity-80 ring-2 ring-primary/50"
+        @watch-stream="handleWatchStream"
       />
 
       <!-- Other peers (exclude self if showing self-view) -->

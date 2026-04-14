@@ -22,14 +22,14 @@ function formatSize(bytes: number): string {
 <template>
   <div class="group relative inline-flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 p-2">
     <button
-      @click="emit('remove')"
       class="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground opacity-0 transition-opacity group-hover:opacity-100"
+      @click="emit('remove')"
     >
       <X class="h-3 w-3" />
     </button>
 
     <template v-if="isImage">
-      <img :src="previewUrl" :alt="file.name" class="h-16 w-16 rounded object-cover" />
+      <img :src="previewUrl" :alt="file.name" class="h-16 w-16 rounded object-cover">
     </template>
     <template v-else>
       <FileText class="h-8 w-8 text-muted-foreground" />

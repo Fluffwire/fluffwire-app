@@ -59,8 +59,9 @@ async function handleCreate() {
     newBotName.value = ''
     newBotDescription.value = ''
     toast.success('Bot created successfully')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to create bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to create bot')
   } finally {
     isCreating.value = false
   }
@@ -91,8 +92,9 @@ async function saveEdit(botId: string) {
     })
     editingBotId.value = null
     toast.success('Bot updated successfully')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to update bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to update bot')
   }
 }
 
@@ -115,8 +117,9 @@ async function handleDelete() {
     showDeleteDialog.value = false
     deletingBotId.value = null
     toast.success('Bot deleted successfully')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to delete bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to delete bot')
   }
 }
 
@@ -135,8 +138,9 @@ async function handleRegenerateToken() {
     regeneratingBotId.value = null
     showTokenModal.value = true
     toast.success('Token regenerated successfully')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to regenerate token')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to regenerate token')
   }
 }
 
@@ -148,7 +152,7 @@ async function copyToken() {
     setTimeout(() => {
       tokenCopied.value = false
     }, 2000)
-  } catch (error) {
+  } catch {
     toast.error('Failed to copy token')
   }
 }
@@ -179,7 +183,7 @@ function formatDate(dateString: string) {
         <h3 class="text-lg font-semibold">Your Bots</h3>
         <p class="text-sm text-muted-foreground">Create and manage bots for automation and integrations</p>
       </div>
-      <Button @click="showCreateForm = true" v-if="!showCreateForm" size="sm">
+      <Button v-if="!showCreateForm" size="sm" @click="showCreateForm = true">
         <Plus class="mr-2 h-4 w-4" />
         New Bot
       </Button>
@@ -233,7 +237,7 @@ function formatDate(dateString: string) {
       <CardContent class="flex flex-col items-center justify-center py-12">
         <BotIcon class="h-12 w-12 text-muted-foreground mb-4" />
         <p class="text-sm text-muted-foreground mb-4">You haven't created any bots yet</p>
-        <Button @click="showCreateForm = true" size="sm">
+        <Button size="sm" @click="showCreateForm = true">
           <Plus class="mr-2 h-4 w-4" />
           Create Your First Bot
         </Button>
@@ -274,7 +278,7 @@ function formatDate(dateString: string) {
 
           <!-- Edit mode -->
           <div v-else>
-            <form @submit.prevent="saveEdit(bot.id)" class="space-y-4">
+            <form class="space-y-4" @submit.prevent="saveEdit(bot.id)">
               <div class="space-y-2">
                 <Label>Name</Label>
                 <Input v-model="editName" placeholder="Bot Name" required maxlength="32" />
@@ -327,7 +331,7 @@ function formatDate(dateString: string) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction @click="handleDelete" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleDelete">
             Delete Bot
           </AlertDialogAction>
         </AlertDialogFooter>

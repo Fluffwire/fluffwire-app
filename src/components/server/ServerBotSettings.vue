@@ -54,8 +54,9 @@ async function fetchServerBots() {
   try {
     const { data } = await botApi.listServerBots(props.serverId)
     serverBots.value = data
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to load bots')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to load bots')
   } finally {
     isLoading.value = false
   }
@@ -85,8 +86,9 @@ async function handleAddBot() {
     window.dispatchEvent(new CustomEvent('bot-member-updated', { detail: { serverId: props.serverId } }))
 
     toast.success('Bot added to server')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to add bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to add bot')
   } finally {
     isAdding.value = false
   }
@@ -112,8 +114,9 @@ async function handleRemoveBot() {
     window.dispatchEvent(new CustomEvent('bot-member-updated', { detail: { serverId: props.serverId } }))
 
     toast.success('Bot removed from server')
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to remove bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to remove bot')
   }
 }
 
@@ -138,7 +141,7 @@ function formatDate(dateString: string) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form @submit.prevent="handleAddBot" class="space-y-4">
+        <form class="space-y-4" @submit.prevent="handleAddBot">
           <!-- Simple mode: Select from your bots -->
           <div v-if="!showAdvanced" class="space-y-2">
             <Label for="bot-select">Your Bots</Label>
@@ -261,7 +264,7 @@ function formatDate(dateString: string) {
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction @click="handleRemoveBot" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="handleRemoveBot">
             Remove Bot
           </AlertDialogAction>
         </AlertDialogFooter>

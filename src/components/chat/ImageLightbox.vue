@@ -66,8 +66,8 @@ async function openInBrowser() {
     <DialogContent :show-close-button="false" class="max-w-[100vw] max-h-[100vh] w-screen h-screen p-0 border-none bg-black/95 shadow-none">
       <!-- Close button -->
       <button
-        @click="open = false"
         class="absolute top-4 right-4 z-50 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+        @click="open = false"
       >
         <X class="h-5 w-5" />
       </button>
@@ -83,15 +83,15 @@ async function openInBrowser() {
       <!-- Navigation arrows -->
       <button
         v-if="hasPrevious"
-        @click="previous"
         class="absolute left-4 top-1/2 z-50 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+        @click="previous"
       >
         <ChevronLeft class="h-6 w-6" />
       </button>
       <button
         v-if="hasNext"
-        @click="next"
         class="absolute right-4 top-1/2 z-50 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70 transition-colors"
+        @click="next"
       >
         <ChevronRight class="h-6 w-6" />
       </button>
@@ -102,14 +102,14 @@ async function openInBrowser() {
           :src="currentImage.url"
           :alt="currentImage.filename"
           class="max-h-[90vh] max-w-[90vw] object-contain"
-        />
+        >
       </div>
 
       <!-- Bottom toolbar -->
       <div v-if="currentImage" class="absolute bottom-4 left-1/2 z-50 flex -translate-x-1/2 gap-2 rounded-full bg-black/50 px-4 py-2">
         <button
-          @click="openInBrowser"
           class="flex items-center gap-2 text-sm text-white hover:text-white/80 transition-colors"
+          @click="openInBrowser"
         >
           <ExternalLink class="h-4 w-4" />
           Open in browser

@@ -22,6 +22,7 @@ import {
   ContextMenuSeparator, ContextMenuTrigger,
 } from '@/components/ui/context-menu'
 import { renderMarkdown } from '@/composables/useMarkdown'
+import type { User } from '@/types'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import EmojiPicker from './EmojiPicker.vue'
 import ImageAttachment from './ImageAttachment.vue'
@@ -76,7 +77,7 @@ const lightboxInitialIndex = ref(0)
 
 // User profile popover state
 const showUserPopover = ref(false)
-const userPopoverUser = ref<any>(null)
+const userPopoverUser = ref<User | null>(null)
 const userPopoverPosition = ref({ x: 0, y: 0 })
 const userPopoverTrigger = ref<HTMLElement | null>(null)
 
@@ -128,14 +129,16 @@ const canWrite = computed(() => {
       return true
     case 'read_only':
       return false
-    case 'private':
+    case 'private': {
       const allowedUserIds = channel.allowedUserIds || []
       const allowedLabelIds = channel.allowedLabelIds || []
       return allowedUserIds.includes(member.userId) || userLabelIds.some(id => allowedLabelIds.includes(id))
-    case 'restricted_write':
+    }
+    case 'restricted_write': {
       const allowedWriteUsers = channel.allowedUserIds || []
       const allowedWriteLabels = channel.allowedLabelIds || []
       return allowedWriteUsers.includes(member.userId) || userLabelIds.some(id => allowedWriteLabels.includes(id))
+    }
     default:
       return true
   }
@@ -218,7 +221,7 @@ function formatFileSize(bytes: number): string {
 }
 
 // Handle image click to open lightbox
-function openImageLightbox(url: string, filename: string) {
+function openImageLightbox(url: string, _filename: string) {
   lightboxImages.value = imageAttachments.value.map(att => ({
     url: att.url,
     filename: att.filename
@@ -351,334 +354,336 @@ function handleMessageClick(event: MouseEvent) {
           showAuthor ? 'mt-4' : '',
         ]"
       >
-    <TooltipProvider>
-    <!-- Hover action buttons -->
-    <div
-      v-if="!isEditing"
-      :class="[
-        'absolute -top-3 right-4 z-10 gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm',
-        keepActionBarVisible ? 'flex' : 'hidden group-hover:flex'
-      ]"
-    >
-      <Tooltip v-if="canWrite">
-        <TooltipTrigger as-child>
-          <Button variant="ghost" size="icon" class="h-7 w-7" @click="emit('reply', message)">
-            <CornerDownRight class="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ $t('chat.reply') }}</TooltipContent>
-      </Tooltip>
-      <Popover v-if="canWrite" v-model:open="showReactionPicker">
-        <PopoverTrigger as-child>
-          <Button variant="ghost" size="icon" class="h-7 w-7">
-            <SmilePlus class="h-3.5 w-3.5" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent side="top" align="end" class="w-auto p-2">
-          <!-- Quick reactions -->
-          <div v-if="!showFullEmojiPicker" class="flex items-center gap-1">
-            <button
-              v-for="emoji in quickEmojis"
-              :key="emoji"
-              @click="handleReactionSelect(emoji)"
-              class="flex h-8 w-8 items-center justify-center rounded hover:bg-accent text-lg transition-colors"
-            >
-              {{ emoji }}
-            </button>
-            <Button variant="ghost" size="icon" class="h-8 w-8" @click="showFullEmojiPicker = true">
-              <SmilePlus class="h-4 w-4" />
-            </Button>
-          </div>
-          <!-- Full emoji picker -->
-          <EmojiPicker v-else @select="handleReactionSelect" />
-        </PopoverContent>
-      </Popover>
-      <Tooltip v-if="isOwnMessage || canDelete">
-        <TooltipTrigger as-child>
-          <Button
-            variant="ghost"
-            size="icon"
-            class="h-7 w-7"
-            @click="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)"
+        <TooltipProvider>
+          <!-- Hover action buttons -->
+          <div
+            v-if="!isEditing"
+            :class="[
+              'absolute -top-3 right-4 z-10 gap-0.5 rounded-md border border-border/50 bg-card p-0.5 shadow-sm',
+              keepActionBarVisible ? 'flex' : 'hidden group-hover:flex'
+            ]"
           >
-            <Pin class="h-3.5 w-3.5" :class="message.pinned ? 'text-primary' : ''" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ message.pinned ? $t('chat.unpinMessage') : $t('chat.pinMessage') }}</TooltipContent>
-      </Tooltip>
-      <Tooltip v-if="isOwnMessage">
-        <TooltipTrigger as-child>
-          <Button variant="ghost" size="icon" class="h-7 w-7" @click="startEditing">
-            <Pencil class="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ $t('common.edit') }}</TooltipContent>
-      </Tooltip>
-      <Tooltip v-if="isOwnMessage || canDelete">
-        <TooltipTrigger as-child>
-          <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive hover:text-destructive" @click="showDeleteDialog = true">
-            <Trash2 class="h-3.5 w-3.5" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{ $t('common.delete') }}</TooltipContent>
-      </Tooltip>
-    </div>
-
-      <template v-if="showAuthor">
-        <UserProfilePopover :user="message.author" side="right">
-          <div class="mt-0.5 shrink-0 cursor-pointer">
-            <UserAvatar
-              :src="message.author.avatar"
-              :alt="message.author.displayName"
-              size="md"
-            />
-          </div>
-        </UserProfilePopover>
-        <div class="min-w-0 flex-1">
-          <!-- Reply preview -->
-          <button
-            v-if="message.replyTo"
-            class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
-            @click="emit('jumpTo', message.replyTo!.id)"
-          >
-            <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
-            <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
-          </button>
-          <div class="flex items-baseline gap-2">
-            <UserProfilePopover :user="message.author" side="right">
-              <span class="text-sm font-medium text-foreground hover:text-primary cursor-pointer">
-                {{ message.author.displayName }}
-              </span>
-            </UserProfilePopover>
-            <span v-if="message.webhookId" class="rounded bg-primary/20 px-1 py-0.5 text-[10px] font-semibold uppercase leading-none text-primary">BOT</span>
-            <Tooltip>
+            <Tooltip v-if="canWrite">
               <TooltipTrigger as-child>
-                <span class="text-xs text-muted-foreground">{{ formattedTime }}</span>
+                <Button variant="ghost" size="icon" class="h-7 w-7" @click="emit('reply', message)">
+                  <CornerDownRight class="h-3.5 w-3.5" />
+                </Button>
               </TooltipTrigger>
-              <TooltipContent>{{ formattedTime }}</TooltipContent>
+              <TooltipContent>{{ $t('chat.reply') }}</TooltipContent>
             </Tooltip>
-            <span v-if="message.editedAt" class="text-xs text-muted-foreground">{{ $t('chat.edited') }}</span>
-          </div>
-
-          <!-- Inline edit mode -->
-          <div v-if="isEditing" class="mt-1">
-            <textarea
-              ref="editTextarea"
-              v-model="editContent"
-              @keydown="handleEditKeydown"
-              @input="resizeEditTextarea"
-              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
-              rows="1"
-            />
-            <p class="mt-1 text-xs text-muted-foreground">
-              Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,
-              <kbd class="rounded border border-border px-1">Escape</kbd> to cancel
-            </p>
-          </div>
-
-          <!-- Normal content -->
-          <template v-else>
-            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
-            <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
-              <iframe
-                v-if="youtubePlaying"
-                :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
-                class="aspect-video w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              />
-              <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
-                <img
-                  :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
-                  :alt="'YouTube video'"
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
-                  <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
-                    <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  </div>
+            <Popover v-if="canWrite" v-model:open="showReactionPicker">
+              <PopoverTrigger as-child>
+                <Button variant="ghost" size="icon" class="h-7 w-7">
+                  <SmilePlus class="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="end" class="w-auto p-2">
+                <!-- Quick reactions -->
+                <div v-if="!showFullEmojiPicker" class="flex items-center gap-1">
+                  <button
+                    v-for="emoji in quickEmojis"
+                    :key="emoji"
+                    class="flex h-8 w-8 items-center justify-center rounded hover:bg-accent text-lg transition-colors"
+                    @click="handleReactionSelect(emoji)"
+                  >
+                    {{ emoji }}
+                  </button>
+                  <Button variant="ghost" size="icon" class="h-8 w-8" @click="showFullEmojiPicker = true">
+                    <SmilePlus class="h-4 w-4" />
+                  </Button>
                 </div>
-              </button>
-            </div>
+                <!-- Full emoji picker -->
+                <EmojiPicker v-else @select="handleReactionSelect" />
+              </PopoverContent>
+            </Popover>
+            <Tooltip v-if="isOwnMessage || canDelete">
+              <TooltipTrigger as-child>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-7 w-7"
+                  @click="message.pinned ? emit('unpin', message.id) : emit('pin', message.id)"
+                >
+                  <Pin class="h-3.5 w-3.5" :class="message.pinned ? 'text-primary' : ''" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ message.pinned ? $t('chat.unpinMessage') : $t('chat.pinMessage') }}</TooltipContent>
+            </Tooltip>
+            <Tooltip v-if="isOwnMessage">
+              <TooltipTrigger as-child>
+                <Button variant="ghost" size="icon" class="h-7 w-7" @click="startEditing">
+                  <Pencil class="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ $t('common.edit') }}</TooltipContent>
+            </Tooltip>
+            <Tooltip v-if="isOwnMessage || canDelete">
+              <TooltipTrigger as-child>
+                <Button variant="ghost" size="icon" class="h-7 w-7 text-destructive hover:text-destructive" @click="showDeleteDialog = true">
+                  <Trash2 class="h-3.5 w-3.5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{{ $t('common.delete') }}</TooltipContent>
+            </Tooltip>
+          </div>
 
-            <!-- Image attachments -->
-            <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
-              <ImageAttachment
-                v-for="att in imageAttachments"
-                :key="att.id"
-                :url="att.url"
-                :filename="att.filename"
-                @click="openImageLightbox"
-              />
-            </div>
-
-            <!-- File attachments -->
-            <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
-              <a
-                v-for="att in fileAttachments"
-                :key="att.id"
-                :href="att.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
-              >
-                <span class="truncate">{{ att.filename }}</span>
-                <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
-              </a>
-            </div>
-
-            <!-- Reactions -->
-            <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+          <template v-if="showAuthor">
+            <UserProfilePopover :user="message.author" side="right">
+              <div class="mt-0.5 shrink-0 cursor-pointer">
+                <UserAvatar
+                  :src="message.author.avatar"
+                  :alt="message.author.displayName"
+                  size="md"
+                />
+              </div>
+            </UserProfilePopover>
+            <div class="min-w-0 flex-1">
+              <!-- Reply preview -->
               <button
-                v-for="r in message.reactions"
-                :key="r.emoji"
-                @click="emit('reaction', message.id, r.emoji)"
-                :class="[
-                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
-                  r.userIds.includes(currentUserId ?? '')
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
-                ]"
+                v-if="message.replyTo"
+                class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
+                @click="emit('jumpTo', message.replyTo!.id)"
               >
-                <span>{{ r.emoji }}</span>
-                <span>{{ r.count }}</span>
+                <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
+                <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
               </button>
+              <div class="flex items-baseline gap-2">
+                <UserProfilePopover :user="message.author" side="right">
+                  <span class="text-sm font-medium text-foreground hover:text-primary cursor-pointer">
+                    {{ message.author.displayName }}
+                  </span>
+                </UserProfilePopover>
+                <span v-if="message.webhookId" class="rounded bg-primary/20 px-1 py-0.5 text-[10px] font-semibold uppercase leading-none text-primary">BOT</span>
+                <Tooltip>
+                  <TooltipTrigger as-child>
+                    <span class="text-xs text-muted-foreground">{{ formattedTime }}</span>
+                  </TooltipTrigger>
+                  <TooltipContent>{{ formattedTime }}</TooltipContent>
+                </Tooltip>
+                <span v-if="message.editedAt" class="text-xs text-muted-foreground">{{ $t('chat.edited') }}</span>
+              </div>
+
+              <!-- Inline edit mode -->
+              <div v-if="isEditing" class="mt-1">
+                <textarea
+                  ref="editTextarea"
+                  v-model="editContent"
+                  class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
+                  rows="1"
+                  @keydown="handleEditKeydown"
+                  @input="resizeEditTextarea"
+                />
+                <p class="mt-1 text-xs text-muted-foreground">
+                  Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,
+                  <kbd class="rounded border border-border px-1">Escape</kbd> to cancel
+                </p>
+              </div>
+
+              <!-- Normal content -->
+              <template v-else>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div class="message-content text-sm text-foreground/90 break-words" @click="handleMessageClick" v-html="renderedContent" />
+                <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
+                  <iframe
+                    v-if="youtubePlaying"
+                    :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
+                    class="aspect-video w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  />
+                  <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
+                    <img
+                      :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
+                      :alt="'YouTube video'"
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                    >
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
+                      <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
+                        <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <!-- Image attachments -->
+                <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
+                  <ImageAttachment
+                    v-for="att in imageAttachments"
+                    :key="att.id"
+                    :url="att.url"
+                    :filename="att.filename"
+                    @click="openImageLightbox"
+                  />
+                </div>
+
+                <!-- File attachments -->
+                <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
+                  <a
+                    v-for="att in fileAttachments"
+                    :key="att.id"
+                    :href="att.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
+                  >
+                    <span class="truncate">{{ att.filename }}</span>
+                    <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
+                  </a>
+                </div>
+
+                <!-- Reactions -->
+                <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+                  <button
+                    v-for="r in message.reactions"
+                    :key="r.emoji"
+                    :class="[
+                      'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
+                      r.userIds.includes(currentUserId ?? '')
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
+                    ]"
+                    @click="emit('reaction', message.id, r.emoji)"
+                  >
+                    <span>{{ r.emoji }}</span>
+                    <span>{{ r.count }}</span>
+                  </button>
+                </div>
+              </template>
             </div>
           </template>
-        </div>
-      </template>
 
-      <template v-else>
-        <div class="w-10 shrink-0">
-          <Tooltip>
-            <TooltipTrigger as-child>
-              <span class="invisible text-xs text-muted-foreground group-hover:visible">
-                {{ shortTime }}
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>{{ formattedTime }}</TooltipContent>
-          </Tooltip>
-        </div>
-        <div class="min-w-0 flex-1">
-          <!-- Reply preview -->
-          <button
-            v-if="message.replyTo"
-            class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
-            @click="emit('jumpTo', message.replyTo!.id)"
-          >
-            <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
-            <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
-            <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
-          </button>
-          <!-- Inline edit mode -->
-          <div v-if="isEditing">
-            <textarea
-              ref="editTextarea"
-              v-model="editContent"
-              @keydown="handleEditKeydown"
-              @input="resizeEditTextarea"
-              class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
-              rows="1"
-            />
-            <p class="mt-1 text-xs text-muted-foreground">
-              Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,
-              <kbd class="rounded border border-border px-1">Escape</kbd> to cancel
-            </p>
-          </div>
-
-          <!-- Normal content -->
           <template v-else>
-            <div class="message-content text-sm text-foreground/90 break-words" v-html="renderedContent" @click="handleMessageClick" />
-            <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
-              <iframe
-                v-if="youtubePlaying"
-                :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
-                class="aspect-video w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowfullscreen
-              />
-              <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
-                <img
-                  :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
-                  :alt="'YouTube video'"
-                  class="h-full w-full object-cover"
-                  loading="lazy"
-                />
-                <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
-                  <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
-                    <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                  </div>
-                </div>
-              </button>
+            <div class="w-10 shrink-0">
+              <Tooltip>
+                <TooltipTrigger as-child>
+                  <span class="invisible text-xs text-muted-foreground group-hover:visible">
+                    {{ shortTime }}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>{{ formattedTime }}</TooltipContent>
+              </Tooltip>
             </div>
-
-            <!-- Image attachments -->
-            <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
-              <ImageAttachment
-                v-for="att in imageAttachments"
-                :key="att.id"
-                :url="att.url"
-                :filename="att.filename"
-                @click="openImageLightbox"
-              />
-            </div>
-
-            <!-- File attachments -->
-            <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
-              <a
-                v-for="att in fileAttachments"
-                :key="att.id"
-                :href="att.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
-              >
-                <span class="truncate">{{ att.filename }}</span>
-                <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
-              </a>
-            </div>
-
-            <!-- Reactions -->
-            <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+            <div class="min-w-0 flex-1">
+              <!-- Reply preview -->
               <button
-                v-for="r in message.reactions"
-                :key="r.emoji"
-                @click="emit('reaction', message.id, r.emoji)"
-                :class="[
-                  'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
-                  r.userIds.includes(currentUserId ?? '')
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
-                ]"
+                v-if="message.replyTo"
+                class="mb-1 flex min-w-0 max-w-full items-center gap-1.5 rounded border-l-2 border-primary bg-secondary/30 px-2 py-1 text-xs hover:bg-secondary/50 transition-colors overflow-hidden"
+                @click="emit('jumpTo', message.replyTo!.id)"
               >
-                <span>{{ r.emoji }}</span>
-                <span>{{ r.count }}</span>
+                <CornerDownRight class="h-3 w-3 shrink-0 text-muted-foreground" />
+                <span class="font-semibold text-foreground truncate shrink-0 max-w-[120px]">{{ message.replyTo.author.displayName }}</span>
+                <span class="truncate text-muted-foreground min-w-0 flex-1">{{ message.replyTo.content }}</span>
               </button>
+              <!-- Inline edit mode -->
+              <div v-if="isEditing">
+                <textarea
+                  ref="editTextarea"
+                  v-model="editContent"
+                  class="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary max-h-[50vh] overflow-y-auto"
+                  rows="1"
+                  @keydown="handleEditKeydown"
+                  @input="resizeEditTextarea"
+                />
+                <p class="mt-1 text-xs text-muted-foreground">
+                  Press <kbd class="rounded border border-border px-1">Enter</kbd> to save,
+                  <kbd class="rounded border border-border px-1">Escape</kbd> to cancel
+                </p>
+              </div>
+
+              <!-- Normal content -->
+              <template v-else>
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <div class="message-content text-sm text-foreground/90 break-words" @click="handleMessageClick" v-html="renderedContent" />
+                <div v-if="youtubeVideoId" class="mt-2 max-w-full overflow-hidden rounded-lg border border-border/50 sm:max-w-[400px]">
+                  <iframe
+                    v-if="youtubePlaying"
+                    :src="`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1`"
+                    class="aspect-video w-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen
+                  />
+                  <button v-else class="relative aspect-video w-full" @click="youtubePlaying = true">
+                    <img
+                      :src="`https://img.youtube.com/vi/${youtubeVideoId}/mqdefault.jpg`"
+                      :alt="'YouTube video'"
+                      class="h-full w-full object-cover"
+                      loading="lazy"
+                    >
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/20 transition-colors hover:bg-black/30">
+                      <div class="flex h-12 w-16 items-center justify-center rounded-xl bg-red-600 text-white shadow-lg">
+                        <svg class="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                      </div>
+                    </div>
+                  </button>
+                </div>
+
+                <!-- Image attachments -->
+                <div v-if="imageAttachments.length" class="mt-1 flex flex-wrap gap-2">
+                  <ImageAttachment
+                    v-for="att in imageAttachments"
+                    :key="att.id"
+                    :url="att.url"
+                    :filename="att.filename"
+                    @click="openImageLightbox"
+                  />
+                </div>
+
+                <!-- File attachments -->
+                <div v-if="fileAttachments.length" class="mt-1 flex flex-col gap-1">
+                  <a
+                    v-for="att in fileAttachments"
+                    :key="att.id"
+                    :href="att.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="flex items-center gap-2 rounded-lg border border-border/50 bg-secondary/50 px-3 py-2 text-sm text-foreground transition-colors hover:bg-secondary"
+                  >
+                    <span class="truncate">{{ att.filename }}</span>
+                    <span class="shrink-0 text-xs text-muted-foreground">{{ formatFileSize(att.size) }}</span>
+                  </a>
+                </div>
+
+                <!-- Reactions -->
+                <div v-if="message.reactions?.length" class="mt-1 flex flex-wrap gap-1">
+                  <button
+                    v-for="r in message.reactions"
+                    :key="r.emoji"
+                    :class="[
+                      'flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors',
+                      r.userIds.includes(currentUserId ?? '')
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-secondary/50 text-muted-foreground hover:bg-secondary',
+                    ]"
+                    @click="emit('reaction', message.id, r.emoji)"
+                  >
+                    <span>{{ r.emoji }}</span>
+                    <span>{{ r.count }}</span>
+                  </button>
+                </div>
+              </template>
             </div>
           </template>
-        </div>
-      </template>
-    </TooltipProvider>
+        </TooltipProvider>
 
-    <!-- Delete confirmation dialog -->
-    <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Message</AlertDialogTitle>
-          <AlertDialogDescription>
-            Are you sure you want to delete this message? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmDelete">
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <!-- Delete confirmation dialog -->
+        <AlertDialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Message</AlertDialogTitle>
+              <AlertDialogDescription>
+                Are you sure you want to delete this message? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmDelete">
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </ContextMenuTrigger>
     <ContextMenuContent class="w-56">

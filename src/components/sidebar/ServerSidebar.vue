@@ -2,7 +2,6 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Sortable from 'sortablejs'
-import { isTauri } from '@/utils/platform'
 import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useReadStateStore } from '@/stores/readState'
@@ -210,13 +209,13 @@ async function confirmDelete() {
         <TooltipTrigger as-child>
           <div class="relative">
             <button
-              @click="navigateHome"
               :class="[
                 'group flex h-12 w-12 items-center justify-center transition-all duration-200 ring-1 ring-primary/20',
                 route.path.startsWith('/channels/@me')
                   ? 'rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/25'
                   : 'rounded-[28px] bg-secondary text-foreground hover:rounded-2xl hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/15',
               ]"
+              @click="navigateHome"
             >
               <svg class="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M21.53 4.306v15.363c0 .988-.544 1.896-1.414 2.363l-7.7 4.139a2.74 2.74 0 01-2.632.039l-7.7-4.139A2.72 2.72 0 01.67 19.669V4.306C.67 3.32 1.214 2.41 2.084 1.944L9.784.166a2.74 2.74 0 012.632-.039l7.7 1.778a2.72 2.72 0 011.414 2.401z" />
@@ -258,44 +257,44 @@ async function confirmDelete() {
               </Tooltip>
 
               <ContextMenuContent class="w-52">
-                <ContextMenuItem @click="handleInvite(server)" class="gap-2">
+                <ContextMenuItem class="gap-2" @click="handleInvite(server)">
                   <UserPlus class="h-4 w-4" />
                   {{ $t('server.inviteModal') }}
                 </ContextMenuItem>
-                <ContextMenuItem v-if="canManageServerSettings(server)" @click="handleServerSettings(server)" class="gap-2">
+                <ContextMenuItem v-if="canManageServerSettings(server)" class="gap-2" @click="handleServerSettings(server)">
                   <Settings class="h-4 w-4" />
                   {{ $t('server.serverSettings') }}
                 </ContextMenuItem>
                 <template v-if="canCreateChannels(server)">
-                  <ContextMenuItem @click="handleCreateChannel(server)" class="gap-2">
+                  <ContextMenuItem class="gap-2" @click="handleCreateChannel(server)">
                     <Hash class="h-4 w-4" />
                     {{ $t('channel.createChannel') }}
                   </ContextMenuItem>
-                  <ContextMenuItem @click="handleCreateCategory(server)" class="gap-2">
+                  <ContextMenuItem class="gap-2" @click="handleCreateCategory(server)">
                     <FolderPlus class="h-4 w-4" />
                     {{ $t('channel.createCategory') }}
                   </ContextMenuItem>
                 </template>
                 <ContextMenuSeparator />
-                <ContextMenuItem @click="handleToggleMute(server.id)" class="gap-2">
+                <ContextMenuItem class="gap-2" @click="handleToggleMute(server.id)">
                   <BellOff v-if="!notifSettings.isMuted(server.id)" class="h-4 w-4" />
                   <Bell v-else class="h-4 w-4" />
                   {{ notifSettings.isMuted(server.id) ? $t('server.unmuteServer') : $t('server.muteServer') }}
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem @click="handleCopyId(server.id)" class="gap-2">
+                <ContextMenuItem class="gap-2" @click="handleCopyId(server.id)">
                   <Copy class="h-4 w-4" />
                   {{ $t('server.copyServerId') }}
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <template v-if="isOwner(server)">
-                  <ContextMenuItem @click="handleDeleteServer(server)" class="gap-2 text-destructive focus:text-destructive">
+                  <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @click="handleDeleteServer(server)">
                     <Trash2 class="h-4 w-4" />
                     {{ $t('server.deleteServer') }}
                   </ContextMenuItem>
                 </template>
                 <template v-else>
-                  <ContextMenuItem @click="handleLeaveServer(server)" class="gap-2 text-destructive focus:text-destructive">
+                  <ContextMenuItem class="gap-2 text-destructive focus:text-destructive" @click="handleLeaveServer(server)">
                     <LogOut class="h-4 w-4" />
                     {{ $t('server.leaveServer') }}
                   </ContextMenuItem>
@@ -310,8 +309,8 @@ async function confirmDelete() {
       <Tooltip>
         <TooltipTrigger as-child>
           <button
-            @click="uiStore.openModal('createServer')"
             class="flex h-12 w-12 items-center justify-center rounded-[24px] border-2 border-dashed border-primary/40 text-primary transition-all duration-200 hover:rounded-2xl hover:border-primary hover:bg-primary hover:text-primary-foreground hover:shadow-md hover:shadow-primary/15"
+            @click="uiStore.openModal('createServer')"
           >
             <Plus class="h-5 w-5" />
           </button>
@@ -332,7 +331,7 @@ async function confirmDelete() {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction @click="confirmLeave" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">{{ $t('server.leaveServer') }}</AlertDialogAction>
+        <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmLeave">{{ $t('server.leaveServer') }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
@@ -349,7 +348,7 @@ async function confirmDelete() {
       </AlertDialogHeader>
       <AlertDialogFooter>
         <AlertDialogCancel>{{ $t('common.cancel') }}</AlertDialogCancel>
-        <AlertDialogAction @click="confirmDelete" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">{{ $t('server.deleteServer') }}</AlertDialogAction>
+        <AlertDialogAction class="bg-destructive text-destructive-foreground hover:bg-destructive/90" @click="confirmDelete">{{ $t('server.deleteServer') }}</AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>

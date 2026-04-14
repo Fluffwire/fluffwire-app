@@ -24,7 +24,7 @@ async function handleSubmit() {
   try {
     await requestReset(email.value)
     submitted.value = true
-  } catch (err: any) {
+  } catch {
     // Even on error, show success (to prevent email enumeration)
     submitted.value = true
   } finally {
@@ -64,7 +64,7 @@ async function handleSubmit() {
       </div>
 
       <!-- Form -->
-      <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+      <form v-else class="space-y-5" @submit.prevent="handleSubmit">
         <div class="space-y-2">
           <Label for="email">Email Address</Label>
           <Input

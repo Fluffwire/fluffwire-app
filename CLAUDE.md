@@ -80,9 +80,10 @@ describe('myFeature', () => {
 
 ### Before Committing
 1. Write tests for your changes
-2. Run `npm run test` to verify all tests pass
-3. Ensure type checking passes: `npm run build`
-4. Only then commit and push
+2. Run `npm run lint` — **zero errors required** (warnings are okay)
+3. Run `npm run test` — **zero failures required**
+4. Ensure type checking passes: `npm run build`
+5. Only then commit and push
 
 ## Internationalization (i18n) Requirements ⚠️
 

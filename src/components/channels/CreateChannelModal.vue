@@ -76,7 +76,7 @@ async function handleCreate() {
         <DialogTitle>{{ $t('channel.createChannel') }}</DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleCreate" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleCreate">
         <div class="space-y-2">
           <Label>{{ $t('channel.channelType') }}</Label>
           <RadioGroup v-model="channelType" class="grid grid-cols-2 gap-2">

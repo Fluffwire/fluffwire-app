@@ -43,7 +43,7 @@ async function handleSubmit() {
     </CardHeader>
 
     <CardContent>
-      <form @submit.prevent="handleSubmit" class="space-y-5">
+      <form class="space-y-5" @submit.prevent="handleSubmit">
         <div v-if="authStore.error" class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
           {{ authStore.error }}
         </div>

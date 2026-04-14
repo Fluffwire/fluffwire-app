@@ -22,7 +22,6 @@ onMounted(() => {
     <button
       v-for="dm in dmStore.dmChannels"
       :key="dm.id"
-      @click="router.push(`/channels/@me/${dm.id}`)"
       :class="[
         'flex w-full items-center gap-3 rounded-lg px-2 py-1.5 transition-colors',
         route.params.dmId === dm.id
@@ -31,6 +30,7 @@ onMounted(() => {
             ? 'font-semibold text-foreground hover:bg-accent/50'
             : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
       ]"
+      @click="router.push(`/channels/@me/${dm.id}`)"
     >
       <UserAvatar
         :src="dm.recipient.avatar"

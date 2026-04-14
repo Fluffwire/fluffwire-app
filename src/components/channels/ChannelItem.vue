@@ -13,7 +13,7 @@ import { useReadStateStore } from '@/stores/readState'
 import { canManageChannels } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import { Hash, Headphones, Pencil, Trash2, Mic, MicOff, Monitor } from 'lucide-vue-next'
+import { Hash, Headphones, Pencil, Trash2, MicOff, Monitor } from 'lucide-vue-next'
 import { isTauri } from '@/utils/platform'
 import {
   ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger,
@@ -119,7 +119,6 @@ async function handleDelete() {
     <ContextMenu>
       <ContextMenuTrigger as="div">
         <button
-          @click="handleClick"
           :class="[
             'flex w-full items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors',
             isActive
@@ -128,6 +127,7 @@ async function handleDelete() {
                 ? 'font-semibold text-foreground hover:bg-accent/50'
                 : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
           ]"
+          @click="handleClick"
         >
           <Hash v-if="channel.type === 'text'" class="h-5 w-5 shrink-0 opacity-60" />
           <Headphones v-else class="h-5 w-5 shrink-0 opacity-60" />
@@ -137,11 +137,11 @@ async function handleDelete() {
       </ContextMenuTrigger>
 
       <ContextMenuContent v-if="canManage" class="w-48">
-        <ContextMenuItem @click="handleEdit" class="gap-2">
+        <ContextMenuItem class="gap-2" @click="handleEdit">
           <Pencil class="h-4 w-4" />
           {{ $t('channel.editChannel') }}
         </ContextMenuItem>
-        <ContextMenuItem v-if="isOwner" @click="showDeleteDialog = true" class="gap-2 text-destructive focus:text-destructive">
+        <ContextMenuItem v-if="isOwner" class="gap-2 text-destructive focus:text-destructive" @click="showDeleteDialog = true">
           <Trash2 class="h-4 w-4" />
           {{ $t('channel.deleteChannel') }}
         </ContextMenuItem>

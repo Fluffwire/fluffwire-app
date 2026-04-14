@@ -52,7 +52,7 @@ async function handleCreate() {
         <DialogTitle>{{ $t('channel.createCategory') }}</DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleCreate" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleCreate">
         <div class="space-y-2">
           <Label for="category-name">{{ $t('channel.categoryName') }}</Label>
           <Input

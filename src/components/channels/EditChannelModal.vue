@@ -6,7 +6,6 @@ import { useChannelsStore } from '@/stores/channels'
 import { useMembersStore } from '@/stores/members'
 import { useLabelsStore } from '@/stores/labels'
 import { useUiStore } from '@/stores/ui'
-import { channelAccessApi } from '@/services/channelAccessApi'
 import { AccessModeLabels, AccessModeDescriptions } from '@/constants/channelAccess'
 import type { Channel, ChannelAccessMode } from '@/types'
 import {
@@ -137,7 +136,7 @@ async function handleSave() {
         <DialogTitle>{{ $t('channel.editChannel') }}</DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleSave" class="flex-1 space-y-4 overflow-y-auto">
+      <form class="flex-1 space-y-4 overflow-y-auto" @submit.prevent="handleSave">
         <!-- Basic Info -->
         <div class="space-y-2">
           <Label for="edit-channel-name">{{ $t('channel.channelName') }}</Label>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, reactive, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import type { MemberWithUser } from '@/stores/members'
@@ -9,7 +9,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLabelsStore } from '@/stores/labels'
 import { useMembersStore } from '@/stores/members'
 import { serverApi } from '@/services/serverApi'
-import { TierLabelKeys, canManageLabels } from '@/constants/tiers'
+import { canManageLabels } from '@/constants/tiers'
 import type { Tier } from '@/constants/tiers'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import UserProfilePopover from '@/components/common/UserProfilePopover.vue'
@@ -359,5 +359,4 @@ function sendVoiceInvite() {
       </AlertDialogFooter>
     </AlertDialogContent>
   </AlertDialog>
-
 </template>

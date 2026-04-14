@@ -90,8 +90,8 @@ function openSettings() {
         <button
           v-for="opt in statusOptions"
           :key="opt.value"
-          @click="setStatus(opt.value)"
           class="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+          @click="setStatus(opt.value)"
         >
           <span :class="['h-2.5 w-2.5 rounded-full shrink-0', opt.color]" />
           <span class="flex-1">{{ $t(opt.labelKey) }}</span>
@@ -105,8 +105,8 @@ function openSettings() {
         <Tooltip>
           <TooltipTrigger as-child>
             <button
-              @click="openSettings"
               class="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+              @click="openSettings"
             >
               <Settings class="h-4 w-4" />
             </button>

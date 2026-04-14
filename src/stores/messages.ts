@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import type { Message, Reaction, CreateMessagePayload } from '@/types'
-import { WsOpCode } from '@/types/websocket'
 import { messageApi } from '@/services/messageApi'
 import { wsService } from '@/services/websocket'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'

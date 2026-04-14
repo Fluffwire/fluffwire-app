@@ -64,9 +64,10 @@ async function handleSubmit() {
     setTimeout(() => {
       router.push('/login')
     }, 2000)
-  } catch (err: any) {
-    if (err.response?.data?.error) {
-      error.value = err.response.data.error
+  } catch (err: unknown) {
+    const apiErr = err as { response?: { data?: { error?: string } } }
+    if (apiErr.response?.data?.error) {
+      error.value = apiErr.response.data.error
     } else {
       error.value = 'Failed to reset password. Please try again.'
     }
@@ -121,7 +122,7 @@ async function handleSubmit() {
       </div>
 
       <!-- Reset Form -->
-      <form v-else @submit.prevent="handleSubmit" class="space-y-5">
+      <form v-else class="space-y-5" @submit.prevent="handleSubmit">
         <div class="space-y-2">
           <Label for="password">New Password</Label>
           <Input

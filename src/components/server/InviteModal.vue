@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { serverApi } from '@/services/serverApi'
 import { useUiStore } from '@/stores/ui'
 import { isTauri } from '@/utils/platform'
@@ -20,7 +19,6 @@ import {
 } from '@/components/ui/select'
 import { Copy, Check, Loader2, Trash2, Plus } from 'lucide-vue-next'
 
-const { t } = useI18n()
 const uiStore = useUiStore()
 
 const inviteLink = ref('')
@@ -171,7 +169,7 @@ function formatUses(invite: ServerInvite): string {
           <div class="grid grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label for="expires">Expires After</Label>
-              <Select v-model="expiresIn" id="expires">
+              <Select id="expires" v-model="expiresIn">
                 <SelectTrigger>
                   <SelectValue placeholder="Never" />
                 </SelectTrigger>
@@ -185,7 +183,7 @@ function formatUses(invite: ServerInvite): string {
 
             <div class="space-y-2">
               <Label for="maxUses">Max Uses</Label>
-              <Select v-model="maxUses" id="maxUses">
+              <Select id="maxUses" v-model="maxUses">
                 <SelectTrigger>
                   <SelectValue placeholder="Unlimited" />
                 </SelectTrigger>
@@ -198,7 +196,7 @@ function formatUses(invite: ServerInvite): string {
             </div>
           </div>
 
-          <Button @click="createInvite" :disabled="isCreating" class="w-full">
+          <Button :disabled="isCreating" class="w-full" @click="createInvite">
             <Plus v-if="!isCreating" class="mr-2 h-4 w-4" />
             <Loader2 v-else class="mr-2 h-4 w-4 animate-spin" />
             Create Invite
@@ -207,7 +205,7 @@ function formatUses(invite: ServerInvite): string {
           <!-- Show generated link -->
           <div v-if="inviteLink && !inviteLink.includes('Failed')" class="flex items-center gap-2">
             <Input :model-value="inviteLink" readonly class="flex-1 font-mono text-sm" />
-            <Button size="sm" @click="copyToClipboard" variant="outline">
+            <Button size="sm" variant="outline" @click="copyToClipboard">
               <Check v-if="copied" class="h-4 w-4" />
               <Copy v-else class="h-4 w-4" />
             </Button>
@@ -246,8 +244,8 @@ function formatUses(invite: ServerInvite): string {
               <Button
                 size="sm"
                 variant="ghost"
-                @click="deleteInvite(invite.code)"
                 class="text-destructive hover:text-destructive hover:bg-destructive/10"
+                @click="deleteInvite(invite.code)"
               >
                 <Trash2 class="h-4 w-4" />
               </Button>

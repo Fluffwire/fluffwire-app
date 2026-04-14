@@ -16,7 +16,6 @@ import OfflineBanner from '@/components/common/OfflineBanner.vue'
 import EmailVerificationBanner from '@/components/auth/EmailVerificationBanner.vue'
 import VoiceInviteToast from '@/components/voice/VoiceInviteToast.vue'
 import DebugPanel from '@/components/common/DebugPanel.vue'
-import { isTauri } from '@/utils/platform'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -164,7 +163,16 @@ const showChannelSidebar = computed(() => !isSettings.value)
 <template>
   <div class="flex h-full w-full overflow-hidden">
     <!-- Offline banner -->
-    <OfflineBanner v-if="showOfflineBanner" @dismiss="bannerDismissed = true" />
+    <Transition
+      enter-active-class="transition-transform duration-300 ease-out"
+      enter-from-class="-translate-y-full"
+      enter-to-class="translate-y-0"
+      leave-active-class="transition-transform duration-200 ease-in"
+      leave-from-class="translate-y-0"
+      leave-to-class="-translate-y-full"
+    >
+      <OfflineBanner v-if="showOfflineBanner" @dismiss="bannerDismissed = true" />
+    </Transition>
 
     <!-- Email verification banner -->
     <EmailVerificationBanner />

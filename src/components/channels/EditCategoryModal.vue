@@ -61,7 +61,7 @@ async function handleSave() {
         <DialogTitle>{{ $t('channel.editCategory') }}</DialogTitle>
       </DialogHeader>
 
-      <form @submit.prevent="handleSave" class="space-y-4">
+      <form class="space-y-4" @submit.prevent="handleSave">
         <div class="space-y-2">
           <Label for="edit-category-name">{{ $t('channel.categoryName') }}</Label>
           <Input

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 import { useVoiceStore } from '@/stores/voice'
-import type { VoiceSignal } from '@/types'
 
 // Mock the WebRTC service
 vi.mock('@/services/webrtc', () => ({

@@ -45,8 +45,9 @@ async function removeBot() {
     toast.success('Bot removed from server')
     // Refresh the member sidebar
     window.location.reload() // TODO: Better way to refresh the sidebar
-  } catch (error: any) {
-    toast.error(error.response?.data?.error || 'Failed to remove bot')
+  } catch (error: unknown) {
+    const err = error as { response?: { data?: { error?: string } } }
+    toast.error(err.response?.data?.error || 'Failed to remove bot')
   }
 }
 </script>
@@ -58,7 +59,8 @@ async function removeBot() {
         <div class="relative">
           <UserAvatar :src="botMember.bot.avatar" :alt="botMember.bot.name" size="sm" :is-bot="true" />
           <!-- Online status indicator -->
-          <span v-if="botMember.status"
+          <span
+            v-if="botMember.status"
             :class="[
               'absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card',
               botMember.status === 'online' ? 'bg-online' : 'bg-offline'
@@ -79,7 +81,7 @@ async function removeBot() {
         <Copy class="mr-2 h-4 w-4" />
         Copy Bot ID
       </ContextMenuItem>
-      <ContextMenuItem v-if="canManageBots" @click="removeBot" class="text-destructive focus:text-destructive">
+      <ContextMenuItem v-if="canManageBots" class="text-destructive focus:text-destructive" @click="removeBot">
         <Trash2 class="mr-2 h-4 w-4" />
         Remove from Server
       </ContextMenuItem>
