@@ -285,7 +285,18 @@
     "dataExported": "Data exporterades",
     "failedExportData": "Kunde inte exportera data",
     "exportMessages": "Exportera meddelanden",
-    "exportMessagesDesc": "Ladda ner alla servermeddelanden som JSON"
+    "exportMessagesDesc": "Ladda ner alla servermeddelanden som JSON",
+    "dangerZone": "Farlig zon",
+    "transfer": "Överför",
+    "transferOwnership": "Överför ägarskap",
+    "transferOwnershipDesc": "Överför serverägarskapet till en annan medlem. Du degraderas till Admin.",
+    "selectNewOwner": "Välj ny ägare",
+    "selectMember": "Välj en medlem...",
+    "transferOwnershipBtn": "Överför ägarskap",
+    "transferOwnershipConfirm": "Är du säker? Det går inte att ångra. Du blir Admin.",
+    "confirmTransfer": "Ja, överför ägarskap",
+    "ownershipTransferred": "Serverägarskapet har överförts",
+    "failedTransferOwnership": "Kunde inte överföra ägarskap"
   },
   "channel": {
     "createChannel": "Skapa kanal",

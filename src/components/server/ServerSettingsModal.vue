@@ -5,6 +5,8 @@ import { useServersStore } from '@/stores/servers'
 import { useChannelsStore } from '@/stores/channels'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useMembersStore } from '@/stores/members'
+import type { MemberWithUser } from '@/stores/members'
 import { useResponsive } from '@/composables/useResponsive'
 import api, { uploadFile } from '@/services/api'
 import { serverApi } from '@/services/serverApi'
@@ -32,6 +34,7 @@ const serversStore = useServersStore()
 const channelsStore = useChannelsStore()
 const authStore = useAuthStore()
 const uiStore = useUiStore()
+const membersStore = useMembersStore()
 const { isMobile } = useResponsive()
 
 const labelsStore = useLabelsStore()
@@ -49,6 +52,43 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const bans = ref<{ userId: string; username: string; bannedBy: string; reason: string; createdAt: string }[]>([])
 const bansLoading = ref(false)
 const isOwner = computed(() => serversStore.currentServer?.ownerId === authStore.user?.id)
+
+// Transfer ownership
+const showTransferOwnership = ref(false)
+const transferNewOwnerId = ref('')
+const transferLoading = ref(false)
+const transferConfirming = ref(false)
+
+const transferCandidates = computed<MemberWithUser[]>(() => {
+  if (!serversStore.currentServer) return []
+  return membersStore.getMembers(serversStore.currentServer.id)
+    .filter((m) => m.userId !== authStore.user?.id)
+})
+
+async function toggleTransferSection() {
+  showTransferOwnership.value = !showTransferOwnership.value
+  if (showTransferOwnership.value && serversStore.currentServer) {
+    await membersStore.fetchMembers(serversStore.currentServer.id)
+  } else {
+    transferNewOwnerId.value = ''
+    transferConfirming.value = false
+  }
+}
+
+async function confirmTransfer() {
+  if (!serversStore.currentServer || !transferNewOwnerId.value) return
+  transferLoading.value = true
+  try {
+    await serverApi.transferOwnership(serversStore.currentServer.id, transferNewOwnerId.value)
+    toast.success(t('server.ownershipTransferred'))
+    uiStore.closeModal()
+  } catch {
+    toast.error(t('server.failedTransferOwnership'))
+  } finally {
+    transferLoading.value = false
+    transferConfirming.value = false
+  }
+}
 
 async function fetchBans() {
   if (!serversStore.currentServer) return
@@ -334,6 +374,9 @@ watch(isOpen, (open) => {
     iconFile.value = null
     iconPreview.value = null
     error.value = ''
+    showTransferOwnership.value = false
+    transferNewOwnerId.value = ''
+    transferConfirming.value = false
   }
 })
 
@@ -808,6 +851,80 @@ async function handleSave() {
               <Loader2 v-if="exportIsLoading" class="mr-2 h-4 w-4 animate-spin" />
               Export Server
             </Button>
+          </div>
+
+          <!-- Danger Zone (owner only) -->
+          <div v-if="isOwner" class="rounded-lg border border-destructive/30 p-4 space-y-3">
+            <h3 class="text-sm font-semibold text-destructive">{{ $t('server.dangerZone') }}</h3>
+
+            <div class="space-y-2">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-medium text-foreground">{{ $t('server.transferOwnership') }}</p>
+                  <p class="text-xs text-muted-foreground">{{ $t('server.transferOwnershipDesc') }}</p>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  class="shrink-0 border-destructive/50 text-destructive hover:bg-destructive/10"
+                  @click="toggleTransferSection"
+                >
+                  {{ showTransferOwnership ? $t('common.cancel') : $t('server.transfer') }}
+                </Button>
+              </div>
+
+              <div v-if="showTransferOwnership" class="space-y-3 rounded-md border border-border/50 p-3">
+                <div class="space-y-1">
+                  <Label for="transfer-owner-select">{{ $t('server.selectNewOwner') }}</Label>
+                  <select
+                    id="transfer-owner-select"
+                    v-model="transferNewOwnerId"
+                    class="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+                  >
+                    <option value="" disabled>{{ $t('server.selectMember') }}</option>
+                    <option
+                      v-for="m in transferCandidates"
+                      :key="m.userId"
+                      :value="m.userId"
+                    >
+                      {{ m.nickname || m.user.displayName || m.user.username }}
+                      ({{ $t(`members.${m.tier}`) }})
+                    </option>
+                  </select>
+                </div>
+
+                <div v-if="!transferConfirming">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    :disabled="!transferNewOwnerId"
+                    @click="transferConfirming = true"
+                  >
+                    {{ $t('server.transferOwnershipBtn') }}
+                  </Button>
+                </div>
+                <div v-else class="space-y-2 rounded-md bg-destructive/10 p-3">
+                  <p class="text-sm font-medium text-destructive">{{ $t('server.transferOwnershipConfirm') }}</p>
+                  <div class="flex gap-2">
+                    <Button type="button" size="sm" variant="ghost" @click="transferConfirming = false">
+                      {{ $t('common.cancel') }}
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      :disabled="transferLoading"
+                      @click="confirmTransfer"
+                    >
+                      <Loader2 v-if="transferLoading" class="mr-2 h-4 w-4 animate-spin" />
+                      {{ $t('server.confirmTransfer') }}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <DialogFooter class="gap-2">
