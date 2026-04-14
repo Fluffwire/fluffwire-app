@@ -165,6 +165,7 @@ class WebSocketService {
     if (!this.token) return
 
     if (this.sessionId && this.sequence != null) {
+      console.log('[WS] Resuming session:', this.sessionId)
       this.send({
         op: WsOpCode.RESUME,
         d: {
@@ -173,7 +174,11 @@ class WebSocketService {
           seq: this.sequence,
         },
       })
+      // Mark as connected when resuming (RESUME doesn't send READY event)
+      this._isConnected = true
+      this.notifyConnectionListeners(true)
     } else {
+      console.log('[WS] Identifying with fresh session')
       this.send({
         op: WsOpCode.IDENTIFY,
         d: { token: this.token },
