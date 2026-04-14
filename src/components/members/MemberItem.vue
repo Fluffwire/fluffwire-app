@@ -21,10 +21,12 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { UserX, Ban, MessageSquare, Copy, User, Shield } from 'lucide-vue-next'
+import { UserX, Ban, MessageSquare, Copy, User, Shield, PhoneCall } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
 import { useRouter } from 'vue-router'
 import { useDirectMessagesStore } from '@/stores/directMessages'
+import { useVoiceStore } from '@/stores/voice'
+import { wsService } from '@/services/websocket'
 
 interface Props {
   member: MemberWithUser
@@ -40,6 +42,7 @@ const authStore = useAuthStore()
 const dmStore = useDirectMessagesStore()
 const labelsStore = useLabelsStore()
 const membersStore = useMembersStore()
+const voiceStore = useVoiceStore()
 
 const serverId = computed(() => route.params.serverId as string)
 const currentMember = computed(() => {
@@ -172,6 +175,31 @@ const profileUser = computed(() => ({
   bio: (props.member.user as { bio?: string })?.bio,
   createdAt: (props.member.user as { createdAt?: string })?.createdAt ?? '',
 }))
+
+// Voice invite logic
+const canInviteToVoice = computed(() => {
+  // Must be in a voice channel
+  if (!voiceStore.currentChannelId || !voiceStore.currentServerId) return false
+  // Must be in same server
+  if (voiceStore.currentServerId !== serverId.value) return false
+  // Can't invite self
+  if (isSelf.value) return false
+  // Can't invite if they're already in our voice channel
+  const isInVoice = voiceStore.peers.some(p => p.userId === props.member.userId)
+  return !isInVoice
+})
+
+function sendVoiceInvite() {
+  if (!voiceStore.currentChannelId || !voiceStore.currentServerId) return
+
+  wsService.sendDispatch('VOICE_INVITE', {
+    targetUserId: props.member.userId,
+    channelId: voiceStore.currentChannelId,
+    serverId: voiceStore.currentServerId,
+  })
+
+  toast.success(t('voice.inviteSent'))
+}
 </script>
 
 <template>
@@ -211,6 +239,10 @@ const profileUser = computed(() => ({
       <ContextMenuItem v-if="!isSelf" class="gap-2" @click="openDM">
         <MessageSquare class="h-4 w-4" />
         {{ $t('friends.message') }}
+      </ContextMenuItem>
+      <ContextMenuItem v-if="canInviteToVoice" class="gap-2" @click="sendVoiceInvite">
+        <PhoneCall class="h-4 w-4" />
+        {{ $t('voice.inviteToVoice') }}
       </ContextMenuItem>
       <ContextMenuItem class="gap-2" @click="copyUserId">
         <Copy class="h-4 w-4" />
