@@ -89,6 +89,49 @@ describe('myFeature', () => {
    - After editing docs: `cd /home/cryo/fluffwire-web && ./deploy.sh`
 6. Only then commit and push
 
+## Logging Pattern ⚠️
+
+**CRITICAL**: NEVER use `console.log/warn/error` for application logging!
+
+### Why
+- Tauri debug panel (Ctrl+Shift+D) ONLY shows `debugLogger` calls
+- `console.log()` does NOT appear in Tauri debug panel
+- This makes debugging desktop app issues impossible
+
+### Correct Pattern
+```typescript
+import { debugLogger } from '@/utils/debug'
+
+// ✅ CORRECT - visible in both web console AND Tauri debug panel
+debugLogger.info('Category', 'Operation started', { userId, channelId })
+debugLogger.success('Category', 'Operation succeeded', { result })
+debugLogger.warn('Category', 'Something unexpected', { warning })
+debugLogger.error('Category', 'Operation failed', error)
+
+// ❌ WRONG - NOT visible in Tauri debug panel
+console.log('Operation started')  // DON'T USE THIS
+console.error('Error:', error)    // DON'T USE THIS
+```
+
+### Categories
+Use descriptive categories for filtering logs:
+- `'WebRTC'` - WebRTC/voice operations
+- `'Voice'` - Voice store operations
+- `'ChannelItem'` - Channel navigation
+- `'VoiceChannelView'` - Voice channel view
+- `'Auth'` - Authentication
+- etc.
+
+### When to Use
+- ✅ **Always** for debugging application flow (joins, navigation, state changes)
+- ✅ **Always** for error scenarios
+- ✅ **Always** for WebRTC/voice operations (critical for Tauri debugging)
+- ❌ Only use `console.log` for temporary local debugging (remove before commit)
+
+### Debug Panel
+- Web: Browser DevTools console
+- Tauri: Ctrl+Shift+D opens debug panel with filterable logs
+
 ## Internationalization (i18n) Requirements ⚠️
 
 **IMPORTANT**: All user-facing text MUST be internationalized. Never hardcode English strings in components.
