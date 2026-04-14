@@ -86,6 +86,23 @@ export const useVoiceStore = defineStore('voice', () => {
   }
 
   function setupWsHandlers() {
+    // Handle voice states sync on reconnect
+    wsDispatcher.register(WS_EVENTS.VOICE_STATES_SYNC, (data: unknown) => {
+      const payload = data as { voiceStates: Array<{
+        userId: string
+        username: string
+        displayName: string
+        avatar: string | null
+        channelId: string
+        selfMute: boolean
+        selfDeaf: boolean
+        streaming: boolean
+      }> }
+
+      console.log('[Voice] Received voice states sync on reconnect', payload.voiceStates.length, 'states')
+      setInitialVoiceStates(payload.voiceStates)
+    })
+
     wsDispatcher.register(WS_EVENTS.VOICE_STATE_UPDATE, (data: unknown) => {
       const state = data as {
         userId: string
