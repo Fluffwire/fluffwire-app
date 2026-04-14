@@ -68,10 +68,11 @@ export const useVoiceStore = defineStore('voice', () => {
     const tag = (e.target as HTMLElement)?.tagName
     if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement)?.isContentEditable) return
     const mod = e.ctrlKey || e.metaKey
-    if (mod && e.key.toLowerCase() === 'm') {
+    // Only trigger shortcuts when Shift is NOT pressed (avoid conflict with Ctrl+Shift+D debug panel)
+    if (mod && !e.shiftKey && e.key.toLowerCase() === 'm') {
       e.preventDefault()
       toggleMute()
-    } else if (mod && e.key.toLowerCase() === 'd') {
+    } else if (mod && !e.shiftKey && e.key.toLowerCase() === 'd') {
       e.preventDefault()
       toggleDeafen()
     }
