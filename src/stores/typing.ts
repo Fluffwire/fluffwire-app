@@ -16,10 +16,11 @@ export const useTypingStore = defineStore('typing', () => {
 
   function setupWsHandlers() {
     wsDispatcher.register(WS_EVENTS.TYPING_START, (data: unknown) => {
-      const { userId, username, channelId } = data as {
+      const { userId, username, channelId, isBot } = data as {
         userId: string
         username: string
         channelId: string
+        isBot?: boolean
       }
 
       // Get or create the typing users map for this channel
@@ -33,7 +34,8 @@ export const useTypingStore = defineStore('typing', () => {
       const existing = channelTyping.get(userId)
       if (existing) clearTimeout(existing.timeout)
 
-      // Set new timeout to remove user after 8 seconds
+      // Use longer timeout for bots (90s for LLM processing), shorter for users (8s)
+      const timeoutDuration = isBot ? 90000 : 8000
       const timeout = setTimeout(() => {
         const users = typingByChannel.value.get(channelId)
         if (users) {
@@ -42,9 +44,29 @@ export const useTypingStore = defineStore('typing', () => {
             typingByChannel.value.delete(channelId)
           }
         }
-      }, 8000)
+      }, timeoutDuration)
 
       channelTyping.set(userId, { userId, username, timeout })
+    })
+
+    wsDispatcher.register(WS_EVENTS.TYPING_STOP, (data: unknown) => {
+      const { userId, channelId } = data as {
+        userId: string
+        channelId: string
+      }
+
+      // Immediately remove user from typing list
+      const channelTyping = typingByChannel.value.get(channelId)
+      if (channelTyping) {
+        const existing = channelTyping.get(userId)
+        if (existing) {
+          clearTimeout(existing.timeout)
+          channelTyping.delete(userId)
+          if (channelTyping.size === 0) {
+            typingByChannel.value.delete(channelId)
+          }
+        }
+      }
     })
   }
   setupWsHandlers()
@@ -75,6 +97,14 @@ export const useTypingStore = defineStore('typing', () => {
     wsService.sendDispatch('TYPING_START', { channelId })
   }
 
+  function stopTyping(channelId: string) {
+    // Only send stop if we've sent a start recently
+    if (lastTypingSent.value.has(channelId)) {
+      wsService.sendDispatch('TYPING_STOP', { channelId })
+      lastTypingSent.value.delete(channelId)
+    }
+  }
+
   function clearChannel(channelId: string) {
     const channelTyping = typingByChannel.value.get(channelId)
     if (channelTyping) {
@@ -90,6 +120,7 @@ export const useTypingStore = defineStore('typing', () => {
     getTypingUsers,
     getTypingText,
     sendTyping,
+    stopTyping,
     clearChannel,
   }
 })

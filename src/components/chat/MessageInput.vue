@@ -253,6 +253,10 @@ function emitTyping() {
   typingStore.sendTyping(props.channelId)
 }
 
+function emitStopTyping() {
+  typingStore.stopTyping(props.channelId)
+}
+
 function openFilePicker() {
   fileInput.value?.click()
 }
@@ -532,6 +536,7 @@ async function handleSubmit() {
       content.value = ''
       pendingFiles.value = []
       draftsStore.clearDraft(props.channelId)
+      emitStopTyping()
       return
     }
     // If not handled, fall through to send as regular message
@@ -543,6 +548,9 @@ async function handleSubmit() {
 
   // Clear draft after successful send
   draftsStore.clearDraft(props.channelId)
+
+  // Stop typing indicator since message was sent
+  emitStopTyping()
 
   if (files.length === 0) {
     // Fast path: no attachments, use WebSocket
@@ -816,6 +824,7 @@ defineExpose({ insertAtCursor })
         v-model="content"
         @keydown="handleKeydown"
         @input="emitTyping(); checkForMention(); autoResizeTextarea()"
+        @blur="content.trim() === '' && emitStopTyping()"
         @paste="handlePaste"
         :placeholder="!canWrite ? t('chat.noWritePermission') : (wsConnected ? t('chat.messagePlaceholder', { channel: channelName }) : t('chat.reconnecting'))"
         :disabled="!wsConnected || !canWrite"
