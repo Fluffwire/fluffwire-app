@@ -6,9 +6,10 @@ Real-time chat application built with Vue 3 + TypeScript.
 
 This is the **CHAT APPLICATION** repository (app.fluffwire.com), NOT the marketing website!
 
-- **Website** (`fluffwire-web`): `/home/cryo/fluffwire-web` → https://fluffwire.com (static landing page)
+- **Website** (`fluffwire-web`): `/home/cryo/fluffwire-web` → https://fluffwire.com (static landing page + docs)
 - **App** (THIS REPO): `/home/cryo/fluffwire-app` → https://app.fluffwire.com (Vue SPA)
 - **Backend** (`fluffwire-server`): `/home/cryo/fluffwire-server` → API + WebSocket server
+- **Bot SDK** (`fluffwire-sdk`): `/home/cryo/fluffwire-sdk` → `@fluffwire/bot-sdk` npm package
 
 ## Tech Stack
 
