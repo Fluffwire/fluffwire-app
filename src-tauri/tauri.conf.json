@@ -50,8 +50,7 @@
       "icons/icon.ico"
     ],
     "macOS": {
-      "entitlements": "./Entitlements.plist",
-      "info": "./Info.plist"
+      "entitlements": "./Entitlements.plist"
     }
   },
   "plugins": {
