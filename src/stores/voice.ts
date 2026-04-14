@@ -5,6 +5,7 @@ import { webrtcService } from '@/services/webrtc'
 import { wsDispatcher, WS_EVENTS } from '@/services/wsDispatcher'
 import { soundManager } from '@/composables/useSounds'
 import { useAuthStore } from '@/stores/auth'
+import { isTauri } from '@/utils/platform'
 
 export const useVoiceStore = defineStore('voice', () => {
   const authStore = useAuthStore()
@@ -342,6 +343,54 @@ export const useVoiceStore = defineStore('voice', () => {
       currentServerId.value = serverId
       connectedSince.value = new Date()
       // Don't play sound when YOU join - only when others join (line 169)
+    } catch (error: unknown) {
+      // Reset state on error
+      currentChannelId.value = null
+      currentServerId.value = null
+      peers.value = []
+
+      console.error('[Voice] Failed to join channel:', error)
+
+      // Show user-friendly error message
+      const { toast } = await import('vue-sonner')
+      const errorMsg = error instanceof Error ? error.message : String(error)
+
+      // Check for common errors
+      if (errorMsg.includes('Permission denied') || errorMsg.includes('NotAllowedError')) {
+        // Microphone permission denied
+        if (isTauri()) {
+          toast.error('Microphone permission denied', {
+            description: 'Please grant microphone access in System Preferences → Security & Privacy → Microphone',
+            duration: 8000,
+          })
+        } else {
+          toast.error('Microphone permission denied', {
+            description: 'Please allow microphone access in your browser settings',
+            duration: 6000,
+          })
+        }
+      } else if (errorMsg.includes('NotFoundError') || errorMsg.includes('DevicesNotFoundError')) {
+        // No microphone found
+        toast.error('No microphone found', {
+          description: 'Please connect a microphone and try again',
+          duration: 6000,
+        })
+      } else if (errorMsg.includes('NotReadableError') || errorMsg.includes('TrackStartError')) {
+        // Microphone in use by another app
+        toast.error('Microphone unavailable', {
+          description: 'Your microphone may be in use by another application',
+          duration: 6000,
+        })
+      } else {
+        // Generic error
+        toast.error('Failed to join voice channel', {
+          description: errorMsg.length < 100 ? errorMsg : 'Please check your microphone settings and try again',
+          duration: 6000,
+        })
+      }
+
+      // Re-throw so caller knows it failed
+      throw error
     } finally {
       isConnecting.value = false
     }
