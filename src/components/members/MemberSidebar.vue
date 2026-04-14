@@ -9,6 +9,7 @@ import BotMemberItem from './BotMemberItem.vue'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { botApi } from '@/services/botApi'
+import { wsDispatcher } from '@/services/wsDispatcher'
 import type { BotMember } from '@/types'
 
 interface Props {
@@ -54,6 +55,21 @@ function handleBotMemberUpdate(event: Event) {
     fetchBots(serverId.value)
   }
 }
+
+// Handle label assignment from context menu (optimistic local update)
+function handleBotLabelsChanged(botId: string, labelIds: string[]) {
+  const bot = serverBots.value.find(b => b.botId === botId)
+  if (bot) bot.labels = labelIds
+}
+
+// Handle BOT_LABEL_UPDATE WebSocket event (updates from other clients)
+wsDispatcher.register('BOT_LABEL_UPDATE', (data: unknown) => {
+  const { serverId: sid, botId, labelIds } = data as { serverId: string; botId: string; labelIds: string[] }
+  if (sid === serverId.value) {
+    const bot = serverBots.value.find(b => b.botId === botId)
+    if (bot) bot.labels = labelIds
+  }
+})
 
 onMounted(() => {
   window.addEventListener('bot-member-updated', handleBotMemberUpdate)
@@ -117,6 +133,7 @@ const offlineMembers = computed(() =>
             :key="bot.botId"
             :bot-member="bot"
             :server-id="serverId"
+            @labels-changed="handleBotLabelsChanged"
           />
         </div>
       </div>

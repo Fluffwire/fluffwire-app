@@ -29,4 +29,7 @@ export const botApi = {
   removeBotFromServer(serverId: string, botId: string): Promise<void> {
     return api.delete(`/servers/${serverId}/bots/${botId}`)
   },
+  assignBotLabels(serverId: string, botId: string, labelIds: string[]): Promise<{ data: { labelIds: string[] } }> {
+    return api.put(`/servers/${serverId}/bots/${botId}/labels`, { labelIds })
+  },
 }

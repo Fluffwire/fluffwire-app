@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog'
-import { Plus, Pencil, Trash2, RotateCw, Copy, Check, Bot as BotIcon } from 'lucide-vue-next'
+import { Plus, Pencil, Trash2, RotateCw, Copy, Check, Bot as BotIcon, Camera } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import UserAvatar from '@/components/common/UserAvatar.vue'
+import { uploadFile } from '@/services/api'
 import type { Bot } from '@/types'
 
 const botsStore = useBotsStore()
@@ -36,6 +38,11 @@ const deletingBotId = ref<string | null>(null)
 // Regenerate token confirmation state
 const showRegenerateDialog = ref(false)
 const regeneratingBotId = ref<string | null>(null)
+
+// Avatar upload state
+const avatarInputRef = ref<HTMLInputElement | null>(null)
+const uploadingAvatarForBotId = ref<string | null>(null)
+const avatarUploading = ref<string | null>(null)
 
 onMounted(() => {
   botsStore.fetchUserBots()
@@ -165,6 +172,32 @@ function closeTokenModal() {
   }, 100)
 }
 
+function triggerAvatarUpload(botId: string) {
+  uploadingAvatarForBotId.value = botId
+  avatarInputRef.value?.click()
+}
+
+async function handleAvatarFileChange(event: Event) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file || !uploadingAvatarForBotId.value) return
+  input.value = ''
+
+  const botId = uploadingAvatarForBotId.value
+  uploadingAvatarForBotId.value = null
+  avatarUploading.value = botId
+
+  try {
+    const { url } = await uploadFile(file)
+    await botsStore.updateBot(botId, { avatar: url })
+    toast.success('Avatar updated')
+  } catch {
+    toast.error('Failed to update avatar')
+  } finally {
+    avatarUploading.value = null
+  }
+}
+
 function formatDate(dateString: string) {
   const date = new Date(dateString)
   return date.toLocaleDateString('en-US', {
@@ -251,9 +284,19 @@ function formatDate(dateString: string) {
           <!-- View mode -->
           <div v-if="editingBotId !== bot.id">
             <div class="flex items-start gap-4">
-              <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <BotIcon class="h-6 w-6 text-primary" />
-              </div>
+              <button
+                class="group relative shrink-0"
+                type="button"
+                :disabled="avatarUploading === bot.id"
+                title="Upload avatar"
+                @click="triggerAvatarUpload(bot.id)"
+              >
+                <UserAvatar :src="bot.avatar" :alt="bot.name" size="md" :is-bot="true" />
+                <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  <div v-if="avatarUploading === bot.id" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <Camera v-else class="h-4 w-4 text-white" />
+                </div>
+              </button>
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   <h4 class="font-semibold">{{ bot.name }}</h4>
@@ -279,6 +322,22 @@ function formatDate(dateString: string) {
           <!-- Edit mode -->
           <div v-else>
             <form class="space-y-4" @submit.prevent="saveEdit(bot.id)">
+              <div class="flex items-center gap-4">
+                <button
+                  class="group relative shrink-0"
+                  type="button"
+                  :disabled="avatarUploading === bot.id"
+                  title="Upload avatar"
+                  @click="triggerAvatarUpload(bot.id)"
+                >
+                  <UserAvatar :src="bot.avatar" :alt="bot.name" size="md" :is-bot="true" />
+                  <div class="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                    <div v-if="avatarUploading === bot.id" class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    <Camera v-else class="h-4 w-4 text-white" />
+                  </div>
+                </button>
+                <p class="text-xs text-muted-foreground">Click avatar to upload image</p>
+              </div>
               <div class="space-y-2">
                 <Label>Name</Label>
                 <Input v-model="editName" placeholder="Bot Name" required maxlength="32" />
@@ -337,6 +396,15 @@ function formatDate(dateString: string) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    <!-- Hidden avatar file input (shared, keyed by uploadingAvatarForBotId) -->
+    <input
+      ref="avatarInputRef"
+      type="file"
+      accept="image/*"
+      class="hidden"
+      @change="handleAvatarFileChange"
+    >
 
     <!-- Regenerate Token Confirmation Dialog -->
     <AlertDialog :open="showRegenerateDialog" @update:open="(open) => !open && (showRegenerateDialog = false)">

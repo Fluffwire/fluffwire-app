@@ -18,6 +18,7 @@ export interface BotMember {
   addedAt: string
   bot: Bot
   status?: string  // online/offline presence status
+  labels: string[]
 }
 
 export interface BotMemberDisplay {
